@@ -3,4 +3,7 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/ocre/public_html/apps/
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp index.html $DEPLOYPATH
+    - /bin/cp LEEME.txt $DEPLOYPATH
+    - /bin/cp README.md $DEPLOYPATH
+    - /bin/cp -R limpiador-mozaik $DEPLOYPATH
