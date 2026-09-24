@@ -1,0 +1,153 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OCRE · Limpiador Mozaik</title>
+<style>:root{--ink:#192832;--muted:#60717c;--line:#d7e0e5;--panel:#fff;--bg:#f3f6f8;--ocre:#14576b;--ocre2:#0f4658;--warn:#d99124;--bad:#b33a3a;--ok:#24705a}*{box-sizing:border-box}body{font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);max-width:1120px;margin:0 auto;padding:28px 18px}header{padding:14px 0 10px}h1{font-size:30px;margin:0 0 6px}h2{font-size:19px;margin:0 0 14px}.lead{color:var(--muted);max-width:760px;margin:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px;margin:16px 0}.warning{border-left:5px solid var(--warn)}button,.download,.picker{background:var(--ocre);color:white;padding:12px 18px;border:0;border-radius:6px;cursor:pointer;margin:8px 8px 8px 0;display:inline-block;text-decoration:none;font-weight:650}.picker input{display:none}button:hover,.download:hover,.picker:hover{background:var(--ocre2)}button:disabled{opacity:.55;cursor:not-allowed}.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 18px}.checks label{display:flex;gap:9px;align-items:flex-start;padding:8px 0}.checks input{margin-top:3px}.hint,small{color:var(--muted)}#statusCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:14px 0}.card{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfdfe}.card b{display:block;font-size:24px}.ok{color:var(--ok)}.bad{color:var(--bad)}details{border:1px solid var(--line);border-radius:8px;background:white;margin:9px 0}summary{cursor:pointer;padding:12px 14px;font-weight:650}details pre{border-top:1px solid var(--line);margin:0;padding:12px 14px;background:#fbfdfe;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.tag{display:inline-block;border-radius:99px;padding:2px 8px;font-size:12px;margin-left:8px;background:#eef4f6;color:var(--muted)}.tag.bad{background:#fdecec;color:var(--bad)}.tag.ok{background:#e9f6f0;color:var(--ok)}@media(max-width:760px){body{padding:18px 12px}.grid{grid-template-columns:1fr}h1{font-size:25px}}</style>
+<header><h1>OCRE · Limpiador Mozaik</h1><p class="lead">v2.4 · Router KDT y taladro MPR · procesa carpetas completas y genera un paquete ZIP para simulación.</p></header>
+<section class="panel warning"><b>Solo para revisión y simulación antes de producción.</b><p>No cambia los originales. No envía archivos a internet. T1: 8 mm · T3: 10 mm · T6: 6 mm.</p><small>Perfil NC basado en los códigos KDT observados. Los agujeros fresados circulares o helicoidales se conservan como trayectorias y requieren revisión.</small></section>
+<section class="panel"><h2>1. Carpeta de producción</h2><label class="picker">Seleccionar carpeta completa <input id="folder" type="file" webkitdirectory multiple></label><p id="selection" class="hint">Sin selección.</p><p class="hint">Incluye subcarpetas. El ZIP tendrá 01_ROUTER, 02_TALADRO y el resumen; conserva rutas relativas.</p></section>
+<section class="panel"><h2>2. Funciones activas</h2><div class="checks" id="options"></div><label>Macros MPR extra a eliminar<br><input id="extraMacros" type="text" placeholder="Ejemplo: 456, <789>" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;margin:6px 0 12px"></label><small>Escribe codigos separados por coma o espacio. Se eliminan antes de bloquear macros desconocidas.</small><br><button id="process">Procesar y preparar ZIP</button></section>
+<section class="panel"><h2>3. Resultado</h2><p class="hint">El resumen en pantalla se mantiene corto. Abre cada archivo para revisar el detalle completo.</p><div id="downloads"></div><div id="statusCards"></div><div id="report"><p class="hint">Sin procesar.</p></div></section>
+<script id="core">
+'use strict';
+function lines(s){if(/[^\x09\x0a\x0d\x20-\x7e]/.test(s))throw Error('Codificación no ASCII: archivo bloqueado para evitar alterar caracteres.');return s.trimEnd().split(/\r?\n/);}
+function out(a){return a.join('\r\n')+'\r\n';}
+function nval(s,k){const m=s.match(new RegExp('(?:^|\\s)'+k+'(-?\\d+(?:\\.\\d+)?)'));return m?Number(m[1]):null;}
+function defaultOptions(){return {strictNCProfile:true,removeG600:true,excludeUnknownTools:true,removeVerticalToolHoles:true,limitZZero:true,reportSlots:true,removeMprRouting:true,blockUnknownMprMacros:true,extraRemoveMprMacros:[],includeIgnored:true,blockDuplicateOutputs:true};}
+function opts(o){return Object.assign(defaultOptions(),o||{});}
+function macroList(s){if(Array.isArray(s))return s.map(Number).filter(n=>Number.isInteger(n)&&n>0);return String(s||'').match(/\d+/g)?.map(Number).filter(n=>Number.isInteger(n)&&n>0)||[];}
+function cleanNC(s,o){
+ o=opts(o);
+ const a=lines(s),diam={1:8,3:10,6:6},slots=[],excluded=[],events=[];let holes=0;
+ if(a[a.length-1]!=='M30')throw Error('Falta cierre M30 o hay contenido posterior.');
+ const prefix=['G53 Z-15.000','M129','M123','M125','G53 Z-15.0','G90 G54','M7','M73','G54 G90'];
+ if(o.strictNCProfile&&a.slice(0,9).join('\n')!==prefix.join('\n'))throw Error('Encabezado diferente del perfil validado.');
+ const tail=['G00 Z100.0000','M5','G00 X0.0000 Y0.0000','M30'];
+ if(o.strictNCProfile&&a.slice(-4).join('\n')!==tail.join('\n'))throw Error('Cierre diferente del perfil validado.');
+ // No se interpretan subprogramas, movimientos modales sin G, ciclos ni offsets distintos.
+ if(o.strictNCProfile)for(const l of a){if(!l.trim())continue;if(/^(G90 G54|G54 G90|M129|M123|M125|M7|M73|M83|M5|M30)$/.test(l))continue;
+ if(/^(?:M33|M03) S\d+$/.test(l)||/^(?:G600|M6) T\d+$/.test(l)||/^G43 H\d+$/.test(l)||/^G53 Z-15(?:\.0+)?$/.test(l))continue;
+ if(/^G0?[0123](?:\s+[XYZRF IJK][-+]?\d+(?:\.\d+)?)+\s*$/.test(l)&&!/[IJK]/.test(l))continue;
+ throw Error('Instrucción fuera del perfil: '+l);}
+ const starts=[];a.forEach((l,i)=>{if(/^(M6|G600) T\d+$/.test(l))starts.push(i);});
+ if(!starts.length)throw Error('Sin selección de herramienta reconocida.');
+ const result=prefix.slice();let kept=0;
+ for(let b=0;b<starts.length;b++){
+ const start=starts[b],finish=b+1<starts.length?starts[b+1]:a.length-4;
+ let block=a.slice(start,finish);while(block.length&&/^(M7|M73|G54 G90|G90 G54)$/.test(block[block.length-1]))block.pop();
+ const t=Number(block[0].match(/T(\d+)/)[1]);
+ if(block[0].startsWith('G600')&&o.removeG600){const count=block.filter(l=>/^G0?1 Z/.test(l)).length;holes+=count;events.push('L'+(start+1)+': retirado '+block[0]+' ('+count+' descensos)');continue;}
+ if(!diam[t]&&o.excludeUnknownTools){excluded.push(t);events.push('L'+(start+1)+': excluida T'+t+', bloque completo de '+block.length+' líneas');continue;}
+ if(o.strictNCProfile&&(!/^M03 S\d+$/.test(block[1])||block[2]!=='G43 H'+t||!/^G0?0 Z115(?:\.0+)?$/.test(block[3])))throw Error('Preparación de herramienta no reconocida en L'+(start+1));
+ const header=block.slice(0,4),body=block.slice(4),filtered=[];let chunk=[];
+ function processChunk(){
+ if(!chunk.length)return;const feeds=chunk.filter(l=>/^G0?[123] /.test(l));
+ if(!feeds.length)return;
+ const firstMove=chunk.find(l=>/^G0?[0123] /.test(l)&&/[XY]/.test(l));
+ if(o.strictNCProfile&&(!firstMove||!/^G0?0 /.test(firstMove)||nval(firstMove,'X')===null||nval(firstMove,'Y')===null))throw Error('Operación sin posicionamiento inicial X/Y completo: revisar dependencia de operaciones retiradas.');
+ const hasLateral=feeds.some(l=>/[XY]/.test(l));
+ if(!hasLateral&&o.removeVerticalToolHoles){if(feeds.some(l=>!/^G0?1 Z-?\d+(?:\.\d+)?(?: F\d+(?:\.\d+)?)?\s*$/.test(l)))throw Error('Operación vertical ambigua.');holes++;events.push('T'+t+': retirada penetración vertical '+(chunk.find(l=>/[XY]/.test(l))||''));chunk=[];return;}
+ // Se mantienen intactas las entradas verticales seguidas de corte lateral.
+ filtered.push(...chunk);kept++;
+ const z=feeds.map(l=>nval(l,'Z')).filter(x=>x!==null),arcs=feeds.some(l=>/^G0?[23] /.test(l));
+ if(o.reportSlots&&!arcs&&z.length&&Math.min(...z)>0){
+ let x=null,y=null;const pts=[],segs=[];
+ for(const l of chunk){const xx=nval(l,'X'),yy=nval(l,'Y'),nx=xx===null?x:xx,ny=yy===null?y:yy;
+ if(/^G0?1 /.test(l)&&x!==null&&y!==null&&nx!==null&&ny!==null){segs.push({x,y,nx,ny,len:Math.hypot(nx-x,ny-y)});pts.push([x,y],[nx,ny]);}x=nx;y=ny;}
+ if(pts.length){const dx=Math.max(...pts.map(p=>p[0]))-Math.min(...pts.map(p=>p[0])),dy=Math.max(...pts.map(p=>p[1]))-Math.min(...pts.map(p=>p[1]));const axis=dx>=dy?'X':'Y',long=Math.max(dx,dy),wide=Math.min(dx,dy);
+ if(long>4*(wide+diam[t])){const main=segs.filter(q=>q.len>long*.5&& (axis==='X'?Math.abs(q.ny-q.y)<.01:Math.abs(q.nx-q.x)<.01));const cross=main.flatMap(q=>axis==='X'?[q.y,q.ny]:[q.x,q.nx]);
+ if(cross.length)slots.push({tool:t,axis,width:+(Math.max(...cross)-Math.min(...cross)+diam[t]).toFixed(3),maxWidth:+(wide+diam[t]).toFixed(3),x:pts[0][0],y:pts[0][1],note:'Ancho estimado del tramo principal; confirmar en vista previa'});}
+ }
+ }
+ chunk=[];
+ }
+ for(const l of body){chunk.push(l);if(/^G0?0 Z115(?:\.0+)?$/.test(l))processChunk();}
+ if(o.strictNCProfile&&chunk.some(l=>/^G0?[123] /.test(l)))throw Error('Trayectoria sin retirada Z115 al final.');processChunk();
+ if(filtered.some(l=>/^G0?[123] /.test(l)))result.push('G90 G54',...header,...filtered);
+ }
+ if(!kept)return {text:null,holes,excluded,slots,events,zCorrections:0};
+ result.push(...tail);let zCorrections=0;
+ const bounded=result.map((line,i)=>{
+ if(/^G53\b/.test(line))return line;
+ return line.replace(/\bZ(-?\d+(?:\.\d+)?)/g,(word,value)=>{if(!o.limitZZero||Number(value)>=0)return word;zCorrections++;events.push('Línea salida '+(i+1)+': '+word+' -> Z0.0000 (límite de cama)');return 'Z0.0000';});
+ });
+ if(o.limitZZero&&bounded.some(line=>!/^G53\b/.test(line)&&nval(line,'Z')<0))throw Error('Validación Z0 fallida.');
+ return {text:out(bounded),holes,excluded,slots,events,zCorrections};
+}
+function cleanMPR(s,o){
+ o=opts(o);
+ const a=lines(s);if(a[0]!=='[H'||!a.includes('MAT="WEEKE"')||a[a.length-1]!=='!')throw Error('MPR sin cabecera WEEKE o terminador válido.');
+ const keep=new Set([100,101,102,103,131]),remove=new Set([105,112]),extra=new Set(macroList(o.extraRemoveMprMacros));let mode=true,count=0,removed=0,work=false;const result=[];
+ for(const l of a){if(l==='!')continue;const m=l.match(/^<(\d+)\s/);if(/^\s*</.test(l)&&!m)throw Error('Inicio de macro no reconocido.');if(m){const id=Number(m[1]);if(extra.has(id)){mode=false;removed++;}else{if(!keep.has(id)&&!remove.has(id)&&o.blockUnknownMprMacros)throw Error('Macro desconocida <'+id+'>: no se genera salida.');mode=keep.has(id)||(!keep.has(id)&&!remove.has(id)&&!o.blockUnknownMprMacros);if(id===100)work=true;if([102,103,131].includes(id))count++;if(!mode)removed++;}}
+ else if(/^\]\d+\s*$/.test(l))mode=!o.removeMprRouting;
+ else if(/^\[/.test(l)){if(!/^\[(H|\d+)\s*$/.test(l))throw Error('Sección desconocida: '+l);mode=true;}
+ if(m){const id=Number(m[1]);if(remove.has(id)&&!o.removeMprRouting)mode=true;if(!keep.has(id)&&!remove.has(id)&&!o.blockUnknownMprMacros)mode=true;}
+ if(mode)result.push(l);
+ }
+ if(!work)throw Error('Falta definición de pieza <100>.');
+ return {text:count?out([...result,'!']):null,count,removed};
+}
+</script>
+<script id="package">
+function makeZip(items){
+ const enc=new TextEncoder(),parts=[],central=[],seen=new Set();let offset=0;
+ function crc(bytes){let c=0xffffffff;for(const b of bytes){c^=b;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0);}return (c^0xffffffff)>>>0;}
+ function header(size){const b=new Uint8Array(size);return {b,v:new DataView(b.buffer)};}
+ if(items.length>65535)throw Error('Demasiados archivos para ZIP.');
+ for(const item of items){if(!item.name||/^[\/\\]|\\|(^|\/)\.\.(\/|$)/.test(item.name))throw Error('Ruta no válida en ZIP.');const key=item.name.toLowerCase();if(seen.has(key))throw Error('Ruta duplicada en ZIP: '+item.name);seen.add(key);
+ const name=enc.encode(item.name),data=enc.encode(item.text),sum=crc(data);if(name.length>65535||offset+data.length+name.length+30>0xffffffff)throw Error('Paquete demasiado grande.');
+ const l=header(30);l.v.setUint32(0,0x04034b50,true);l.v.setUint16(4,20,true);l.v.setUint16(6,0x800,true);l.v.setUint16(12,33,true);l.v.setUint32(14,sum,true);l.v.setUint32(18,data.length,true);l.v.setUint32(22,data.length,true);l.v.setUint16(26,name.length,true);parts.push(l.b,name,data);
+ const c=header(46);c.v.setUint32(0,0x02014b50,true);c.v.setUint16(4,20,true);c.v.setUint16(6,20,true);c.v.setUint16(8,0x800,true);c.v.setUint16(14,33,true);c.v.setUint32(16,sum,true);c.v.setUint32(20,data.length,true);c.v.setUint32(24,data.length,true);c.v.setUint16(28,name.length,true);c.v.setUint32(42,offset,true);central.push(c.b,name);offset+=30+name.length+data.length;
+ }
+ const size=central.reduce((s,b)=>s+b.length,0),end=header(22);end.v.setUint32(0,0x06054b50,true);end.v.setUint16(8,items.length,true);end.v.setUint16(10,items.length,true);end.v.setUint32(12,size,true);end.v.setUint32(16,offset,true);const all=[...parts,...central,end.b];const bytes=new Uint8Array(offset+size+22);let pos=0;for(const p of all){bytes.set(p,pos);pos+=p.length;}return bytes;
+}
+async function walkEntry(entry,parent=''){
+ const path=parent+entry.name;
+ if(entry.isFile){const file=await new Promise((ok,no)=>entry.file(ok,no));return [{file,path}];}
+ if(!entry.isDirectory)throw Error('Elemento no reconocido: '+path);
+ const reader=entry.createReader(),result=[];for(;;){const batch=await new Promise((ok,no)=>reader.readEntries(ok,no));if(!batch.length)break;for(const child of batch)result.push(...await walkEntry(child,path+'/'));}return result;
+}
+</script>
+<script>
+const report=document.getElementById('report'),downloads=document.getElementById('downloads'),cards=document.getElementById('statusCards');let urls=[];
+let selected=[],busy=false;const button=document.getElementById('process'),status=document.getElementById('selection');
+const optionDefs=[
+ ['strictNCProfile','NC: validar perfil KDT observado','Bloquea encabezados, cierres o instrucciones fuera del formato conocido.'],
+ ['removeG600','NC: quitar perforaciones G600','Retira bloques de multidrill enviados al router.'],
+ ['excludeUnknownTools','NC: excluir herramientas desconocidas','Solo conserva T1, T3 y T6.'],
+ ['removeVerticalToolHoles','NC: quitar penetraciones verticales con fresa','Retira perforaciones simples hechas con T1/T3/T6.'],
+ ['limitZZero','NC: limitar Z de trabajo a cama Z0','Convierte destinos negativos de Z a Z0; conserva G53.'],
+ ['reportSlots','NC: reportar ancho de ranuras','Detecta ranuras rectas candidatas y estima ancho.'],
+ ['removeMprRouting','MPR: dejar solo perforaciones','Retira trayectorias y macros de fresado del taladro.'],
+ ['blockUnknownMprMacros','MPR: bloquear macros desconocidas','Evita generar salida cuando aparece una macro no clasificada.'],
+ ['includeIgnored','Resumen: registrar archivos ignorados','Lista archivos que no sean NC/MPR.'],
+ ['blockDuplicateOutputs','ZIP: bloquear salidas duplicadas','Evita sobrescribir dos piezas con el mismo nombre final.']
+];
+function resetDownloads(){urls.forEach(URL.revokeObjectURL);urls=[];downloads.replaceChildren();}
+function currentOptions(){const o={};for(const d of optionDefs)o[d[0]]=document.getElementById('opt_'+d[0]).checked;o.extraRemoveMprMacros=macroList(document.getElementById('extraMacros').value);return o;}
+function setupOptions(){const box=document.getElementById('options'),base=defaultOptions();for(const d of optionDefs){const label=document.createElement('label'),input=document.createElement('input'),span=document.createElement('span');input.type='checkbox';input.id='opt_'+d[0];input.checked=!!base[d[0]];span.innerHTML=d[1]+'<br><small>'+d[2]+'</small>';label.append(input,span);box.append(label);}}
+function choose(list){selected=list.sort((a,b)=>a.path.localeCompare(b.path));resetDownloads();cards.replaceChildren();const n=selected.filter(x=>/\.(nc|mpr)$/i.test(x.path)).length;status.textContent=selected.length+' archivos encontrados; '+n+' NC/MPR para procesar.';report.innerHTML='<p class="hint">Selección lista.</p>';}
+document.getElementById('folder').onchange=e=>{if(!busy)choose(Array.from(e.target.files,f=>({file:f,path:f.webkitRelativePath||f.name})));};
+function link(name,text){const u=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));urls.push(u);const a=document.createElement('a');a.href=u;a.download=name;a.className='download';a.textContent='Descargar '+name;downloads.append(a);}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function suggest(message){if(/Encabezado|Cierre|Instrucción|Preparación|posicionamiento|vertical ambigua|retirada Z115/.test(message))return 'Opción posible: desactivar "NC: validar perfil KDT observado" y reprocesar solo para diagnóstico.';
+ if(/Validación Z0/.test(message))return 'Opción posible: desactivar "NC: limitar Z de trabajo a cama Z0" y revisar el resultado en simulación.';
+ if(/Macro desconocida/.test(message))return 'Opción posible: desactivar "MPR: bloquear macros desconocidas" y revisar qué conserva el archivo.';
+ if(/duplicada/.test(message))return 'Opción posible: desactivar "ZIP: bloquear salidas duplicadas", aunque conviene corregir nombres de origen.';
+ return 'Sin opción automática segura. Revisar el archivo original.';}
+function addCard(label,value,cls){const d=document.createElement('div');d.className='card';d.innerHTML='<b class="'+(cls||'')+'">'+value+'</b>'+label;cards.append(d);}
+function renderReport(summary,items){cards.replaceChildren();addCard('Incluidos',summary.included,'ok');addCard('Omitidos',summary.omitted,'');addCard('Bloqueados',summary.failed,summary.failed?'bad':'ok');addCard('Ignorados',summary.ignored,'');report.replaceChildren();for(const item of items){const d=document.createElement('details'),tag=item.status==='BLOQUEADO'?'bad':item.status==='SALIDA'?'ok':'';d.innerHTML='<summary>'+esc(item.path)+' <span class="tag '+tag+'">'+item.status+'</span></summary><pre>'+esc(item.detail.join('\n'))+'</pre>';report.append(d);}}
+function textSummary(summary,items,options){const log=['OCRE LIMPIADOR v2.4','NO AUTORIZA PRODUCCIÓN. Revisar todas las salidas en simulación.','T1=8 mm, T3=10 mm, T6=6 mm.','Macros MPR extra eliminadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'),'Incluidos: '+summary.included+' | Omitidos: '+summary.omitted+' | Bloqueados: '+summary.failed+' | Ignorados: '+summary.ignored,''];for(const item of items)log.push(item.path+' | '+item.status,...item.detail.map(x=>'  '+x),'');return log.join('\n');}
+document.getElementById('process').onclick=async()=>{
+ if(busy)return;resetDownloads();cards.replaceChildren();const files=selected.slice(),options=currentOptions();if(!files.length){report.innerHTML='<p class="hint">Selecciona una carpeta primero.</p>';return;}busy=true;button.disabled=true;const packaged=[],names=new Set(),items=[];const summary={included:0,omitted:0,failed:0,ignored:0};
+ try{
+ for(const item of files){const f=item.file;if(!/\.(nc|mpr)$/i.test(f.name)){summary.ignored++;if(options.includeIgnored)items.push({path:item.path,status:'IGNORADO',detail:['No es archivo NC/MPR.']});continue;}report.innerHTML='<p class="hint">Procesando '+esc(item.path)+'</p>';const detail=[];
+ try{if(/_(ROUTER|TALADRO)_V2(?:2|3|4)?\./i.test(f.name))throw Error('Selecciona el original, no una salida V2/V23/V24.');const bytes=new Uint8Array(await f.arrayBuffer());if(bytes.some(x=>x>127))throw Error('Codificación no ASCII.');const s=new TextDecoder().decode(bytes);let r,name;
+ if(/\.nc$/i.test(f.name)){r=cleanNC(s,options);name=f.name.replace(/\.nc$/i,'_ROUTER_V24.nc');detail.push('Perforaciones/descensos retirados: '+r.holes,'Herramientas excluidas: '+(r.excluded.join(', ')||'ninguna'),'Ranuras rectas candidatas: '+r.slots.length,...r.slots.map(g=>'T'+g.tool+' X'+g.x+' Y'+g.y+': ancho principal ~'+g.width+' mm; barrido máximo '+g.maxWidth+' mm'),...r.events,'Destinos Z negativos corregidos a Z0: '+r.zCorrections);}
+ else{r=cleanMPR(s,options);name=f.name.replace(/\.mpr$/i,'_TALADRO_V24.mpr');detail.push('Macros de perforación conservadas: '+r.count,'Macros retiradas: '+r.removed,'Macros extra solicitadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'));}
+ if(r.text){const parent=item.path.includes('/')?item.path.slice(0,item.path.lastIndexOf('/')+1):'';const path=(/\.nc$/i.test(f.name)?'01_ROUTER/':'02_TALADRO/')+parent+name;const key=path.toLowerCase();if(options.blockDuplicateOutputs&&names.has(key))throw Error('Salida duplicada: '+path);names.add(key);packaged.push({name:path,text:r.text});summary.included++;detail.push('Salida: '+path);items.push({path:item.path,status:'SALIDA',detail});}
+ else{summary.omitted++;detail.push('Sin operaciones conservadas.');items.push({path:item.path,status:'OMITIDO',detail});}
+ }catch(e){summary.failed++;items.push({path:item.path,status:'BLOQUEADO',detail:['Error: '+e.message,suggest(e.message)]});}}
+ const summaryText=textSummary(summary,items,options);renderReport(summary,items);packaged.push({name:'RESUMEN_MOZAIK.txt',text:summaryText});if(summary.failed)packaged.push({name:'LOTE_INCOMPLETO_NO_PRODUCIR.txt',text:'Hay archivos bloqueados. Consulte RESUMEN_MOZAIK.txt y resuelva los errores antes de producción.'});
+ const stamp=new Date().toISOString().replace(/[:.]/g,'-');link('MOZAIK_'+(summary.failed?'INCOMPLETO_':'PROCESADO_')+stamp+'.zip',makeZip(packaged));
+ }catch(e){report.innerHTML+='<p class="bad">No se pudo preparar el ZIP: '+esc(e.message)+'</p>';}finally{busy=false;button.disabled=false;}
+};
+setupOptions();
+</script></html>
