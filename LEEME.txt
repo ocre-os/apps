@@ -1,4 +1,4 @@
-OCRE - LIMPIADOR MOZAIK V2.4 - APP WEB
+OCRE - LIMPIADOR MOZAIK V2.6 - APP WEB
 
 1. Extrae el ZIP completo.
 2. Para publicarlo, sube el contenido de la carpeta apps a apps.ocre.mx.
@@ -29,14 +29,18 @@ aplicar el bloqueo de macros desconocidas.
 
 NC: solo T1=8, T3=10, T6=6 mm. Elimina bloques G600 y bloques completos de otras
 herramientas. Elimina penetraciones verticales aisladas del perfil admitido.
-Conserva cortes, entradas verticales a cortes y ranuras. Conserva velocidades,
+Conserva cortes, entradas verticales a cortes y ranuras. Acepta alturas Z de
+trabajo variables por espesor, por ejemplo piezas de 15, 18 mm o mas gruesas,
+siempre que el formato general del NC siga el perfil KDT observado. Conserva velocidades,
 compensaciones y trayectorias retenidas, salvo destinos Z de trabajo negativos,
 que se convierten a Z0 y se registran. G53 de máquina no se modifica.
 G43 se conserva: requiere cero de cama y longitudes correctamente calibrados.
 El filtro no comprueba los offsets físicos ni evita errores de calibración.
 No elimina automáticamente agujeros fresados con arcos o hélices.
 Ciclos y formatos no reconocidos se BLOQUEAN, no se interpretan por aproximación.
-Perfil específico del encabezado/cierre de los NC suministrados, con Z115.
+Perfil especifico del encabezado/cierre de los NC suministrados. La altura de
+retirada de cada herramienta se detecta desde su preparacion, por ejemplo Z115 o
+Z118, y se usa para separar operaciones.
 
 MPR: conserva macros 100/101 de soporte y 102/103/131 de perforación.
 Elimina 105/112 y tablas geométricas ]n. Conserva variables [nnn y terminador !.
@@ -45,13 +49,16 @@ Solo ASCII en esta versión para evitar corrupción de codificación.
 
 Resumen: la pantalla muestra totales y un desglose colapsado por archivo.
 RESUMEN_MOZAIK.txt conserva el detalle completo para auditoria.
-Se reportan descensos retirados, herramientas excluidas y ranuras rectas candidatas.
+Se reportan descensos retirados, herramientas excluidas, espesor estimado desde
+las entradas verticales de corte NC y ranuras rectas candidatas.
 El ancho principal se estima con pasadas largas paralelas y diámetro real.
 El barrido máximo incluye ensanches de los extremos, que pueden quedar fuera
 de la pieza. No equivale necesariamente al ancho de ranura útil en toda su longitud.
 No estima ranuras curvas, diagonales, perfiles complejos ni fusiona pasadas separadas.
 
-Pruebas: el núcleo se ejecutó con Node y once NC originales; se verificó que
+Pruebas: el núcleo se ejecutó con Node y once NC originales; tambien se probo
+un caso sintetico de 18 mm con varias pasadas y destino final negativo limitado a Z0.
+Se verificó que
 los bloques de corte/ranurado retenidos permanecieran intactos. Las pruebas
 sintéticas cubren penetración aislada, herramienta excluida, ranura y rechazo
 de instrucciones no admitidas; el filtro MPR se probó con ejemplos sintéticos.
