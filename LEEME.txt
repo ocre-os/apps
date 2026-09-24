@@ -1,4 +1,4 @@
-OCRE - LIMPIADOR MOZAIK V2.6 - APP WEB
+OCRE - LIMPIADOR MOZAIK V2.7 - APP WEB
 
 1. Extrae el ZIP completo.
 2. Para publicarlo, sube el contenido de la carpeta apps a apps.ocre.mx.
@@ -17,11 +17,13 @@ No mezcles salidas anteriores con la carpeta de originales.
 No crea nuevas perforaciones MPR a partir del NC: las operaciones deben existir
 ya en los MPR originales. Verifica que la producción tenga todas sus piezas.
 
-La pantalla incluye checks para activar o desactivar funciones individuales.
-Si un archivo se bloquea, el desglose expandible sugiere que funcion podria
-omitirse para una segunda corrida de diagnostico. Desactivar validaciones puede
-conservar operaciones que normalmente se retirarian; siempre simula antes de
-enviar a maquina.
+La pantalla esta condensada para uso de taller: selecciona carpeta, procesa y
+descarga. Las funciones avanzadas empiezan colapsadas y solo se expanden si
+necesitas desactivar una validacion o revisar una ayuda. Cada funcion tiene un
+icono de ayuda con explicacion, caso de uso y ejemplo. Si un archivo se bloquea,
+el desglose expandible sugiere que funcion podria omitirse para una segunda
+corrida de diagnostico. Desactivar validaciones puede conservar operaciones que
+normalmente se retirarian; siempre simula antes de enviar a maquina.
 
 El campo "Macros MPR extra a eliminar" acepta codigos como 456, <456> o una
 lista separada por espacios/comas. Esas macros se eliminan completas antes de
