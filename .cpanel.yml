@@ -1,1 +1,6 @@
-
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/ocre/public_html/apps/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R * $DEPLOYPATH
