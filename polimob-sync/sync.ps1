@@ -7,19 +7,26 @@ $RepoMozaik = Join-Path $Root "Mozaik"
 $BackupRoot = Join-Path $env:LOCALAPPDATA "OCRE\PolimobBackups"
 $Repo = "https://github.com/ocre-os/Polimob.git"
 
-$Groups = [ordered]@{
- "Postprocesadores y CNC" = @("Data\CNC")
- "Materiales y productos" = @("Product Libraries")
- "Bibliotecas de insertos" = @("Insert Libraries")
- "Etiquetas" = @("Data\Labels")
- "Plantillas de reporte" = @("Data\ReportTemplates")
- "Plantillas de importacion" = @("Data\TemplateImport")
- "Puertas" = @("Data\Doors")
- "Herrajes y accesorios" = @("Data\ClosetRods","Data\Fasteners","Data\Legs","Data\Lights","Data\Locks","Data\Molding","Data\Pulls")
- "Reglas y construccion" = @("Data\ReplacementRules","Data\StdConst")
- "Simbolos Multiprint" = @("Data\MultiprintSymbolImages")
+$BasePaths = @(
+ "Product Libraries","Insert Libraries","Data\\ClosetRods","Data\\Doors","Data\\Fasteners",
+ "Data\\Labels","Data\\Legs","Data\\Lights","Data\\Locks","Data\\Molding",
+ "Data\\MultiprintSymbolImages","Data\\Pulls","Data\\ReplacementRules",
+ "Data\\ReportTemplates","Data\\StdConst","Data\\TemplateImport"
+)
+function Get-SyncTargets {
+ $targets = New-Object System.Collections.Generic.List[string]
+ foreach($p in $BasePaths){ if(Test-Path (Join-Path $Mozaik $p)){ $targets.Add($p) } }
+ $cnc = Join-Path $Mozaik "Data\\CNC"
+ if(Test-Path $cnc){
+   # Los archivos directamente dentro de Data\\CNC se administran como un objetivo propio.
+   if(Get-ChildItem -LiteralPath $cnc -File -ErrorAction SilentlyContinue){ $targets.Add("Data\\CNC\\[archivos raiz]") }
+   Get-ChildItem -LiteralPath $cnc -Directory -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object {
+     $targets.Add("Data\\CNC\\" + $_.Name)
+   }
+ }
+ return @($targets | Sort-Object -Unique)
 }
-$AllPaths = @($Groups.Values | ForEach-Object { $_ } | Select-Object -Unique)
+$AllPaths = Get-SyncTargets
 
 function Copy-Tree([string]$Source,[string]$Destination) {
  if (!(Test-Path $Source)) { return }
@@ -35,14 +42,14 @@ function New-Profile {
  New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
  Write-Host ""
  Write-Host "Configuracion inicial de esta computadora" -ForegroundColor Cyan
- Write-Host "Elige por categoria: 1=Solo recibir, 2=Solo publicar, 3=Publicar y recibir, 4=Local/no sincronizar"
+ Write-Host "Configura cada carpeta real: 1=Solo recibir, 2=Solo publicar, 3=Publicar y recibir, 4=Local/no sincronizar"
  $modes=[ordered]@{}
- foreach($name in $Groups.Keys) {
-   do { $v=Read-Host "$name [1/2/3/4]" } until($v -in @("1","2","3","4"))
-   $modes[$name]=@{"1"="pull";"2"="push";"3"="both";"4"="local"}[$v]
+ foreach($path in $AllPaths) {
+   do { $v=Read-Host "$path [1/2/3/4]" } until($v -in @("1","2","3","4"))
+   $modes[$path]=@{"1"="pull";"2"="push";"3"="both";"4"="local"}[$v]
  }
- $profile=[ordered]@{version=1;computer=$env:COMPUTERNAME;modes=$modes}
- $profile | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $ProfileFile
+ $profile=[ordered]@{version=2;computer=$env:COMPUTERNAME;modes=$modes}
+ $profile | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 $ProfileFile
  return [pscustomobject]$profile
 }
 function Get-Profile {
@@ -69,12 +76,25 @@ if (!(Get-Command git -ErrorAction SilentlyContinue)) {
 }
 if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw "Instala Git for Windows y vuelve a ejecutar." }
 
+if(Test-Path $ProfileFile){
+ try { $existing=Get-Content -Raw $ProfileFile | ConvertFrom-Json } catch { $existing=$null }
+ if(!$existing -or $existing.version -lt 2){
+   Write-Host "El perfil anterior sera reemplazado por seleccion de carpetas reales." -ForegroundColor Yellow
+   Remove-Item -LiteralPath $ProfileFile -Force -ErrorAction SilentlyContinue
+ }
+}
 $profile=Get-Profile
 $stamp=Get-Date -Format "yyyyMMdd-HHmmss"
 $backup=Join-Path $BackupRoot $stamp
 Write-Host "Perfil: $($profile.computer)"
 Write-Host "Creando respaldo..."
-foreach($rel in $AllPaths){ Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $backup $rel) }
+foreach($rel in $AllPaths){
+ if($rel -eq "Data\\CNC\\[archivos raiz]"){
+   $src=Join-Path $Mozaik "Data\\CNC"; $dst=Join-Path $backup "Data\\CNC"
+   New-Item -ItemType Directory -Force -Path $dst | Out-Null
+   Get-ChildItem -LiteralPath $src -File -ErrorAction SilentlyContinue | Copy-Item -Destination $dst -Force
+ } else { Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $backup $rel) }
+}
 
 # El staging es descartable; nunca se borra ni resetea C:\Mozaik.
 $needsClone=!(Test-Path (Join-Path $Root ".git"))
@@ -102,19 +122,20 @@ if($needsClone){
 
 $pushPaths=@()
 $pullPaths=@()
-foreach($name in $Groups.Keys){
- $mode=$profile.modes.$name
- foreach($rel in $Groups[$name]){
-   if($mode -in @("push","both")){$pushPaths += $rel}
-   if($mode -in @("pull","both")){$pullPaths += $rel}
- }
+foreach($rel in $AllPaths){
+ $mode=$profile.modes.$rel
+ if($mode -in @("push","both")){$pushPaths += $rel}
+ if($mode -in @("pull","both")){$pullPaths += $rel}
 }
-$pushPaths=@($pushPaths|Select-Object -Unique)
-$pullPaths=@($pullPaths|Select-Object -Unique)
-
 if($pushPaths.Count -gt 0){
  Write-Host "Recopilando categorias autorizadas para publicar..."
- foreach($rel in $pushPaths){ Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $RepoMozaik $rel) }
+ foreach($rel in $pushPaths){
+ if($rel -eq "Data\\CNC\\[archivos raiz]"){
+   $src=Join-Path $Mozaik "Data\\CNC"; $dst=Join-Path $RepoMozaik "Data\\CNC"
+   New-Item -ItemType Directory -Force -Path $dst | Out-Null
+   Get-ChildItem -LiteralPath $src -File -ErrorAction SilentlyContinue | Copy-Item -Destination $dst -Force
+ } else { Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $RepoMozaik $rel) }
+}
  Push-Location $Root
  git config user.name "OCRE Polimob Sync"
  git config user.email "polimob-sync@ocre.mx"
@@ -131,7 +152,13 @@ if($pushPaths.Count -gt 0){
 }
 if($pullPaths.Count -gt 0){
  Write-Host "Aplicando categorias autorizadas para recibir..."
- foreach($rel in $pullPaths){ Copy-Tree (Join-Path $RepoMozaik $rel) (Join-Path $Mozaik $rel) }
+ foreach($rel in $pullPaths){
+ if($rel -eq "Data\\CNC\\[archivos raiz]"){
+   $src=Join-Path $RepoMozaik "Data\\CNC"; $dst=Join-Path $Mozaik "Data\\CNC"
+   New-Item -ItemType Directory -Force -Path $dst | Out-Null
+   Get-ChildItem -LiteralPath $src -File -ErrorAction SilentlyContinue | Copy-Item -Destination $dst -Force
+ } else { Copy-Tree (Join-Path $RepoMozaik $rel) (Join-Path $Mozaik $rel) }
+}
 }
 Write-Host "Sincronizacion terminada." -ForegroundColor Green
 Write-Host "Perfil: $ProfileFile"
