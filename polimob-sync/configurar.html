@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OCRE Polimob Sync - Configurador</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#202124;background:#f5f6f8}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1050px;margin:36px auto;padding:0 20px}h1{margin:0 0 6px}.muted{color:#69707d}.card{background:#fff;border:1px solid #e3e6ea;border-radius:14px;padding:22px;margin-top:20px;box-shadow:0 2px 10px #00000008}.grid{display:grid;grid-template-columns:minmax(280px,1fr) repeat(2,130px) 130px;gap:8px;align-items:center}.head{font-weight:700;border-bottom:1px solid #eee;padding-bottom:10px}.row{display:contents}.cell{padding:10px 6px;border-bottom:1px solid #f0f1f2}.center{text-align:center}input[type=checkbox]{width:20px;height:20px}.local{font-size:13px;color:#69707d}.actions{display:flex;gap:12px;justify-content:flex-end;margin-top:20px}button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}.primary{background:#202124;color:white}.secondary{background:#eceff2}.notice{padding:12px;border-radius:9px;background:#f5f7fa;margin-top:14px;font-size:14px}@media(max-width:700px){.grid{grid-template-columns:1fr 75px 75px 65px}.cell{font-size:13px}}
+</style></head><body><div class="wrap">
+<h1>OCRE Polimob Sync <span class="muted">v0.5.0</span></h1>
+<p class="muted">Configura qué carpetas puede publicar y recibir esta computadora.</p>
+<div class="card"><label>Nombre de esta computadora<br><input id="computer" style="margin-top:7px;width:100%;padding:10px;border:1px solid #ccd1d7;border-radius:8px" placeholder="Ej. DISENO-01"></label>
+<div class="notice">Publicar = esta PC → Polimob. Recibir = Polimob → esta PC. Si ambos están desactivados, la carpeta permanece local.</div>
+<div class="grid" id="grid"><div class="cell head">Carpeta</div><div class="cell head center">Publicar ↑</div><div class="cell head center">Recibir ↓</div><div class="cell head center">Local</div></div>
+<div class="actions"><button class="secondary" onclick="setAll(false,true)">Todo solo recibir</button><button class="secondary" onclick="setAll(false,false)">Todo local</button><button class="primary" onclick="downloadProfile()">Generar configuración</button></div>
+</div></div>
+<script>
+const paths=["Product Libraries","Insert Libraries","Data\\ClosetRods","Data\\Doors","Data\\Fasteners","Data\\Labels","Data\\Legs","Data\\Lights","Data\\Locks","Data\\Molding","Data\\MultiprintSymbolImages","Data\\Pulls","Data\\ReplacementRules","Data\\ReportTemplates","Data\\StdConst","Data\\TemplateImport","Data\\CNC\\[archivos raiz]"];
+const g=document.getElementById("grid");
+for(const p of paths){const id=btoa(unescape(encodeURIComponent(p))).replace(/=/g,"");g.insertAdjacentHTML("beforeend",`<div class="cell"><code>${p}</code></div><div class="cell center"><input type="checkbox" data-p="${p}" data-k="push"></div><div class="cell center"><input type="checkbox" data-p="${p}" data-k="pull"></div><div class="cell center local" id="l-${id}">Local</div>`)}
+function setAll(push,pull){document.querySelectorAll('[data-k=push]').forEach(x=>x.checked=push);document.querySelectorAll('[data-k=pull]').forEach(x=>x.checked=pull)}
+function downloadProfile(){const computer=document.getElementById("computer").value.trim()||"SIN-NOMBRE";const modes={};for(const p of paths){const pu=document.querySelector(`[data-p="${CSS.escape(p)}"][data-k=push]`).checked;const pl=document.querySelector(`[data-p="${CSS.escape(p)}"][data-k=pull]`).checked;modes[p]=pu&&pl?"both":pu?"push":pl?"pull":"local"}const data={version:3,appVersion:"0.5.0",computer,modes};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="polimob-profile.json";a.click();URL.revokeObjectURL(a.href)}
+</script></body></html>
