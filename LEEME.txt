@@ -1,4 +1,4 @@
-OCRE - LIMPIADOR MOZAIK V2.7 - APP WEB
+OCRE - LIMPIADOR MOZAIK V2.12 - APP WEB
 
 1. Extrae el ZIP completo.
 2. Para publicarlo, sube el contenido de la carpeta apps a apps.ocre.mx.
@@ -8,12 +8,18 @@ OCRE - LIMPIADOR MOZAIK V2.7 - APP WEB
 6. Revisa en las vistas previas de tus controles antes de producción.
 
 No sustituye ni requiere el PS1 anterior. Funciona localmente sin internet.
-Los originales no se modifican. Incluye subcarpetas y conserva rutas relativas.
-El ZIP contiene 01_ROUTER, 02_TALADRO y RESUMEN_MOZAIK.txt.
+Los originales no se modifican. La salida queda plana, sin conservar carpetas
+internas de la carpeta seleccionada.
+El ZIP contiene Router, Taladro y RESUMEN_MOZAIK.txt.
 Solo incluye NC/MPR procesados y reportes: otros formatos se registran como
 ignorados. Los archivos sin operaciones conservadas se omiten y se reportan.
-Si hay archivos bloqueados, el ZIP se llama INCOMPLETO e incluye un aviso.
-No mezcles salidas anteriores con la carpeta de originales.
+Si hay cualquier archivo bloqueado, el proceso se detiene y no arma ZIP.
+El desglose muestra el error y una sugerencia sobre la funcion que podria
+desactivarse para diagnosticar, o si conviene corregir el origen.
+Si existen originales, usa originales. Si ya no existen, esta version puede
+reprocesar salidas anteriores del limpiador con validaciones activas; normaliza
+el nombre para no encadenar sufijos, por ejemplo pieza_TALADRO_V29.mpr vuelve a
+salir como pieza_TALADRO_V212.mpr.
 No crea nuevas perforaciones MPR a partir del NC: las operaciones deben existir
 ya en los MPR originales. Verifica que la producción tenga todas sus piezas.
 
@@ -45,7 +51,13 @@ retirada de cada herramienta se detecta desde su preparacion, por ejemplo Z115 o
 Z118, y se usa para separar operaciones.
 
 MPR: conserva macros 100/101 de soporte y 102/103/131 de perforación.
-Elimina 105/112 y tablas geométricas ]n. Conserva variables [nnn y terminador !.
+Cuando encuentra ranuras/fresados 105/112 con geometría, elimina las líneas
+cortas y conserva solo un segmento largo como ranura fantasma de referencia
+para orientación en WS Drill/vista previa. Conserva variables [nnn y terminador !.
+Elimina condiciones de habilitación MPR inválidas en perforaciones, por ejemplo
+??="_ABD", cuando la variable ABD no existe en el archivo; si la variable existe,
+la condición se conserva. Esta funcion tiene su propio check para poder apagarla
+si necesitas diagnosticar un archivo.
 Macros desconocidas bloquean el archivo. Archivos sin perforaciones se omiten.
 Solo ASCII en esta versión para evitar corrupción de codificación.
 
