@@ -1,4 +1,4 @@
-$SyncVersion = "0.5.0"
+$SyncVersion = "0.5.1"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -43,8 +43,7 @@ function New-Profile {
  New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
  Write-Host ""
  Write-Host "Falta configurar las carpetas de esta computadora." -ForegroundColor Yellow
- Write-Host "Abre el configurador desde apps.ocre.mx, genera polimob-profile.json"
- Write-Host "y vuelve a ejecutar el instalador para importar el perfil."
+ Write-Host "Ejecuta el acceso directo Configurar OCRE Polimob Sync y guarda el perfil."
  throw "Perfil de sincronizacion no configurado."
 }
 function Get-Profile {
@@ -73,7 +72,7 @@ if (!(Get-Command git -ErrorAction SilentlyContinue)) { throw "Instala Git for W
 
 if(Test-Path $ProfileFile){
  try { $existing=Get-Content -Raw $ProfileFile | ConvertFrom-Json } catch { $existing=$null }
- if(!$existing -or $existing.version -lt 3){
+ if(!$existing -or $existing.version -lt 4){
    Write-Host "El perfil anterior sera reemplazado por seleccion de carpetas reales." -ForegroundColor Yellow
    Remove-Item -LiteralPath $ProfileFile -Force -ErrorAction SilentlyContinue
  }
