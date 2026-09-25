@@ -1,4 +1,4 @@
-$SyncVersion = "0.6.1"
+$SyncVersion = "0.6.2"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -117,9 +117,18 @@ if($needsClone){
 $pushPaths=@()
 $pullPaths=@()
 foreach($rel in $AllPaths){
- $mode=$profile.modes.$rel
- if($mode -in @("push","both")){$pushPaths += $rel}
- if($mode -in @("pull","both")){$pullPaths += $rel}
+ $prop=$profile.modes.PSObject.Properties[$rel]
+ $mode=if($null -ne $prop){[string]$prop.Value}else{"local"}
+ $baseMode=($mode -split '\+')[0]
+ if($baseMode -in @("push","both")){$pushPaths += $rel}
+ if($baseMode -in @("pull","both")){$pullPaths += $rel}
+}
+Write-Host "Publicar: $($pushPaths.Count) carpeta(s)"
+Write-Host "Recibir: $($pullPaths.Count) carpeta(s)"
+if(($pushPaths.Count + $pullPaths.Count) -eq 0){
+ Write-Host "El perfil no tiene carpetas habilitadas para sincronizar." -ForegroundColor Yellow
+ Write-Host "Abre Configurar OCRE Polimob Sync y revisa Publicar/Recibir."
+ exit 3
 }
 # Previsualizacion segura antes de modificar Mozaik o publicar.
 function Get-Preview([string]$rel,[string]$direction){
