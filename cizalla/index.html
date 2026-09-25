@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#151515" />
+  <title>OCRE Tecnologías | Cizalla Hidráulica</title>
+  <meta name="description" content="Asistente para operadores de cizalla hidráulica." />
+
+  <style>
+    :root{
+      --bg:#101011;
+      --panel:#181819;
+      --panel2:#202022;
+      --line:#353538;
+      --text:#f4f3ef;
+      --muted:#aaa8a2;
+      --accent:#c98b3c;
+      --accent2:#e3ab62;
+      --green:#8ccf93;
+      --yellow:#e6b764;
+      --red:#ef8177;
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html{color-scheme:dark}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(201,139,60,.11), transparent 26rem),
+        var(--bg);
+      color:var(--text);
+    }
+
+    .app{
+      width:min(980px,calc(100% - 20px));
+      margin:0 auto;
+      padding:14px 0 24px;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:1fr minmax(250px,360px);
+      gap:14px;
+      align-items:end;
+      margin-bottom:12px;
+    }
+
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .logo{
+      width:39px;height:39px;
+      border-radius:11px;
+      display:grid;place-items:center;
+      font-weight:900;
+      background:linear-gradient(145deg,var(--accent2),var(--accent));
+      color:#17120c;
+    }
+
+    .brand strong{
+      display:block;
+      font-size:14px;
+      letter-spacing:.04em;
+    }
+
+    .brand span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:1px;
+    }
+
+    label{
+      display:block;
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      margin-bottom:5px;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+
+    select{
+      width:100%;
+      color:var(--text);
+      background:
+        linear-gradient(45deg,transparent 50%,var(--muted) 50%) calc(100% - 17px) 50%/6px 6px no-repeat,
+        linear-gradient(135deg,var(--muted) 50%,transparent 50%) calc(100% - 13px) 50%/6px 6px no-repeat,
+        var(--panel2);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:11px 37px 11px 12px;
+      appearance:none;
+      font-size:14px;
+      outline:none;
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+    }
+
+    .main{
+      padding:18px;
+    }
+
+    .eyebrow{
+      color:var(--accent2);
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-weight:900;
+      margin-bottom:5px;
+    }
+
+    h1{
+      margin:0 0 5px;
+      font-size:clamp(28px,5vw,44px);
+      line-height:1;
+      letter-spacing:-.04em;
+    }
+
+    .intro{
+      margin:0 0 14px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:1.3fr .7fr;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .primary-results{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .metric{
+      padding:14px;
+      min-height:88px;
+      background:var(--panel2);
+      border:1px solid var(--line);
+      border-radius:14px;
+    }
+
+    .metric small{
+      display:block;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin-bottom:6px;
+    }
+
+    .metric strong{
+      display:block;
+      font-size:clamp(28px,6vw,40px);
+      line-height:.95;
+      letter-spacing:-.04em;
+    }
+
+    .metric em{
+      display:block;
+      font-size:10px;
+      color:var(--muted);
+      font-style:normal;
+      margin-top:7px;
+    }
+
+    .traffic{
+      margin-top:10px;
+      border-radius:14px;
+      padding:11px 13px;
+      border:1px solid var(--line);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .traffic strong{
+      display:block;
+      margin-bottom:2px;
+      font-size:12px;
+    }
+
+    .traffic.green{
+      background:rgba(140,207,147,.07);
+      color:var(--green);
+    }
+
+    .traffic.yellow{
+      background:rgba(230,183,100,.07);
+      color:var(--yellow);
+    }
+
+    .traffic.red{
+      background:rgba(239,129,119,.07);
+      color:var(--red);
+    }
+
+    .secondary{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .secondary-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:9px 11px;
+      border:1px solid var(--line);
+      background:#151516;
+      border-radius:12px;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .secondary-item b{
+      color:var(--text);
+      font-size:14px;
+    }
+
+    .visual{
+      margin-top:10px;
+      padding:12px 14px 10px;
+    }
+
+    .visual-title{
+      color:var(--muted);
+      font-size:11px;
+      margin-bottom:2px;
+    }
+
+    .diagram{
+      height:160px;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+    }
+
+    svg{width:100%;height:155px;display:block}
+    .svg-t{font-family:Inter,system-ui,sans-serif;fill:#f4f3ef}
+    .svg-m{fill:#9f9e99}
+    .svg-a{fill:#e3ab62}
+
+    details{
+      margin-top:7px;
+      border-top:1px solid var(--line);
+      padding-top:8px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.4;
+    }
+
+    summary{
+      color:var(--text);
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    footer{
+      text-align:center;
+      color:#72716d;
+      font-size:10px;
+      margin-top:10px;
+    }
+
+    @media(max-width:650px){
+      .app{width:min(100% - 12px,980px);padding-top:8px}
+      .topbar{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+      .main{padding:13px}
+      .controls{grid-template-columns:1fr 105px}
+      .primary-results{gap:8px}
+      .metric{min-height:80px;padding:12px}
+      .visual{padding:10px 11px 8px}
+      .diagram{height:135px}
+      svg{height:132px}
+    }
+
+    @media(max-width:390px){
+      .controls{grid-template-columns:1fr}
+      .primary-results{grid-template-columns:1fr 1fr}
+      .secondary{grid-template-columns:1fr 1fr}
+      .metric strong{font-size:27px}
+    }
+  
+    .pwa-bar{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .pwa-status,.pwa-btn{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:11px;
+      line-height:1;
+    }
+    .pwa-status{
+      color:var(--muted);
+      background:#151516;
+    }
+    .pwa-status.online{color:var(--green)}
+    .pwa-status.offline{color:var(--yellow)}
+    .pwa-btn{
+      color:var(--text);
+      background:var(--panel2);
+      cursor:pointer;
+      font-weight:800;
+    }
+    .pwa-btn[hidden]{display:none}
+    .update-toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      width:min(92vw,520px);
+      background:#1b1b1d;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      z-index:9999;
+      font-size:12px;
+    }
+    .update-toast[hidden]{display:none}
+
+  </style>
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cizalla OCRE" />
+
+</head>
+
+<body>
+  <main class="app">
+
+    <section class="topbar">
+      <div class="brand">
+        <div class="logo">O</div>
+        <div>
+          <strong>OCRE TECNOLOGÍAS</strong>
+          <span>Asistente para operadores</span>
+        </div>
+      </div>
+
+      <div>
+        <label for="machine">Equipo</label>
+        <select id="machine">
+          <option value="krass3212">Cizalla hidráulica Krass 3200 × 12 mm</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="pwa-bar">
+      <span id="connectionStatus" class="pwa-status">Comprobando conexión…</span>
+      <button id="installBtn" class="pwa-btn" hidden>Instalar aplicación</button>
+    </div>
+
+    <section class="card main">
+      <div class="eyebrow">Ajuste de corte</div>
+      <h1>Cizalla hidráulica</h1>
+      <p class="intro">Selecciona el material y el espesor de la lámina. Te indicaremos los ajustes recomendados para el corte.</p>
+
+      <div class="controls">
+        <div>
+          <label for="material">Material</label>
+          <select id="material">
+            <option value="mild">Acero al carbón / comercial</option>
+            <option value="stainless">Acero inoxidable 304 / 316</option>
+            <option value="aluminum">Aluminio comercial</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="thickness">Espesor</label>
+          <select id="thickness">
+            <option value="1">1 mm</option>
+            <option value="2">2 mm</option>
+            <option value="3">3 mm</option>
+            <option value="4">4 mm</option>
+            <option value="5">5 mm</option>
+            <option value="6">6 mm</option>
+            <option value="7">7 mm</option>
+            <option value="8">8 mm</option>
+            <option value="9">9 mm</option>
+            <option value="10">10 mm</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="primary-results">
+        <div class="metric">
+          <small>Gap recomendado</small>
+          <strong id="gap">0.07 mm</strong>
+          <em id="gapPct">7% del espesor</em>
+        </div>
+
+        <div class="metric">
+          <small>Lado derecho</small>
+          <strong id="rightHeight">66.2 mm</strong>
+          <em>Altura desde la base</em>
+        </div>
+      </div>
+
+      <div id="traffic" class="traffic green">
+        <strong>Corte recomendado</strong>
+        <span>Esta combinación está dentro del rango normal de trabajo. Se espera un corte estable y limpio.</span>
+      </div>
+
+      <div class="secondary">
+        <div class="secondary-item">
+          <span>Lado izquierdo</span>
+          <b>40.0 mm</b>
+        </div>
+
+        <div class="secondary-item">
+          <span>Ángulo de corte</span>
+          <b id="angle">0.50°</b>
+        </div>
+      </div>
+    </section>
+
+    <section class="card visual">
+      <div class="visual-title">Referencia visual de medición</div>
+
+      <div class="diagram">
+        <svg viewBox="0 0 620 220" role="img" aria-label="Referencia visual de la cuchilla">
+          <line x1="62" y1="172" x2="557" y2="172" stroke="#55555a" stroke-width="6" stroke-linecap="round"/>
+
+          <line id="blade" x1="92" y1="137" x2="528" y2="112" stroke="#e3ab62" stroke-width="10" stroke-linecap="round"/>
+
+          <line x1="92" y1="137" x2="92" y2="172" stroke="#9f9e99" stroke-width="2" stroke-dasharray="5 4"/>
+          <line id="rMeasure" x1="528" y1="112" x2="528" y2="172" stroke="#9f9e99" stroke-width="2" stroke-dasharray="5 4"/>
+
+          <circle cx="92" cy="137" r="5" fill="#f4f3ef"/>
+          <circle id="rDot" cx="528" cy="112" r="5" fill="#f4f3ef"/>
+
+          <text x="62" y="126" class="svg-t" font-size="16" font-weight="800">40.0 mm</text>
+          <text id="svgRight" x="435" y="100" class="svg-t" font-size="16" font-weight="800">66.2 mm</text>
+
+          <text x="66" y="205" class="svg-t svg-m" font-size="13">IZQUIERDO · FIJO</text>
+          <text x="428" y="205" class="svg-t svg-m" font-size="13">DERECHO · AJUSTE</text>
+        </svg>
+      </div>
+
+      <details>
+        <summary>Cómo medir</summary>
+        <p>Mide verticalmente desde la misma referencia de la base. El lado izquierdo permanece en 40.0 mm. Ajusta el lado derecho hasta alcanzar la medida indicada.</p>
+      </details>
+    </section>
+
+
+    <div id="updateToast" class="update-toast" hidden>
+      <span>Hay una versión nueva disponible.</span>
+      <button id="updateBtn" class="pwa-btn">Actualizar ahora</button>
+    </div>
+
+    <footer>
+      OCRE Tecnologías · Valores de referencia sujetos a validación mecánica y capacidad real del equipo.
+    </footer>
+  </main>
+
+  <script>
+    const MACHINES = {
+      krass3212: {
+        label: "Cizalla hidráulica Krass 3200 × 12 mm",
+        leftHeight: 40,
+        effectiveLength: 3000
+      }
+    };
+
+    const MATERIALS = {
+      mild: {
+        label: "Acero al carbón / comercial",
+        gapPercent: 0.07,
+        yellowFrom: 8,
+        redFrom: 10
+      },
+      stainless: {
+        label: "Acero inoxidable 304 / 316",
+        gapPercent: 0.09,
+        yellowFrom: 6,
+        redFrom: 8
+      },
+      aluminum: {
+        label: "Aluminio comercial",
+        gapPercent: 0.05,
+        yellowFrom: 9,
+        redFrom: 10
+      }
+    };
+
+    function angleForThickness(t){
+      if(t <= 2) return 0.50;
+      if(t <= 4) return 1.00;
+      if(t <= 6) return 1.50;
+      if(t <= 8) return 2.00;
+      return 2.50;
+    }
+
+    const machineEl = document.getElementById("machine");
+    const materialEl = document.getElementById("material");
+    const thicknessEl = document.getElementById("thickness");
+
+    const gapEl = document.getElementById("gap");
+    const gapPctEl = document.getElementById("gapPct");
+    const rightHeightEl = document.getElementById("rightHeight");
+    const angleEl = document.getElementById("angle");
+    const trafficEl = document.getElementById("traffic");
+
+    const blade = document.getElementById("blade");
+    const rMeasure = document.getElementById("rMeasure");
+    const rDot = document.getElementById("rDot");
+    const svgRight = document.getElementById("svgRight");
+
+    function updateTraffic(material, t){
+      if(t >= material.redFrom){
+        trafficEl.className = "traffic red";
+        trafficEl.innerHTML = `
+          <strong>Límite de operación</strong>
+          <span>Esta combinación está próxima al límite recomendado. Verifica cuidadosamente el gap, la sujeción, la presión y la capacidad del equipo antes de cortar.</span>
+        `;
+      } else if(t >= material.yellowFrom){
+        trafficEl.className = "traffic yellow";
+        trafficEl.innerHTML = `
+          <strong>Corte con precaución</strong>
+          <span>Esta combinación exige mayor esfuerzo de corte. Verifica el gap, la sujeción de la lámina y las condiciones de la máquina antes de operar.</span>
+        `;
+      } else {
+        trafficEl.className = "traffic green";
+        trafficEl.innerHTML = `
+          <strong>Corte recomendado</strong>
+          <span>Esta combinación está dentro del rango normal de trabajo. Se espera un corte estable y limpio.</span>
+        `;
+      }
+    }
+
+    function calculate(){
+      const machine = MACHINES[machineEl.value];
+      const material = MATERIALS[materialEl.value];
+      const t = Number(thicknessEl.value);
+
+      const gap = t * material.gapPercent;
+      const angle = angleForThickness(t);
+      const rightHeight =
+        machine.leftHeight +
+        machine.effectiveLength * Math.tan(angle * Math.PI / 180);
+
+      gapEl.textContent = `${gap.toFixed(2)} mm`;
+      gapPctEl.textContent = `${Math.round(material.gapPercent * 100)}% del espesor`;
+      angleEl.textContent = `${angle.toFixed(2)}°`;
+      rightHeightEl.textContent = `${rightHeight.toFixed(1)} mm`;
+
+      updateTraffic(material,t);
+
+      // Diagrama compacto: ilustrativo, no a escala.
+      const minH = 66.2;
+      const maxH = 171.0;
+      const minY = 136;
+      const maxLift = 55;
+      const n = Math.max(0,Math.min(1,(rightHeight-minH)/(maxH-minH)));
+      const y = minY - n*maxLift;
+
+      blade.setAttribute("y2",y.toFixed(1));
+      rMeasure.setAttribute("y1",y.toFixed(1));
+      rDot.setAttribute("cy",y.toFixed(1));
+      svgRight.setAttribute("y",(y-10).toFixed(1));
+      svgRight.textContent = `${rightHeight.toFixed(1)} mm`;
+    }
+
+    machineEl.addEventListener("change",calculate);
+    materialEl.addEventListener("change",calculate);
+    thicknessEl.addEventListener("change",calculate);
+    calculate();
+  </script>
+
+  <script>
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const updateToast = document.getElementById('updateToast');
+    const updateBtn = document.getElementById('updateBtn');
+
+    function updateConnectionStatus(){
+      const online = navigator.onLine;
+      connectionStatus.textContent = online ? 'En línea · versión web activa' : 'Sin conexión · modo offline';
+      connectionStatus.className = 'pwa-status ' + (online ? 'online' : 'offline');
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      installBtn.hidden = false;
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.hidden = true;
+      deferredPrompt = null;
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+
+          // Solicita verificación de actualización cada vez que se abre la app.
+          registration.update().catch(() => {});
+
+          // También vuelve a comprobar cuando recupera conexión.
+          window.addEventListener('online', () => registration.update().catch(() => {}));
+
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                updateToast.hidden = false;
+              }
+            });
+          });
+
+          updateBtn.addEventListener('click', () => {
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+              location.reload();
+            }
+          });
+
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            location.reload();
+          });
+        } catch (err) {
+          console.warn('No se pudo registrar el service worker:', err);
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
