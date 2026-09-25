@@ -1,0 +1,30 @@
+@echo off
+setlocal
+title OCRE Polimob Sync - Instalador
+net session >nul 2>&1
+if not "%errorlevel%"=="0" (
+  echo Solicitando permisos de administrador...
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+  exit /b
+)
+set "DEST=%ProgramData%\OCRE\PolimobSync"
+set "BASE=https://raw.githubusercontent.com/ocre-os/apps/main/polimob-sync"
+if not exist "%DEST%" mkdir "%DEST%"
+echo Instalando OCRE Polimob Sync...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -UseBasicParsing '%BASE%/sync.ps1' -OutFile '%DEST%\sync.ps1'"
+if errorlevel 1 goto :error
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -UseBasicParsing '%BASE%/sync.cmd' -OutFile '%DEST%\sync.cmd'"
+if errorlevel 1 goto :error
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws=New-Object -ComObject WScript.Shell; $s=$ws.CreateShortcut([Environment]::GetFolderPath('Desktop')+'\OCRE Polimob Sync.lnk'); $s.TargetPath='%DEST%\sync.cmd'; $s.WorkingDirectory='%DEST%'; $s.Save()"
+echo.
+echo Instalacion terminada.
+echo Se creo "OCRE Polimob Sync" en el Escritorio.
+echo.
+echo La primera sincronizacion puede solicitar inicio de sesion en GitHub.
+pause
+exit /b 0
+:error
+echo.
+echo No fue posible descargar los componentes del sincronizador.
+pause
+exit /b 1
