@@ -5,23 +5,10 @@ $RepoMozaik = Join-Path $Root "Mozaik"
 $BackupRoot = Join-Path $env:LOCALAPPDATA "OCRE\PolimobBackups"
 $Repo = "https://github.com/ocre-os/Polimob.git"
 $Included = @(
-  "Product Libraries",
-  "Insert Libraries",
-  "Data\ClosetRods",
-  "Data\CNC",
-  "Data\Doors",
-  "Data\Fasteners",
-  "Data\Labels",
-  "Data\Legs",
-  "Data\Lights",
-  "Data\Locks",
-  "Data\Molding",
-  "Data\MultiprintSymbolImages",
-  "Data\Pulls",
-  "Data\ReplacementRules",
-  "Data\ReportTemplates",
-  "Data\StdConst",
-  "Data\TemplateImport"
+  "Product Libraries","Insert Libraries","Data\ClosetRods","Data\CNC","Data\Doors",
+  "Data\Fasteners","Data\Labels","Data\Legs","Data\Lights","Data\Locks","Data\Molding",
+  "Data\MultiprintSymbolImages","Data\Pulls","Data\ReplacementRules","Data\ReportTemplates",
+  "Data\StdConst","Data\TemplateImport"
 )
 
 function Copy-Tree([string]$Source,[string]$Destination) {
@@ -51,37 +38,38 @@ $backup = Join-Path $BackupRoot $stamp
 Write-Host "Creando respaldo de configuracion..."
 foreach ($rel in $Included) { Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $backup $rel) }
 
-if (!(Test-Path (Join-Path $Root ".git"))) {
+# El clon es solo staging. Nunca hacemos stash/reset/clean sobre C:\Mozaik.
+# Si una ejecucion anterior dejo el staging sucio, se reemplaza por un clon limpio.
+$needsClone = !(Test-Path (Join-Path $Root ".git"))
+if (!$needsClone) {
+  Push-Location $Root
+  $dirty = git status --porcelain
+  Pop-Location
+  if ($dirty) {
+    Write-Host "Recuperando staging de una ejecucion anterior..."
+    Remove-Item -LiteralPath $Root -Recurse -Force
+    $needsClone = $true
+  }
+}
+if ($needsClone) {
   New-Item -ItemType Directory -Force -Path (Split-Path $Root) | Out-Null
   git clone $Repo $Root
   if ($LASTEXITCODE -ne 0) { throw "No se pudo clonar ocre-os/Polimob." }
 } else {
   Push-Location $Root
-  # Una ejecucion anterior puede haber dejado cambios sin commit. Los preservamos
-  # mientras actualizamos el remoto y los reaplicamos despues.
-  $dirty = git status --porcelain
-  $stashed = $false
-  if ($dirty) {
-    git stash push -u -m "OCRE Polimob Sync auto-stash" -- "Mozaik" | Out-Null
-    if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudieron preservar los cambios locales antes de actualizar." }
-    $stashed = $true
-  }
-  git pull --rebase
+  git pull --ff-only
   if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudo actualizar ocre-os/Polimob." }
-  if ($stashed) {
-    git stash pop
-    if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Se detecto un conflicto al recuperar cambios locales. El respaldo de Mozaik permanece intacto." }
-  }
   Pop-Location
 }
 
-Write-Host "Aplicando configuracion compartida a Mozaik..."
-foreach ($rel in $Included) { Copy-Tree (Join-Path $RepoMozaik $rel) (Join-Path $Mozaik $rel) }
-
-Write-Host "Recopilando cambios locales..."
+# Primera fuente: la instalacion local de Mozaik. Copiamos al staging sin borrar
+# archivos locales ni pedir confirmaciones interactivas.
+Write-Host "Recopilando configuracion local..."
 foreach ($rel in $Included) { Copy-Tree (Join-Path $Mozaik $rel) (Join-Path $RepoMozaik $rel) }
 
 Push-Location $Root
+git config user.name "OCRE Polimob Sync"
+git config user.email "polimob-sync@ocre.mx"
 git add -- "Mozaik"
 $changes = git status --porcelain -- "Mozaik"
 if ($changes) {
@@ -89,10 +77,15 @@ if ($changes) {
   git commit -m "sync(mozaik): $machine $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
   if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudo crear el commit." }
   git push
-  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudo publicar. GitHub puede solicitar autenticacion." }
-  Write-Host "Sincronizacion publicada correctamente." -ForegroundColor Green
+  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudo publicar. Autoriza GitHub cuando Git Credential Manager lo solicite." }
+  Write-Host "Configuracion publicada correctamente." -ForegroundColor Green
 } else {
   Write-Host "Sin cambios locales por publicar." -ForegroundColor Green
 }
 Pop-Location
+
+# Solo despues de publicar correctamente aplicamos la version consolidada.
+Write-Host "Aplicando configuracion consolidada a Mozaik..."
+foreach ($rel in $Included) { Copy-Tree (Join-Path $RepoMozaik $rel) (Join-Path $Mozaik $rel) }
+
 Write-Host "Sincronizacion terminada." -ForegroundColor Green
