@@ -62,7 +62,7 @@ if (!(Test-Path (Join-Path $Root ".git"))) {
   $dirty = git status --porcelain
   $stashed = $false
   if ($dirty) {
-    git stash push -u -m "OCRE Polimob Sync auto-stash" | Out-Null
+    git stash push -u -m "OCRE Polimob Sync auto-stash" -- "Mozaik" | Out-Null
     if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudieron preservar los cambios locales antes de actualizar." }
     $stashed = $true
   }
