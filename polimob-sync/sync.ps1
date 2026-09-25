@@ -47,7 +47,15 @@ if (!$needsClone) {
   Pop-Location
   if ($dirty) {
     Write-Host "Recuperando staging de una ejecucion anterior..."
-    Remove-Item -LiteralPath $Root -Recurse -Force
+    # No usamos Remove-Item: Git puede dejar directorios con atributos/bloqueos
+    # que provocan preguntas interactivas. Renombramos el staging y clonamos limpio.
+    $oldRoot = "$Root.old-$stamp"
+    try {
+      Rename-Item -LiteralPath $Root -NewName (Split-Path $oldRoot -Leaf) -ErrorAction Stop
+    } catch {
+      $Root = Join-Path $env:LOCALAPPDATA ("OCRE\\Polimob-" + $stamp)
+      $RepoMozaik = Join-Path $Root "Mozaik"
+    }
     $needsClone = $true
   }
 }
