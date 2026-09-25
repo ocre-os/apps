@@ -57,8 +57,21 @@ if (!(Test-Path (Join-Path $Root ".git"))) {
   if ($LASTEXITCODE -ne 0) { throw "No se pudo clonar ocre-os/Polimob." }
 } else {
   Push-Location $Root
+  # Una ejecucion anterior puede haber dejado cambios sin commit. Los preservamos
+  # mientras actualizamos el remoto y los reaplicamos despues.
+  $dirty = git status --porcelain
+  $stashed = $false
+  if ($dirty) {
+    git stash push -u -m "OCRE Polimob Sync auto-stash" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudieron preservar los cambios locales antes de actualizar." }
+    $stashed = $true
+  }
   git pull --rebase
   if ($LASTEXITCODE -ne 0) { Pop-Location; throw "No se pudo actualizar ocre-os/Polimob." }
+  if ($stashed) {
+    git stash pop
+    if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Se detecto un conflicto al recuperar cambios locales. El respaldo de Mozaik permanece intacto." }
+  }
   Pop-Location
 }
 
