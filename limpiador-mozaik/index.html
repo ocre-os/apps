@@ -1,8 +1,8 @@
 <!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OCRE · Limpiador Mozaik</title>
 <style>:root{--ink:#192832;--muted:#60717c;--line:#d7e0e5;--panel:#fff;--bg:#f3f6f8;--ocre:#14576b;--ocre2:#0f4658;--warn:#d99124;--bad:#b33a3a;--ok:#24705a}*{box-sizing:border-box}body{font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);max-width:1120px;margin:0 auto;padding:18px}header{padding:8px 0 6px}h1{font-size:28px;margin:0 0 4px}h2{font-size:17px;margin:0 0 10px}.lead{color:var(--muted);max-width:760px;margin:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin:10px 0}.warning{border-left:5px solid var(--warn)}button,.download,.picker{background:var(--ocre);color:white;padding:10px 14px;border:0;border-radius:6px;cursor:pointer;margin:6px 8px 6px 0;display:inline-block;text-decoration:none;font-weight:650}.picker input{display:none}button:hover,.download:hover,.picker:hover{background:var(--ocre2)}button:disabled{opacity:.55;cursor:not-allowed}.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:4px 14px;margin:8px 0}.checks label{display:flex;gap:8px;align-items:center;padding:4px 0;min-height:28px}.checks input{margin:0}.hint,small{color:var(--muted)}.compact-options summary{display:flex;align-items:center;justify-content:space-between;gap:12px}.summary-note{font-weight:400;color:var(--muted);font-size:13px}.macro-row{margin-top:8px}.macro-row input{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;margin-top:4px}.help{display:inline-grid;place-items:center;width:18px;height:18px;border:1px solid var(--line);border-radius:50%;background:#eef4f6;color:var(--ocre2);font-size:12px;font-weight:800;cursor:help;position:relative}.help:hover:after,.help:focus:after{content:attr(data-help);position:absolute;z-index:5;left:22px;top:-8px;width:min(330px,75vw);padding:10px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink);box-shadow:0 10px 30px rgba(25,40,50,.18);font-weight:400;line-height:1.35;text-align:left}.help:focus{outline:2px solid var(--ocre)}#statusCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:10px 0}.card{border:1px solid var(--line);border-radius:8px;padding:10px;background:#fbfdfe}.card b{display:block;font-size:22px}.ok{color:var(--ok)}.bad{color:var(--bad)}details{border:1px solid var(--line);border-radius:8px;background:white;margin:8px 0}summary{cursor:pointer;padding:10px 12px;font-weight:650}details pre{border-top:1px solid var(--line);margin:0;padding:10px 12px;background:#fbfdfe;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.tag{display:inline-block;border-radius:99px;padding:2px 8px;font-size:12px;margin-left:8px;background:#eef4f6;color:var(--muted)}.tag.bad{background:#fdecec;color:var(--bad)}.tag.ok{background:#e9f6f0;color:var(--ok)}@media(max-width:760px){body{padding:12px}.grid{grid-template-columns:1fr}h1{font-size:24px}.compact-options summary{align-items:flex-start;flex-direction:column}.help:hover:after,.help:focus:after{left:auto;right:0;top:22px}}</style>
-<header><h1>OCRE · Limpiador Mozaik</h1><p class="lead">v2.7 · Router KDT y taladro MPR · procesa carpetas completas y genera un paquete ZIP para simulación.</p></header>
+<header><h1>OCRE · Limpiador Mozaik</h1><p class="lead">v2.12 · Router KDT y taladro MPR · procesa carpetas completas y genera un paquete ZIP para simulación.</p></header>
 <section class="panel warning"><b>Solo para revisión y simulación antes de producción.</b><p>No cambia los originales. No envía archivos a internet. T1: 8 mm · T3: 10 mm · T6: 6 mm.</p><small>Perfil NC basado en códigos KDT observados. Agujeros fresados circulares o helicoidales se conservan como trayectorias y requieren revisión.</small></section>
-<section class="panel"><h2>1. Carpeta de producción</h2><label class="picker">Seleccionar carpeta completa <input id="folder" type="file" webkitdirectory multiple></label><span id="selection" class="hint">Sin selección.</span><p class="hint">El ZIP tendrá 01_ROUTER, 02_TALADRO y resumen; conserva subcarpetas.</p><button id="process">Procesar y preparar ZIP</button></section>
+<section class="panel"><h2>1. Carpeta de producción</h2><label class="picker">Seleccionar carpeta completa <input id="folder" type="file" webkitdirectory multiple></label><span id="selection" class="hint">Sin selección.</span><p class="hint">El ZIP tendrá Router, Taladro y resumen; sin carpetas internas innecesarias.</p><button id="process">Procesar y preparar ZIP</button></section>
 <details class="panel compact-options"><summary><span>2. Funciones avanzadas</span><span class="summary-note">Todas activas por defecto. Expande solo para desactivar o revisar ayudas.</span></summary><div class="checks" id="options"></div><label class="macro-row">Macros MPR extra a eliminar<input id="extraMacros" type="text" placeholder="Ejemplo: 456, <789>"></label><small>Se eliminan completas antes de bloquear macros desconocidas.</small></details>
 <section class="panel"><h2>3. Resultado</h2><p class="hint">Abre cada archivo para revisar el detalle completo.</p><div id="downloads"></div><div id="statusCards"></div><div id="report"><p class="hint">Sin procesar.</p></div></section>
 <script id="core">
@@ -10,8 +10,9 @@
 function lines(s){if(/[^\x09\x0a\x0d\x20-\x7e]/.test(s))throw Error('Codificación no ASCII: archivo bloqueado para evitar alterar caracteres.');return s.trimEnd().split(/\r?\n/);}
 function out(a){return a.join('\r\n')+'\r\n';}
 function nval(s,k){const m=s.match(new RegExp('(?:^|\\s)'+k+'(-?\\d+(?:\\.\\d+)?)'));return m?Number(m[1]):null;}
-function defaultOptions(){return {strictNCProfile:true,removeG600:true,excludeUnknownTools:true,removeVerticalToolHoles:true,limitZZero:true,reportSlots:true,removeMprRouting:true,blockUnknownMprMacros:true,extraRemoveMprMacros:[],includeIgnored:true,blockDuplicateOutputs:true};}
+function defaultOptions(){return {strictNCProfile:true,removeG600:true,excludeUnknownTools:true,removeVerticalToolHoles:true,limitZZero:true,reportSlots:true,removeMprRouting:true,removeInvalidMprConditions:true,blockUnknownMprMacros:true,extraRemoveMprMacros:[],allowReprocessCleanerOutputs:true,includeIgnored:true,blockDuplicateOutputs:true};}
 function opts(o){return Object.assign(defaultOptions(),o||{});}
+function cleanOutputBaseName(name){return String(name||'').replace(/_(ROUTER|TALADRO)_V\d+(?=\.(?:nc|mpr)$)/i,'');}
 function macroList(s){if(Array.isArray(s))return s.map(Number).filter(n=>Number.isInteger(n)&&n>0);return String(s||'').match(/\d+/g)?.map(Number).filter(n=>Number.isInteger(n)&&n>0)||[];}
 function thicknessFrom(entries){const v=entries.filter(x=>x>0&&x<90).sort((a,b)=>b-a);return {estimated:v.length?+v[0].toFixed(3):null,candidates:[...new Set(v.map(x=>+x.toFixed(3)))].slice(0,6)};}
 function cleanNC(s,o){
@@ -77,15 +78,46 @@ function cleanNC(s,o){
 function cleanMPR(s,o){
  o=opts(o);
  const a=lines(s);if(a[0]!=='[H'||!a.includes('MAT="WEEKE"')||a[a.length-1]!=='!')throw Error('MPR sin cabecera WEEKE o terminador válido.');
- const keep=new Set([100,101,102,103,131]),remove=new Set([105,112]),extra=new Set(macroList(o.extraRemoveMprMacros));let mode=true,count=0,removed=0,work=false;const result=[];
- for(const l of a){if(l==='!')continue;const m=l.match(/^<(\d+)\s/);if(/^\s*</.test(l)&&!m)throw Error('Inicio de macro no reconocido.');if(m){const id=Number(m[1]);if(extra.has(id)){mode=false;removed++;}else{if(!keep.has(id)&&!remove.has(id)&&o.blockUnknownMprMacros)throw Error('Macro desconocida <'+id+'>: no se genera salida.');mode=keep.has(id)||(!keep.has(id)&&!remove.has(id)&&!o.blockUnknownMprMacros);if(id===100)work=true;if([102,103,131].includes(id))count++;if(!mode)removed++;}}
- else if(/^\]\d+\s*$/.test(l))mode=!o.removeMprRouting;
- else if(/^\[/.test(l)){if(!/^\[(H|\d+)\s*$/.test(l))throw Error('Sección desconocida: '+l);mode=true;}
- if(m){const id=Number(m[1]);if(remove.has(id)&&!o.removeMprRouting)mode=true;if(!keep.has(id)&&!remove.has(id)&&!o.blockUnknownMprMacros)mode=true;}
- if(mode)result.push(l);
+ const keep=new Set([100,101,102,103,131]),remove=new Set([105,112]),extra=new Set(macroList(o.extraRemoveMprMacros));
+ let count=0,removed=0,work=false,ghosts=0;const result=[],geom=new Map(),vars=new Set(),mprConditionsRemoved={};
+ const parseRef=v=>{const m=String(v||'').match(/^(\d+):(\d+)$/);return m?{section:m[1],element:Number(m[2])}:null;};
+ const prop=(block,key)=>{const m=block.find(l=>l.startsWith(key+'=')||l.startsWith(key+'_='));return m?m.split('=').slice(1).join('=').replace(/^"|"$/g,''):null;};
+ const setProp=(block,key,value)=>block.map(l=>l.startsWith(key+'=')?key+'="'+value+'"':l);
+ const rememberVars=block=>{for(const l of block){const m=l.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);if(m)vars.add(m[1].replace(/^_/,''));}};
+ const cleanConditions=block=>block.filter(l=>{const m=l.match(/^\?\?="([^"]+)"$/);if(!m||!o.removeInvalidMprConditions)return true;const name=m[1].replace(/^_+/,'');if(vars.has(name))return true;mprConditionsRemoved[m[1]]=(mprConditionsRemoved[m[1]]||0)+1;return false;});
+ const readGeom=(block)=>{
+  const id=block[0].slice(1).trim(),els=[];let cur=null;
+  for(const l of block.slice(1)){const m=l.match(/^\$E(\d+)/);if(m){if(cur)els.push(cur);cur={n:Number(m[1]),lines:[l],x:null,y:null,z:null,type:null};continue;}
+   if(!cur)continue;cur.lines.push(l);if(l==='KP'||l==='KL')cur.type=l;let v=l.match(/^([XYZ])=(-?\d+(?:\.\d+)?)/);if(v)cur[v[1].toLowerCase()]=Number(v[2]);}
+  if(cur)els.push(cur);geom.set(id,els);return {id,els};
+ };
+ const ghostFor=(block)=>{
+  const ea=parseRef(prop(block,'EA')),ee=parseRef(prop(block,'EE'));if(!ea||!ee||ea.section!==ee.section)return null;
+  const els=geom.get(String(ea.section));if(!els)return null;const ordered=els.filter(e=>e.n>=ea.element&&e.n<=ee.element&&Number.isFinite(e.x)&&Number.isFinite(e.y));
+  let best=null;for(let i=1;i<ordered.length;i++){const a=ordered[i-1],b=ordered[i],d=Math.hypot((b.x-a.x),(b.y-a.y));if(!best||d>best.d)best={a,b,d};}
+  if(!best||best.d<=0)return null;
+  const section=String(ea.section),start=best.a,end=best.b,sec=[''];// blank keeps the same visual spacing style as Mozaik exports.
+  sec.push(']'+section,'$E0','KP','X='+start.x,'Y='+start.y,'Z='+(Number.isFinite(start.z)?start.z:0),'','$E1','KL','X='+end.x,'Y='+end.y,'Z='+(Number.isFinite(end.z)?end.z:0),'');
+  let macro=setProp(setProp(block,'EA',section+':0'),'EE',section+':1').map(l=>l==='MNM="Router"'?'MNM="Ranura fantasma referencia"':l==='KAT="Router"'?'KAT="Ranura fantasma referencia"':l);
+  return [...sec,...macro];
+ };
+ for(let i=0;i<a.length;){
+  const l=a[i];if(l==='!'){i++;continue;}
+  if(/^\]\d+\s*$/.test(l)){let j=i+1;while(j<a.length&&!/^(\]|\[|<|!)\s*/.test(a[j]))j++;const block=a.slice(i,j);readGeom(block);if(!o.removeMprRouting)result.push(...block);i=j;continue;}
+  if(/^\[/.test(l)&&!/^\[(H|\d+)\s*$/.test(l))throw Error('Sección desconocida: '+l);
+  const m=l.match(/^<(\d+)\s/);
+  if(/^\s*</.test(l)&&!m)throw Error('Inicio de macro no reconocido.');
+  if(m){let j=i+1;while(j<a.length&&!/^(\]|\[|<|!)\s*/.test(a[j]))j++;const block=a.slice(i,j),id=Number(m[1]);
+   if(extra.has(id)){removed++;i=j;continue;}
+   if(id===100)work=true;if([102,103,131].includes(id))count++;
+   if(keep.has(id)||(!remove.has(id)&&!o.blockUnknownMprMacros)){const kept=cleanConditions(block);result.push(...kept);if(id===100)rememberVars(kept);i=j;continue;}
+   if(remove.has(id)){removed++;const g=o.removeMprRouting?ghostFor(block):null;if(g){result.push(...g);ghosts++;}else if(!o.removeMprRouting)result.push(...block);i=j;continue;}
+   throw Error('Macro desconocida <'+id+'>: no se genera salida.');
+  }
+  result.push(l);const vm=l.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);if(vm)vars.add(vm[1].replace(/^_/,''));i++;
  }
  if(!work)throw Error('Falta definición de pieza <100>.');
- return {text:count?out([...result,'!']):null,count,removed};
+ return {text:count?out([...result,'!']):null,count,removed,ghosts,mprConditionsRemoved};
 }
 </script>
 <script id="package">
@@ -119,7 +151,9 @@ const optionDefs=[
  ['limitZZero','NC: limitar Z de trabajo a cama Z0','Convierte destinos Z negativos a Z0 y registra cada correccion. Conserva G53 porque es coordenada de maquina. Ejemplo: Z-0.5080 pasa a Z0.0000.'],
  ['reportSlots','NC: reportar ancho de ranuras','Detecta ranuras rectas candidatas y estima ancho usando el diametro fijo de herramienta. Es informativo: no cambia el codigo. Ejemplo: T1 suma 8 mm al barrido principal.'],
  ['removeMprRouting','MPR: dejar solo perforaciones','Retira trayectorias y macros de fresado del MPR para que el taladro conserve solo operaciones de perforacion.'],
+ ['removeInvalidMprConditions','MPR: quitar condiciones inválidas','Elimina condiciones de habilitacion que apuntan a variables inexistentes, por ejemplo ??="_ABD" cuando ABD no esta declarado. Util para limpiar MPR creados por el postprocesador anterior. Si la variable existe, la condicion se conserva.'],
  ['blockUnknownMprMacros','MPR: bloquear macros desconocidas','Evita generar salida cuando aparece una macro no clasificada. Desactivalo solo para diagnostico; tambien puedes agregar una macro puntual al campo de eliminacion extra.'],
+ ['allowReprocessCleanerOutputs','Entrada: aceptar salidas previas del limpiador','Permite volver a limpiar archivos generados por versiones anteriores, como _TALADRO_V29.mpr o _ROUTER_V210.nc. El limpiador normaliza el nombre antes de crear la nueva salida para no encadenar versiones.'],
  ['includeIgnored','Resumen: registrar archivos ignorados','Lista archivos que no sean NC/MPR en el resumen. Desactivalo si quieres un reporte mas corto del lote.'],
  ['blockDuplicateOutputs','ZIP: bloquear salidas duplicadas','Evita sobrescribir dos piezas con el mismo nombre final dentro del ZIP. Conviene corregir nombres de origen antes de desactivar esto.']
 ];
@@ -130,25 +164,26 @@ function choose(list){selected=list.sort((a,b)=>a.path.localeCompare(b.path));re
 document.getElementById('folder').onchange=e=>{if(!busy)choose(Array.from(e.target.files,f=>({file:f,path:f.webkitRelativePath||f.name})));};
 function link(name,text){const u=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));urls.push(u);const a=document.createElement('a');a.href=u;a.download=name;a.className='download';a.textContent='Descargar '+name;downloads.append(a);}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function suggest(message){if(/Encabezado|Cierre|Instrucción|Preparación|posicionamiento|vertical ambigua|retirada Z/.test(message))return 'Opción posible: desactivar "NC: validar perfil KDT observado" y reprocesar solo para diagnóstico.';
+function suggest(message){if(/Encabezado|Cierre|Instrucción|Preparación|posicionamiento|vertical ambigua|retirada Z/.test(message))return 'Sugerencia: puedo asistirte. Para diagnóstico podria desactivarse "NC: validar perfil KDT observado", o corregir el origen si el cambio no es esperado.';
  if(/Validación Z0/.test(message))return 'Opción posible: desactivar "NC: limitar Z de trabajo a cama Z0" y revisar el resultado en simulación.';
- if(/Macro desconocida/.test(message))return 'Opción posible: desactivar "MPR: bloquear macros desconocidas" y revisar qué conserva el archivo.';
+ if(/Macro desconocida/.test(message))return 'Sugerencia: revisar origen o desactivar "MPR: bloquear macros desconocidas" solo para diagnóstico; no se genera ZIP hasta resolverlo.';
+ if(/Salida previa del limpiador/.test(message))return 'Sugerencia: activar "Entrada: aceptar salidas previas del limpiador" si ya no existen los originales y quieres reprocesar con validaciones.';
  if(/duplicada/.test(message))return 'Opción posible: desactivar "ZIP: bloquear salidas duplicadas", aunque conviene corregir nombres de origen.';
- return 'Sin opción automática segura. Revisar el archivo original.';}
+ return 'Proceso detenido. Corrige el origen o desactiva conscientemente la función relacionada y vuelve a procesar.';}
 function addCard(label,value,cls){const d=document.createElement('div');d.className='card';d.innerHTML='<b class="'+(cls||'')+'">'+value+'</b>'+label;cards.append(d);}
 function renderReport(summary,items){cards.replaceChildren();addCard('Incluidos',summary.included,'ok');addCard('Omitidos',summary.omitted,'');addCard('Bloqueados',summary.failed,summary.failed?'bad':'ok');addCard('Ignorados',summary.ignored,'');report.replaceChildren();for(const item of items){const d=document.createElement('details'),tag=item.status==='BLOQUEADO'?'bad':item.status==='SALIDA'?'ok':'';d.innerHTML='<summary>'+esc(item.path)+' <span class="tag '+tag+'">'+item.status+'</span></summary><pre>'+esc(item.detail.join('\n'))+'</pre>';report.append(d);}}
-function textSummary(summary,items,options){const log=['OCRE LIMPIADOR v2.7','NO AUTORIZA PRODUCCIÓN. Revisar todas las salidas en simulación.','T1=8 mm, T3=10 mm, T6=6 mm.','Admite alturas Z de retirada variables por herramienta; destinos negativos se limitan a Z0 si la funcion esta activa.','Macros MPR extra eliminadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'),'Incluidos: '+summary.included+' | Omitidos: '+summary.omitted+' | Bloqueados: '+summary.failed+' | Ignorados: '+summary.ignored,''];for(const item of items)log.push(item.path+' | '+item.status,...item.detail.map(x=>'  '+x),'');return log.join('\n');}
+function textSummary(summary,items,options){const log=['OCRE LIMPIADOR v2.12','NO AUTORIZA PRODUCCIÓN. Revisar todas las salidas en simulación.','T1=8 mm, T3=10 mm, T6=6 mm.','Admite alturas Z de retirada variables por herramienta; destinos negativos se limitan a Z0 si la funcion esta activa.','Reproceso de salidas previas: '+(options.allowReprocessCleanerOutputs?'permitido con validaciones':'bloqueado'),'Macros MPR extra eliminadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'),'Incluidos: '+summary.included+' | Omitidos: '+summary.omitted+' | Bloqueados: '+summary.failed+' | Ignorados: '+summary.ignored,''];for(const item of items)log.push(item.path+' | '+item.status,...item.detail.map(x=>'  '+x),'');return log.join('\n');}
 document.getElementById('process').onclick=async()=>{
  if(busy)return;resetDownloads();cards.replaceChildren();const files=selected.slice(),options=currentOptions();if(!files.length){report.innerHTML='<p class="hint">Selecciona una carpeta primero.</p>';return;}busy=true;button.disabled=true;const packaged=[],names=new Set(),items=[];const summary={included:0,omitted:0,failed:0,ignored:0};
  try{
  for(const item of files){const f=item.file;if(!/\.(nc|mpr)$/i.test(f.name)){summary.ignored++;if(options.includeIgnored)items.push({path:item.path,status:'IGNORADO',detail:['No es archivo NC/MPR.']});continue;}report.innerHTML='<p class="hint">Procesando '+esc(item.path)+'</p>';const detail=[];
- try{if(/_(ROUTER|TALADRO)_V2(?:2|3|4|5|6|7)?\./i.test(f.name))throw Error('Selecciona el original, no una salida V2/V23/V24/V25/V26/V27.');const bytes=new Uint8Array(await f.arrayBuffer());if(bytes.some(x=>x>127))throw Error('Codificación no ASCII.');const s=new TextDecoder().decode(bytes);let r,name;
- if(/\.nc$/i.test(f.name)){r=cleanNC(s,options);name=f.name.replace(/\.nc$/i,'_ROUTER_V27.nc');detail.push('Perforaciones/descensos retirados: '+r.holes,'Herramientas excluidas: '+(r.excluded.join(', ')||'ninguna'),'Espesor estimado desde NC: '+(r.thickness.estimated===null?'no detectado':r.thickness.estimated+' mm'),'Candidatos de espesor: '+(r.thickness.candidates.join(', ')||'ninguno'),'Ranuras rectas candidatas: '+r.slots.length,...r.slots.map(g=>'T'+g.tool+' X'+g.x+' Y'+g.y+': ancho principal ~'+g.width+' mm; barrido máximo '+g.maxWidth+' mm'),...r.events,'Destinos Z negativos corregidos a Z0: '+r.zCorrections);}
- else{r=cleanMPR(s,options);name=f.name.replace(/\.mpr$/i,'_TALADRO_V27.mpr');detail.push('Macros de perforación conservadas: '+r.count,'Macros retiradas: '+r.removed,'Macros extra solicitadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'));}
- if(r.text){const parent=item.path.includes('/')?item.path.slice(0,item.path.lastIndexOf('/')+1):'';const path=(/\.nc$/i.test(f.name)?'01_ROUTER/':'02_TALADRO/')+parent+name;const key=path.toLowerCase();if(options.blockDuplicateOutputs&&names.has(key))throw Error('Salida duplicada: '+path);names.add(key);packaged.push({name:path,text:r.text});summary.included++;detail.push('Salida: '+path);items.push({path:item.path,status:'SALIDA',detail});}
+ try{const previous=/_(ROUTER|TALADRO)_V\d+(?=\.(?:nc|mpr)$)/i.test(f.name);if(previous&&!options.allowReprocessCleanerOutputs)throw Error('Salida previa del limpiador detectada. Activa "Entrada: aceptar salidas previas del limpiador" para reprocesar con validaciones.');const sourceName=cleanOutputBaseName(f.name);if(previous)detail.push('Entrada previa del limpiador aceptada: '+f.name+' -> '+sourceName);const bytes=new Uint8Array(await f.arrayBuffer());if(bytes.some(x=>x>127))throw Error('Codificación no ASCII.');const s=new TextDecoder().decode(bytes);let r,name;
+ if(/\.nc$/i.test(f.name)){r=cleanNC(s,options);name=sourceName.replace(/\.nc$/i,'_ROUTER_V212.nc');detail.push('Perforaciones/descensos retirados: '+r.holes,'Herramientas excluidas: '+(r.excluded.join(', ')||'ninguna'),'Espesor estimado desde NC: '+(r.thickness.estimated===null?'no detectado':r.thickness.estimated+' mm'),'Candidatos de espesor: '+(r.thickness.candidates.join(', ')||'ninguno'),'Ranuras rectas candidatas: '+r.slots.length,...r.slots.map(g=>'T'+g.tool+' X'+g.x+' Y'+g.y+': ancho principal ~'+g.width+' mm; barrido máximo '+g.maxWidth+' mm'),...r.events,'Destinos Z negativos corregidos a Z0: '+r.zCorrections);}
+ else{r=cleanMPR(s,options);name=sourceName.replace(/\.mpr$/i,'_TALADRO_V212.mpr');const badConds=Object.entries(r.mprConditionsRemoved).map(x=>x[0]+' x'+x[1]).join(', ');detail.push('Macros de perforación conservadas: '+r.count,'Macros retiradas/reducidas: '+r.removed,'Ranuras fantasma de referencia: '+r.ghosts,'Condiciones MPR inválidas eliminadas: '+(badConds||'ninguna'),'Macros extra solicitadas: '+(options.extraRemoveMprMacros.join(', ')||'ninguna'));}
+ if(r.text){const path=(/\.nc$/i.test(f.name)?'Router/':'Taladro/')+name;const key=path.toLowerCase();if(options.blockDuplicateOutputs&&names.has(key))throw Error('Salida duplicada: '+path);names.add(key);packaged.push({name:path,text:r.text});summary.included++;detail.push('Salida: '+path);items.push({path:item.path,status:'SALIDA',detail});}
  else{summary.omitted++;detail.push('Sin operaciones conservadas.');items.push({path:item.path,status:'OMITIDO',detail});}
- }catch(e){summary.failed++;items.push({path:item.path,status:'BLOQUEADO',detail:['Error: '+e.message,suggest(e.message)]});}}
- const summaryText=textSummary(summary,items,options);renderReport(summary,items);packaged.push({name:'RESUMEN_MOZAIK.txt',text:summaryText});if(summary.failed)packaged.push({name:'LOTE_INCOMPLETO_NO_PRODUCIR.txt',text:'Hay archivos bloqueados. Consulte RESUMEN_MOZAIK.txt y resuelva los errores antes de producción.'});
+ }catch(e){summary.failed++;items.push({path:item.path,status:'BLOQUEADO',detail:['Error: '+e.message,suggest(e.message),'No se generó ZIP. El paquete solo se arma cuando todos los filtros pasan sin errores.']});renderReport(summary,items);return;}}
+ const summaryText=textSummary(summary,items,options);renderReport(summary,items);packaged.push({name:'RESUMEN_MOZAIK.txt',text:summaryText});
  const stamp=new Date().toISOString().replace(/[:.]/g,'-');link('MOZAIK_'+(summary.failed?'INCOMPLETO_':'PROCESADO_')+stamp+'.zip',makeZip(packaged));
  }catch(e){report.innerHTML+='<p class="bad">No se pudo preparar el ZIP: '+esc(e.message)+'</p>';}finally{busy=false;button.disabled=false;}
 };
