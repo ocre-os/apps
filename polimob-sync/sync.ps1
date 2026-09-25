@@ -1,3 +1,4 @@
+$SyncVersion = "0.4.0"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -58,7 +59,7 @@ function Get-Profile {
 }
 
 Write-Host ""
-Write-Host "OCRE Polimob Sync" -ForegroundColor Cyan
+Write-Host "OCRE Polimob Sync v$SyncVersion" -ForegroundColor Cyan
 Write-Host "Mozaik: $Mozaik"
 if (!(Test-Path $Mozaik)) { throw "No existe C:\Mozaik." }
 if (Test-MozaikOpen) {
