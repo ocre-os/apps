@@ -1,5 +1,5 @@
 $ErrorActionPreference="Stop"
-$Version="0.5.1"
+$Version="0.5.2"
 $Mozaik="C:\Mozaik"
 $AppDir=Join-Path $env:ProgramData "OCRE\PolimobSync"
 $Profile=Join-Path $AppDir "profile.json"
@@ -23,14 +23,16 @@ foreach($p in ($paths|Sort-Object -Unique)){
  $pull=if($mode -in @("pull","both")){"checked"}else{""}
  $del=if($mode -match "delete"){"checked"}else{""}
  $safe=[System.Net.WebUtility]::HtmlEncode($p)
- $rows+="<tr><td><code>$safe</code></td><td><input type=checkbox class=push $push></td><td><input type=checkbox class=pull $pull></td><td><input type=checkbox class=del $del></td></tr>"
+ if($p -eq "Data\CNC\[archivos raiz]"){$count=@(Get-ChildItem (Join-Path $Mozaik "Data\CNC") -File -ErrorAction SilentlyContinue).Count}
+ else{$count=@(Get-ChildItem (Join-Path $Mozaik $p) -File -Recurse -ErrorAction SilentlyContinue).Count}
+ $rows+="<tr><td><code>$safe</code></td><td>$count</td><td><input type=checkbox class=push $push></td><td><input type=checkbox class=pull $pull></td><td><input type=checkbox class=del $del></td></tr>"
 }
 $token=[guid]::NewGuid().ToString("N")
 $html=@"
 <!doctype html><meta charset=utf-8><title>OCRE Polimob Sync</title>
 <style>body{font:15px system-ui;background:#f4f6f8;color:#202124;margin:0}.w{max-width:1000px;margin:35px auto;padding:0 20px}.c{background:white;border:1px solid #ddd;border-radius:14px;padding:22px}h1{margin:0}.m{color:#68707c}table{width:100%;border-collapse:collapse;margin-top:18px}td,th{padding:10px;border-bottom:1px solid #eee;text-align:left}th:not(:first-child),td:not(:first-child){text-align:center}input[type=checkbox]{width:20px;height:20px}.b{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}button{padding:11px 15px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.p{background:#202124;color:white}.s{background:#eceff2}.n{background:#f7f8fa;padding:10px;border-radius:8px;margin-top:14px}</style>
-<div class=w><div class=c><h1>OCRE Polimob Sync <span class=m>v$Version</span></h1><p class=m>Equipo: $env:COMPUTERNAME</p><div class=n>Publicar: esta PC → Polimob. Recibir: Polimob → esta PC. Eliminaciones esta desactivado por defecto.</div>
-<table><thead><tr><th>Carpeta detectada</th><th>Publicar ↑</th><th>Recibir ↓</th><th>Propagar eliminaciones</th></tr></thead><tbody>$rows</tbody></table>
+<div class=w><div class=c><h1>OCRE Polimob Sync <span class=m>v$Version</span></h1><p class=m>Equipo: $env:COMPUTERNAME</p><div class=n>Publicar: esta PC &gt; Polimob. Recibir: Polimob &gt; esta PC. Eliminaciones desactivadas por defecto.</div>
+<table><thead><tr><th>Carpeta detectada</th><th>Archivos</th><th>Publicar</th><th>Recibir</th><th>Propagar eliminaciones</th></tr></thead><tbody>$rows</tbody></table>
 <div class=b><button class=s onclick="allPull()">Todo solo recibir</button><button class=s onclick="allLocal()">Todo local</button><button class=p onclick="save()">Guardar configuracion</button></div></div></div>
 <script>
 const TOKEN="$token";
