@@ -1,5 +1,5 @@
 $ErrorActionPreference="Stop"
-$Version="0.6.2"
+$Version="0.6.3"
 $Mozaik="C:\Mozaik"
 $AppDir=Join-Path $env:ProgramData "OCRE\PolimobSync"
 $Profile=Join-Path $AppDir "profile.json"
@@ -38,7 +38,7 @@ $html=@"
 const TOKEN="$token";
 function allPull(){document.querySelectorAll('.push,.del').forEach(x=>x.checked=false);document.querySelectorAll('.pull').forEach(x=>x.checked=true)}
 function allLocal(){document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false)}
-function save(){let modes={};document.querySelectorAll('tbody tr').forEach(r=>{let p=r.cells[0].innerText,pu=r.querySelector('.push').checked,pl=r.querySelector('.pull').checked,de=r.querySelector('.del').checked;modes[p]=(pu&&pl?'both':pu?'push':pl?'pull':'local')+(de?'+delete':'')});let q=encodeURIComponent(JSON.stringify({version:4,appVersion:"$Version",computer:"$env:COMPUTERNAME",modes}));location.href="http://127.0.0.1:48731/save?token="+TOKEN+"&profile="+q}
+function save(){let modes={};document.querySelectorAll('tbody tr').forEach(r=>{let p=r.cells[0].innerText,pu=r.querySelector('.push').checked,pl=r.querySelector('.pull').checked,de=r.querySelector('.del').checked;modes[p]=(pu&&pl?'both':pu?'push':pl?'pull':'local')+(de?'+delete':'')});let payload=JSON.stringify({version:4,appVersion:"$Version",computer:"$env:COMPUTERNAME",modes});let q=encodeURIComponent(payload);location.href="http://127.0.0.1:48731/save?token="+TOKEN+"&profile="+q}
 </script>
 "@
 $tmp=Join-Path $env:TEMP "ocre-polimob-config.html";Set-Content -Encoding UTF8 $tmp $html
@@ -48,6 +48,7 @@ try{
  $ctx=$listener.GetContext()
  if($ctx.Request.QueryString["token"] -ne $token){throw "Solicitud invalida"}
  $json=$ctx.Request.QueryString["profile"]
+ if([string]::IsNullOrWhiteSpace($json)){throw "Perfil vacio"}
  $obj=$json|ConvertFrom-Json
  $obj|ConvertTo-Json -Depth 10|Set-Content -Encoding UTF8 $Profile
  $msg=[Text.Encoding]::UTF8.GetBytes("<html><meta charset=utf-8><body style='font:18px system-ui;padding:40px'><h2>Configuracion guardada</h2><p>Ya puedes cerrar esta ventana y ejecutar OCRE Polimob Sync.</p></body></html>")
