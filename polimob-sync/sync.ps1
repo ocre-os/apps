@@ -1,4 +1,4 @@
-$SyncVersion = "0.6.4"
+$SyncVersion = "0.6.5"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -117,7 +117,10 @@ if($needsClone){
 $pushPaths=@()
 $pullPaths=@()
 foreach($rel in $AllPaths){
- $prop=@($profile.modes.PSObject.Properties | Where-Object { $_.Name -eq $rel }) | Select-Object -First 1
+ # JSON/HTML guarda rutas con una sola barra invertida. Normalizamos tambien
+ # perfiles antiguos que pudieran contener barras duplicadas.
+ $relKey=($rel -replace '\\\\','\')
+ $prop=@($profile.modes.PSObject.Properties | Where-Object { (($_.Name) -replace '\\\\','\') -eq $relKey }) | Select-Object -First 1
  $mode=if($null -ne $prop){[string]$prop.Value}else{"local"}
  $baseMode=($mode -split '\+')[0]
  if($baseMode -in @("push","both")){$pushPaths += $rel}
