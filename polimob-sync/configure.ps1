@@ -1,5 +1,5 @@
 $ErrorActionPreference="Stop"
-$Version="0.5.2"
+$Version="0.6.0"
 $Mozaik="C:\Mozaik"
 $AppDir=Join-Path $env:ProgramData "OCRE\PolimobSync"
 $Profile=Join-Path $AppDir "profile.json"
