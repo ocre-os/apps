@@ -1,4 +1,4 @@
-$SyncVersion = "0.5.1"
+$SyncVersion = "0.5.2"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
