@@ -1,4 +1,4 @@
-$SyncVersion = "0.5.2"
+$SyncVersion = "0.6.0"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -121,6 +121,40 @@ foreach($rel in $AllPaths){
  if($mode -in @("push","both")){$pushPaths += $rel}
  if($mode -in @("pull","both")){$pullPaths += $rel}
 }
+# Previsualizacion segura antes de modificar Mozaik o publicar.
+function Get-Preview([string]$rel,[string]$direction){
+ $localBase=if($rel -eq "Data\\CNC\\[archivos raiz]"){Join-Path $Mozaik "Data\\CNC"}else{Join-Path $Mozaik $rel}
+ $repoBase=if($rel -eq "Data\\CNC\\[archivos raiz]"){Join-Path $RepoMozaik "Data\\CNC"}else{Join-Path $RepoMozaik $rel}
+ $source=if($direction -eq "pull"){$repoBase}else{$localBase}
+ $dest=if($direction -eq "pull"){$localBase}else{$repoBase}
+ if(!(Test-Path $source)){ return [pscustomobject]@{New=0;Update=0;MissingSource=$true} }
+ $files=if($rel -eq "Data\\CNC\\[archivos raiz]"){Get-ChildItem $source -File -ErrorAction SilentlyContinue}else{Get-ChildItem $source -File -Recurse -ErrorAction SilentlyContinue}
+ $new=0;$update=0
+ foreach($x in $files){
+   $rp=$x.FullName.Substring($source.Length).TrimStart('\\')
+   $d=Join-Path $dest $rp
+   if(!(Test-Path $d)){$new++}
+   elseif($x.Length -ne (Get-Item $d).Length -or $x.LastWriteTimeUtc -gt (Get-Item $d).LastWriteTimeUtc){$update++}
+ }
+ [pscustomobject]@{New=$new;Update=$update;MissingSource=$false}
+}
+Write-Host ""
+Write-Host "PREVISUALIZACION - aun no se ha modificado C:\\Mozaik" -ForegroundColor Cyan
+$hasWork=$false
+foreach($rel in $pullPaths){
+ $p=Get-Preview $rel "pull"
+ if($p.MissingSource){Write-Host "[RECIBIR] $rel : no existe en Polimob; se omitira" -ForegroundColor Yellow}
+ else{Write-Host "[RECIBIR] $rel : $($p.New) nuevos, $($p.Update) por actualizar, 0 eliminaciones";if($p.New+$p.Update -gt 0){$hasWork=$true}}
+}
+foreach($rel in $pushPaths){
+ $p=Get-Preview $rel "push"
+ if($p.MissingSource){Write-Host "[PUBLICAR] $rel : no existe localmente; se omitira" -ForegroundColor Yellow}
+ else{Write-Host "[PUBLICAR] $rel : $($p.New) nuevos, $($p.Update) por actualizar, 0 eliminaciones";if($p.New+$p.Update -gt 0){$hasWork=$true}}
+}
+if(!$hasWork){Write-Host "No hay cambios aplicables." -ForegroundColor Green; exit 0}
+$confirm=Read-Host "Escribe SI para aplicar estos cambios"
+if($confirm.Trim().ToUpperInvariant() -ne "SI"){Write-Host "Cancelado. No se modifico Mozaik.";exit 0}
+
 if($pushPaths.Count -gt 0){
  Write-Host "Recopilando categorias autorizadas para publicar..."
  foreach($rel in $pushPaths){
