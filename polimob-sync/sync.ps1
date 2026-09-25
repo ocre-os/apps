@@ -1,4 +1,4 @@
-$SyncVersion = "0.6.0"
+$SyncVersion = "0.6.1"
 $ErrorActionPreference = "Stop"
 $Mozaik = "C:\Mozaik"
 $AppDir = Join-Path $env:ProgramData "OCRE\PolimobSync"
@@ -139,11 +139,11 @@ function Get-Preview([string]$rel,[string]$direction){
  [pscustomobject]@{New=$new;Update=$update;MissingSource=$false}
 }
 Write-Host ""
-Write-Host "PREVISUALIZACION - aun no se ha modificado C:\\Mozaik" -ForegroundColor Cyan
+Write-Host "PREVISUALIZACION - aun no se ha modificado C:\Mozaik" -ForegroundColor Cyan
 $hasWork=$false
 foreach($rel in $pullPaths){
  $p=Get-Preview $rel "pull"
- if($p.MissingSource){Write-Host "[RECIBIR] $rel : no existe en Polimob; se omitira" -ForegroundColor Yellow}
+ if($p.MissingSource){Write-Host "[RECIBIR] $rel - NO EXISTE EN POLIMOB; se omitira" -ForegroundColor Yellow}
  else{Write-Host "[RECIBIR] $rel : $($p.New) nuevos, $($p.Update) por actualizar, 0 eliminaciones";if($p.New+$p.Update -gt 0){$hasWork=$true}}
 }
 foreach($rel in $pushPaths){
