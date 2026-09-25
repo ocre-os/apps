@@ -9,7 +9,7 @@ if not "%errorlevel%"=="0" (
 )
 set "DEST=%ProgramData%\OCRE\PolimobSync"
 set "BASE=https://raw.githubusercontent.com/ocre-os/apps/main/polimob-sync"
-set "VERSION=0.6.4"
+set "VERSION=0.6.5"
 if not exist "%DEST%" mkdir "%DEST%"
 echo Instalando OCRE Polimob Sync v%VERSION%...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -UseBasicParsing -Headers @{'Cache-Control'='no-cache'} ('%BASE%/sync.ps1?v='+[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -OutFile '%DEST%\sync.ps1.tmp'; $txt=Get-Content -Raw '%DEST%\sync.ps1.tmp'; if($txt -notmatch ('\$SyncVersion\s*=\s*[''\"]'+[regex]::Escape('%VERSION%')+'[''\"]')){ throw ('Version descargada incorrecta. Se esperaba %VERSION%. Inicio descargado: '+$txt.Substring(0,[Math]::Min(120,$txt.Length))) }; Move-Item -Force '%DEST%\sync.ps1.tmp' '%DEST%\sync.ps1'"
