@@ -9,3 +9,7 @@ Render limitado a 25fps, resolución hasta 2x y pasos de tiempo acotados. Con mo
 Validación: 6 pruebas existentes y 4 pruebas de render (dirección y contenido reales, densidad móvil/desktop, actualización/revelado y cancelación). Sintaxis y diff comprobados. Vista local inspeccionada en Chromium a 1440×900 y 390×844: pantalla densa, verde, scanlines, telemetría vertical y salida visible. Los endpoints rechazan el origen localhost mediante CORS; el estado local de conexión no se interpreta como falla de Core. La comprobación sanitaria final se realiza desde apps.ocre.mx después de publicar.
 
 CI: pruebas sin dependencias con Node 22 y timeout de tres minutos. Reversión: revertir esta PR en Apps main y permitir que el despliegue FTP existente publique la versión anterior.
+
+## Seguimiento de publicación
+
+PR #3 fusionada a main en 89acee7. CI de main y despliegue FTP #55 completados correctamente. La verificación real encontró una sesión que retenía el Matrix anterior: se versionan las referencias a matrix.js y styles.css para forzar la descarga de los nuevos recursos. Core devolvió Cloudflare Tunnel error 1033 durante la comprobación; no se modificó Core ni staging y la UI conserva el estado de conexión real. La validación final de Matrix se repite con los recursos versionados.
