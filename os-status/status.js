@@ -34,7 +34,7 @@
   }
 
   class StatusMonitor {
-    constructor({ fetcher = fetch, timeoutMs = 5000 } = {}) {
+    constructor({ fetcher = (...args) => fetch(...args), timeoutMs = 5000 } = {}) {
       this.fetcher = fetcher;
       this.timeoutMs = timeoutMs;
       this.latestCycle = 0;
