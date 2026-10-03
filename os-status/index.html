@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070b0d">
+  <title>OCRE OS Status</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <main id="normalMode" class="shell">
+    <header class="topbar">
+      <a class="brand" href="../" aria-label="Volver a OCRE Apps">
+        <span class="brand-mark">O</span>
+        <span><strong>OCRE OS</strong><small>STATUS / LIVE DIAGNOSTICS</small></span>
+      </a>
+      <div class="top-actions">
+        <button id="matrixToggle" class="ghost matrix-trigger" type="button">MATRIX MODE</button>
+        <button id="refreshButton" class="refresh" type="button"><span class="refresh-icon">↻</span> Comprobar ahora</button>
+      </div>
+    </header>
+
+    <section class="environment-bar" aria-label="Entorno">
+      <button class="env active" data-env="core" type="button">CORE</button>
+      <button class="env" data-env="staging" type="button">STAGING</button>
+      <span id="livePulse" class="live-pill"><i></i> LIVE</span>
+    </section>
+
+    <section class="hero" aria-live="polite">
+      <div class="hero-copy">
+        <p id="eyebrow" class="eyebrow">ESTADO DEL SISTEMA</p>
+        <h1><span id="environmentName">CORE</span> <em>·</em> <span id="overallLabel">COMPROBANDO</span></h1>
+        <p id="heroMessage" class="hero-message">Consultando los puntos críticos de OCRE-OS.</p>
+      </div>
+      <div class="orb-wrap" aria-hidden="true">
+        <div id="statusOrb" class="status-orb checking"><span></span></div>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Métricas esenciales">
+      <article><span>LATENCIA</span><strong id="latency">—</strong><small>observador → plataforma</small></article>
+      <article><span>ÚLTIMA COMPROBACIÓN</span><strong id="checkedAt">—</strong><small id="age">sin muestra</small></article>
+      <article><span>CONTRATO</span><strong id="contractState">—</strong><small>ocre-status-v1</small></article>
+      <article><span>VERSIÓN</span><strong id="version">—</strong><small id="commit">commit no informado</small></article>
+    </section>
+
+    <section class="diagnostics">
+      <div class="section-heading">
+        <div><p>DIAGNÓSTICO</p><h2>Puntos de comprobación</h2></div>
+        <span id="cycleState" class="cycle-state">Preparando ciclo</span>
+      </div>
+      <div id="checksGrid" class="checks-grid"></div>
+    </section>
+
+    <section class="explain">
+      <div class="section-heading">
+        <div><p>LECTURA</p><h2>Cómo interpretar este estado</h2></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot healthy"></i> Operativo</span>
+        <span><i class="dot degraded"></i> Degradado</span>
+        <span><i class="dot failed"></i> Falla</span>
+        <span><i class="dot unknown"></i> Desconocido</span>
+      </div>
+      <p>Los datos se consultan en vivo desde este navegador. Si OCRE-OS no puede responder, los componentes internos se muestran como desconocidos en lugar de asumir una falla.</p>
+    </section>
+
+    <footer>OCRE Tecnologías · diagnóstico público sanitizado · sin información de clientes</footer>
+  </main>
+
+  <section id="matrixMode" class="matrix-mode" hidden aria-label="Matrix Mode">
+    <canvas id="matrixCanvas"></canvas>
+    <div class="matrix-scanlines" aria-hidden="true"></div>
+    <button id="matrixExit" class="matrix-exit" type="button">EXIT MATRIX</button>
+    <div id="matrixHint" class="matrix-hint">LIVE TELEMETRY / OCRE OS</div>
+  </section>
+
+  <script src="status.js"></script>
+  <script src="matrix.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
