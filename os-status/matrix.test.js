@@ -24,7 +24,7 @@ test('telemetry is upright single glyphs in increasing y order, never horizontal
   const real=r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,'));
   assert.ok(real.length>0);
   const first=real.slice(0,13);
-  assert.ok(['CORE::HEALTHY','C0RE::HEALTHY'].includes(first.map(c=>c.text).join('')));
+  assert.equal(first.length,13);assert.equal(first[4].text,':');assert.equal(first[5].text,':');
   assert.ok(first.every(c=>c.x===first[0].x));
   assert.ok(first.slice(1).every((c,i)=>c.y>first[i].y));
   assert.ok(new Set(real.map(c=>c.x)).size<=5,'telemetry should remain sparse');
@@ -68,6 +68,13 @@ test('live updates replace old telemetry and animated frames reveal downwards',(
 
 test('telemetry glyph mutation uses reversible visual lookalikes',()=>{
   const source=fs.readFileSync(__dirname+'/matrix.js','utf8');
-  assert.ok(source.includes("const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'}"));
+  assert.ok(source.includes("P:'¶'"));assert.ok(source.includes("L:'|'"));assert.ok(source.includes("O:'0'"));
   assert.ok(source.includes('telemetryGlyph(t.text[i],i,now)'));
+});
+
+test('decorative rain mutates cells independently instead of walking glyphs sequentially',()=>{
+  const source=fs.readFileSync(__dirname+'/matrix.js','utf8');
+  assert.ok(source.includes('function rainGlyph(col,j,now)'));
+  assert.ok(source.includes('mix32(col.seed'));
+  assert.ok(!source.includes('const seed=(j*17'));
 });
