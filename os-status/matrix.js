@@ -63,8 +63,10 @@
   function telemetryGlyph(ch,index,now){
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
-    const phase=(Math.floor(now/520)+index*7)%31;
-    return phase===0?alt:ch;
+    // Each glyph has a different phase. A short 2-frame substitution is visible
+    // while the source character remains dominant and fully recoverable.
+    const phase=(Math.floor(now/180)+index*11)%19;
+    return phase===0||phase===1?alt:ch;
   }
   function draw(now){
     if(!running)return;
