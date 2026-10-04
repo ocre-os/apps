@@ -69,8 +69,8 @@
   function telemetryGlyph(ch,index,now){
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
-    const phase=(Math.floor(now/120)+index*7)%13;
-    return phase===0||phase===1?alt:ch;
+    const phase=(Math.floor(now/80)+index*7)%11;
+    return phase===0||phase===1||phase===2?alt:ch;
   }
   function draw(now){
     if(!running)return;
