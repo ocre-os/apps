@@ -41,22 +41,24 @@
     const present=new Set([state.overall,...Object.values(state.checks||{})]);
     return ['failed','degraded','unknown','healthy'].filter(value=>present.has(value));
   }
-  function setOrbColor(orb,status,transitionMs=0){
+  function orbCount(state,status){const values=Object.values(state.checks||{});return values.filter(v=>v===status).length+'/'+values.length}
+  function setOrbColor(orb,status,transitionMs=0,state=null){
     orb.style.setProperty('--orb-color',orbColors[status]||orbColors.unknown);
     orb.style.setProperty('--orb-transition',transitionMs+'ms');
     orb.dataset.currentStatus=status;
+    if(state){const count=$('orbCount');count.dataset.next=orbCount(state,status);count.classList.add('changing');setTimeout(()=>{if(count.dataset.next){count.textContent=count.dataset.next;count.classList.remove('changing')}},Math.min(900,transitionMs*.45))}
   }
   function renderOrb(state){
     const orb=$('statusOrb'),states=orbStates(state);
     clearTimeout(orbCycleTimer);
     orb.className='status-orb '+state.overall+(states.length>1?' has-secondary':'');
     orb.dataset.states=states.join(' ');
-    setOrbColor(orb,state.overall,0);
+    setOrbColor(orb,state.overall,0,state);
     if(states.length<2)return;
     let index=states.indexOf(state.overall);
     const advance=()=>{
       index=(index+1)%states.length;
-      setOrbColor(orb,states[index],2000);
+      setOrbColor(orb,states[index],2000,state);
       orbCycleTimer=setTimeout(advance,3000);
     };
     orbCycleTimer=setTimeout(advance,1000);
