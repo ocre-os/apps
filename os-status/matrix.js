@@ -12,9 +12,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:11,size:8,alpha:.20,speed:32,chance:.90},
-      {spacing:14,size:10,alpha:.41,speed:62,chance:.90},
-      {spacing:19,size:13,alpha:.67,speed:96,chance:.98},
+      {spacing:10,size:8,alpha:.20,speed:32,chance:.94},
+      {spacing:13,size:10,alpha:.41,speed:62,chance:.94},
+      {spacing:18,size:13,alpha:.67,speed:96,chance:.99},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
@@ -59,6 +59,13 @@
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
     });
   }
+  const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'};
+  function telemetryGlyph(ch,index,now){
+    const alt=lookalikes[ch.toUpperCase()];
+    if(!alt)return ch;
+    const phase=(Math.floor(now/240)+index*7)%17;
+    return phase===0||phase===1?alt:ch;
+  }
   function draw(now){
     if(!running)return;
     if(!reduced&&now-last<40){raf=requestAnimationFrame(draw);return}
@@ -93,7 +100,7 @@
       ctx.fillStyle='rgba(135,255,151,'+t.alpha+')';ctx.shadowColor='#60ff7b';
       for(let i=0;i<Math.min(t.text.length,Math.floor(t.revealed));i++){
         const y=t.y+i*t.step;if(y<0||y>innerHeight)continue;
-        ctx.fillText(t.text[i],t.x,y);
+        ctx.fillText(telemetryGlyph(t.text[i],i,now),t.x,y);
       }
     });
     ctx.shadowBlur=0;
