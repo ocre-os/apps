@@ -59,10 +59,10 @@
     const previous=preservePosition?telemetry:[];
     telemetry=Array.from({length:count},(_,i)=>{
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
-      const text=fragments[i%fragments.length],step=14,old=previous[i];
+      const text=fragments[i%fragments.length],step=14,old=previous[i],tailLen=10;
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
         alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
-        revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length),history:old?.history??[]};
+        revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length),history:old?.history??[],tailLen};
     });
   }
   const lookalikes={A:'4',E:'3',I:'1',L:'|',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2',P:'¶',C:'(',D:')',H:'#',X:'×',V:'\\/'};
@@ -123,6 +123,18 @@
       for(let i=0;i<Math.min(t.text.length,Math.floor(t.revealed));i++){
         const y=t.y+i*t.step;if(y<0||y>innerHeight)continue;
         ctx.fillText(telemetryGlyph(t.text[i],i,now),t.x,y);
+      }
+      // Treat an invisible terminator after the message as the moving head of a native Matrix tail.
+      // It draws no glyph itself; the cells behind it reuse recent message glyphs and fade by distance.
+      if(!reduced&&t.revealed>=t.text.length){
+        const headY=t.y+t.text.length*t.step;
+        for(let j=1;j<=t.tailLen;j++){
+          const y=headY-j*t.step;if(y<0||y>innerHeight)continue;
+          const source=Math.max(0,t.text.length-j),fade=Math.pow(1-j/(t.tailLen+1),1.35);
+          ctx.font='400 14px "Matrix Code NFI",ui-monospace,SFMono-Regular,Menlo,monospace';
+          ctx.fillStyle='rgba(48,238,82,'+(t.alpha*fade*.58)+')';ctx.shadowColor='#39ff63';ctx.shadowBlur=j<3?4:2;
+          ctx.fillText(telemetryGlyph(t.text[source],source,now-j*70),t.x,y);
+        }
       }
     });
     ctx.shadowBlur=0;
