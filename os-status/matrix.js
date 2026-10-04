@@ -100,41 +100,27 @@
     ctx.shadowBlur=1;ctx.font='700 14px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
-      if(!reduced&&t.revealed>=t.text.length){
-        t.y+=t.speed*dt;
-        t.history.push({y:t.y,at:now});
-        // Real temporal persistence, sampled from previous positions like the rain's phosphor trail.
-        if(t.history.length>16)t.history.shift();
-      }
-      if(t.y>innerHeight+20){t.y=-t.text.length*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1;t.history=[]}
-      if(!reduced&&t.history.length>1){
-        for(let h=0;h<t.history.length-1;h++){
-          const sample=t.history[h],age=(now-sample.at)/1000;
-          if(age>.72)continue;
-          const trailAlpha=t.alpha*.55*(1-age/.72)*(h/t.history.length);
-          ctx.fillStyle='rgba(48,238,82,'+trailAlpha+')';ctx.shadowColor='#39ff63';ctx.shadowBlur=2;
-          for(let i=0;i<t.text.length;i++){
-            const y=sample.y+i*t.step;if(y<0||y>innerHeight)continue;
-            ctx.fillText(telemetryGlyph(t.text[i],i,sample.at),t.x,y);
-          }
-        }
-      }
-      ctx.shadowBlur=1;ctx.fillStyle='rgba(174,255,185,'+t.alpha+')';ctx.shadowColor='rgba(96,255,123,.22)';
-      for(let i=0;i<Math.min(t.text.length,Math.floor(t.revealed));i++){
-        const y=t.y+i*t.step;if(y<0||y>innerHeight)continue;
-        ctx.fillText(telemetryGlyph(t.text[i],i,now),t.x,y);
-      }
-      // Treat an invisible terminator after the message as the moving head of a native Matrix tail.
-      // It draws no glyph itself; the cells behind it reuse recent message glyphs and fade by distance.
-      if(!reduced&&t.revealed>=t.text.length){
-        const headY=t.y+t.text.length*t.step;
-        for(let j=1;j<=t.tailLen;j++){
-          const y=headY-j*t.step;if(y<0||y>innerHeight)continue;
-          const source=Math.max(0,t.text.length-j),fade=Math.pow(1-j/(t.tailLen+1),1.35);
-          ctx.font='400 14px "Matrix Code NFI",ui-monospace,SFMono-Regular,Menlo,monospace';
-          ctx.fillStyle='rgba(48,238,82,'+(t.alpha*fade*.58)+')';ctx.shadowColor='#39ff63';ctx.shadowBlur=j<3?4:2;
-          ctx.fillText(telemetryGlyph(t.text[source],source,now-j*70),t.x,y);
-        }
+      if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
+      if(t.y>innerHeight+20){t.y=-Math.max(t.text.length,18)*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1}
+
+      // Telemetry is now rendered as a genuine Matrix stream. The readable message occupies
+      // the leading cells; cells behind it use the exact same fade/head model as normal rain.
+      const visible=Math.min(t.text.length,Math.floor(t.revealed));
+      const streamLen=Math.max(t.text.length+12,26);
+      for(let j=streamLen-1;j>=0;j--){
+        const y=t.y+j*t.step;if(y<-16||y>innerHeight+16)continue;
+        const inMessage=j<visible;
+        if(j<t.text.length&&!inMessage)continue;
+        const tailIndex=Math.max(0,j-t.text.length+1);
+        const fade=inMessage?1:Math.pow(1-tailIndex/(streamLen-t.text.length+1),1.55);
+        const head=inMessage&&j===visible-1;
+        ctx.font=(head?'700 ':'400 ')+'14px "Matrix Code NFI",ui-monospace,SFMono-Regular,Menlo,monospace';
+        ctx.fillStyle=inMessage
+          ? (head?'rgba(215,255,221,'+(t.alpha*.96)+')':'rgba(174,255,185,'+(t.alpha*.90)+')')
+          : 'rgba(48,238,82,'+(t.alpha*fade*.72)+')';
+        ctx.shadowBlur=head?9:2;ctx.shadowColor='#39ff63';
+        const glyph=inMessage?telemetryGlyph(t.text[j],j,now):glyphs[mix32((j+1)*0x9e3779b1^Math.floor(now/120)^Math.floor(t.x*17))%glyphs.length];
+        ctx.fillText(glyph,t.x,y);
       }
     });
     ctx.shadowBlur=0;
