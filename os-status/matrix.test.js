@@ -21,13 +21,14 @@ const state={overall:'healthy',checks:{web:'healthy',api:'healthy',database:'fai
 test('telemetry is upright single glyphs in increasing y order, never horizontal phrases',()=>{
   const r=renderer(390,true);r.api.enter('CORE',state);r.draw(40);
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1),'horizontal phrase was drawn');
-  const real=r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,'));
+  const real=r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,'));
   assert.ok(real.length>0);
   const first=real.slice(0,13);
-  assert.equal(first.map(c=>c.text).join(''),'CORE::HEALTHY');
+  assert.ok(['CORE::HEALTHY','C0RE::HEALTHY'].includes(first.map(c=>c.text).join('')));
   assert.ok(first.every(c=>c.x===first[0].x));
   assert.ok(first.slice(1).every((c,i)=>c.y>first[i].y));
   assert.ok(new Set(real.map(c=>c.x)).size<=5,'telemetry should remain sparse');
+  assert.ok(real.some(c=>'4031058672'.includes(c.text)),'visible telemetry should contain an active lookalike mutation');
 });
 
 test('rain stays populated at the reduced cinematic density on mobile and desktop',()=>{
@@ -53,15 +54,15 @@ test('exit cancels rendering and reduced motion does not keep scheduling frames'
 
 test('live updates replace old telemetry and animated frames reveal downwards',()=>{
   const r=renderer();r.api.enter('CORE',state);r.draw(40);
-  const before=r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).length;
+  const before=r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).length;
   r.draw(180);
-  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).length>before);
+  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).length>before);
   r.api.setTelemetry('STAGING',{...state,overall:'failed'});r.draw(220);
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1));
   r.api.exit();assert.equal(r.frames.size,0);
   const still=renderer(390,true);still.api.enter('CORE',state);still.draw(40);
   still.api.setTelemetry('STAGING',{...state,overall:'failed'});still.draw(80);
-  const text=still.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).map(c=>c.text).join('');
+  const text=still.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).map(c=>c.text).join('');
   assert.ok(text.includes('::'),'updated telemetry remains structured');assert.ok(!text.includes('CORE::HEALTHY'));
 });
 
