@@ -12,9 +12,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:11,size:8,alpha:.20,speed:32,chance:.84},
+      {spacing:11,size:8,alpha:.20,speed:32,chance:.90},
       {spacing:14,size:10,alpha:.41,speed:62,chance:.90},
-      {spacing:19,size:13,alpha:.67,speed:96,chance:.93},
+      {spacing:19,size:13,alpha:.67,speed:96,chance:.98},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
