@@ -65,3 +65,6 @@ test('live updates replace old telemetry and animated frames reveal downwards',(
   const text=still.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).map(c=>c.text).join('');
   assert.ok(text.includes('STAGING::FAILED'));assert.ok(!text.includes('CORE::HEALTHY'));
 });
+
+assert.ok(source.includes("const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'}"));
+assert.ok(source.includes('telemetryGlyph(t.text[i],i,now)'));
