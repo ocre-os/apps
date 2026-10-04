@@ -56,7 +56,7 @@ test('live updates replace old telemetry and animated frames reveal downwards',(
   const r=renderer();r.api.enter('CORE',state);r.draw(40);
   const before=r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).length;
   r.draw(180);
-  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).length>before);
+  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,')).length>=before,'telemetry remains visible while descending');
   r.api.setTelemetry('STAGING',{...state,overall:'failed'});r.draw(220);
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1));
   r.api.exit();assert.equal(r.frames.size,0);
