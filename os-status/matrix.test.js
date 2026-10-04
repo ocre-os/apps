@@ -66,10 +66,12 @@ test('live updates replace old telemetry and animated frames reveal downwards',(
   assert.ok(text.includes('::'),'updated telemetry remains structured');assert.ok(!text.includes('CORE::HEALTHY'));
 });
 
-test('telemetry glyph mutation uses reversible visual lookalikes',()=>{
+test('telemetry glyph mutation uses reversible visual lookalikes in unified streams',()=>{
   const source=fs.readFileSync(__dirname+'/matrix.js','utf8');
   assert.ok(source.includes("P:'¶'"));assert.ok(source.includes("L:'|'"));assert.ok(source.includes("O:'0'"));
-  assert.ok(source.includes('telemetryGlyph(t.text[i],i,now)'));
+  assert.ok(source.includes('telemetryGlyph(t.text[j],j,now)'));
+  assert.ok(source.includes('streamLen=Math.max(t.text.length+12,26)'));
+  assert.ok(source.includes("ctx.shadowBlur=head?9:2;ctx.shadowColor='#39ff63'"));
 });
 
 test('decorative rain mutates cells independently instead of walking glyphs sequentially',()=>{
