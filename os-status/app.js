@@ -78,12 +78,20 @@
     renderChecks(state);
     if(window.OcreMatrix) window.OcreMatrix.setTelemetry(target.label,state);
   }
+  function loadingDots(){return '<span class="loading-dots" aria-label="Comprobando"><i></i><i></i><i></i></span>'}
   function renderChecking(){
     $('environmentName').textContent=targets[selected].label;
-    $('overallLabel').textContent='COMPROBANDO';
-    $('heroMessage').textContent='Consultando los puntos críticos de OCRE-OS.';
-    $('statusOrb').className='status-orb checking';
-    $('cycleState').textContent='Comprobación en curso…';
+    $('overallLabel').innerHTML=loadingDots();
+    $('heroMessage').innerHTML=loadingDots();
+    $('statusOrb').className='status-orb checking loading-placeholder';
+    $('latency').innerHTML=loadingDots();
+    $('checkedAt').innerHTML=loadingDots();
+    $('age').textContent='';
+    $('contractState').innerHTML=loadingDots();
+    $('version').innerHTML=loadingDots();
+    $('commit').textContent='';
+    $('cycleState').innerHTML=loadingDots();
+    $('checksGrid').innerHTML='';
   }
   async function check(){
     checking=true;$('refreshButton').classList.add('loading');renderChecking();

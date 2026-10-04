@@ -31,3 +31,11 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:#
   .top-actions button{min-height:42px;padding:6px 9px}
   .environment-bar{padding:7px 0 1px}
 }
+
+/* Ephemeral check state: intentionally content-free, so fast responses never look half-read. */
+.loading-dots{display:inline-flex;align-items:center;gap:.22em;min-height:1em;vertical-align:middle}
+.loading-dots i{display:block;width:.16em;height:.16em;min-width:3px;min-height:3px;border-radius:50%;background:currentColor;opacity:.24;animation:loading-dot 900ms ease-in-out infinite}
+.loading-dots i:nth-child(2){animation-delay:150ms}.loading-dots i:nth-child(3){animation-delay:300ms}
+.hero .loading-dots{font-size:.72em;color:#8da0a8}.hero-message .loading-dots{font-size:1.35em}.metrics .loading-dots{font-size:1em;color:#82949b}.cycle-state .loading-dots{font-size:1.15em}
+.status-orb.loading-placeholder{--orb-color:#718087;opacity:.36;filter:saturate(.35);animation:orb-breathe 2.4s ease-in-out infinite}
+@keyframes loading-dot{0%,100%{opacity:.18;transform:translateY(0)}45%{opacity:.9;transform:translateY(-.18em)}}
