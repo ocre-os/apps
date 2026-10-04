@@ -59,12 +59,12 @@
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
     });
   }
-  const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'};
+  const lookalikes={A:'4',E:'3',I:'1',L:'|',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2',P:'¶',C:'(',D:')',H:'#',X:'×',V:'\\/'};
   function telemetryGlyph(ch,index,now){
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
-    const phase=(Math.floor(now/520)+index*7)%31;
-    return phase===0?alt:ch;
+    const phase=(Math.floor(now/120)+index*7)%13;
+    return phase===0||phase===1?alt:ch;
   }
   function draw(now){
     if(!running)return;
