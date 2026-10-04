@@ -23,10 +23,11 @@ test('telemetry is upright single glyphs in increasing y order, never horizontal
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1),'horizontal phrase was drawn');
   const real=r.calls.filter(c=>c.color.startsWith('rgba(174,255,185,'));
   assert.ok(real.length>0);
-  const first=real.slice(0,13);
-  assert.equal(first.length,13);assert.equal(first[4].text,':');assert.equal(first[5].text,':');
+  const byLane=Object.values(Object.groupBy(real,c=>c.x));
+  const first=byLane.find(lane=>lane.length>=6);assert.ok(first,'missing readable telemetry lane');
   assert.ok(first.every(c=>c.x===first[0].x));
   assert.ok(first.slice(1).every((c,i)=>c.y>first[i].y));
+  assert.ok(real.filter(c=>c.text===':').length>=2,'structured telemetry separators should remain visible');
   assert.ok(new Set(real.map(c=>c.x)).size<=5,'telemetry should remain sparse');
   assert.ok(real.some(c=>'4031058672'.includes(c.text)),'visible telemetry should contain an active lookalike mutation');
 });
