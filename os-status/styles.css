@@ -22,3 +22,12 @@ footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);color:#
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition-duration:.01ms!important}.status-orb span{opacity:.5}}
 
 @media(max-width:760px){.hero-copy{padding-right:78px;box-sizing:border-box}.hero h1{max-width:100%;font-size:40px}.hero-message{max-width:100%}.orb-wrap{right:2px}}
+
+/* Mobile header density: preserve touch targets while removing excess vertical chrome. */
+@media(max-width:760px){
+  .shell{padding-top:6px}
+  .topbar{padding-bottom:6px;min-height:48px}
+  .brand-mark{width:32px;height:32px;border-radius:9px}
+  .top-actions button{min-height:42px;padding:6px 9px}
+  .environment-bar{padding:7px 0 1px}
+}
