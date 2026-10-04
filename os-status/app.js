@@ -19,6 +19,7 @@
   let timer = null;
   let checking = false;
   let lastState = null;
+  let orbCycleTimer = null;
   const $ = (id) => document.getElementById(id);
 
   function statusText(value){return ({healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',unknown:'DESCONOCIDO'})[value] || 'DESCONOCIDO'}
@@ -35,18 +36,30 @@
       return '<article class="check" data-status="'+value+'"><div class="check-head"><div><span class="check-label">CHECK / '+key.toUpperCase()+'</span><div class="check-name">'+name+'</div></div><span class="check-status">'+statusText(value)+'</span></div><p>'+desc+'</p></article>';
     }).join('');
   }
+  const orbColors={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',unknown:'#7d8b92'};
   function orbStates(state){
-    const priority=['failed','degraded','unknown'];
-    const present=new Set(Object.values(state.checks||{}));
-    return priority.filter(value=>value!==state.overall&&present.has(value)).slice(0,2);
+    const present=new Set([state.overall,...Object.values(state.checks||{})]);
+    return ['failed','degraded','unknown','healthy'].filter(value=>present.has(value));
+  }
+  function setOrbColor(orb,status,transitionMs=0){
+    orb.style.setProperty('--orb-color',orbColors[status]||orbColors.unknown);
+    orb.style.setProperty('--orb-transition',transitionMs+'ms');
+    orb.dataset.currentStatus=status;
   }
   function renderOrb(state){
-    const orb=$('statusOrb'),secondary=orbStates(state);
-    orb.className='status-orb '+state.overall+(secondary.length?' has-secondary':'');
-    orb.style.setProperty('--orb-main','var(--'+state.overall+')');
-    orb.style.setProperty('--orb-alt','var(--'+(secondary[0]||state.overall)+')');
-    orb.style.setProperty('--orb-alt2','var(--'+(secondary[1]||secondary[0]||state.overall)+')');
-    orb.dataset.states=[state.overall,...secondary].join(' ');
+    const orb=$('statusOrb'),states=orbStates(state);
+    clearTimeout(orbCycleTimer);
+    orb.className='status-orb '+state.overall+(states.length>1?' has-secondary':'');
+    orb.dataset.states=states.join(' ');
+    setOrbColor(orb,state.overall,0);
+    if(states.length<2)return;
+    let index=states.indexOf(state.overall);
+    const advance=()=>{
+      index=(index+1)%states.length;
+      setOrbColor(orb,states[index],2000);
+      orbCycleTimer=setTimeout(advance,3000);
+    };
+    orbCycleTimer=setTimeout(advance,1000);
   }
   function render(state){
     lastState=state;
@@ -92,5 +105,5 @@
   document.addEventListener('keydown',(e)=>{if(e.key==='Escape')window.OcreMatrix?.exit()});
   check();
   timer=setInterval(check,10000);
-  window.addEventListener('beforeunload',()=>clearInterval(timer));
+  window.addEventListener('beforeunload',()=>{clearInterval(timer);clearTimeout(orbCycleTimer)});
 })();
