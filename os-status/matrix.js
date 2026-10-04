@@ -12,9 +12,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:11,size:8,alpha:.20,speed:32,chance:.79},
-      {spacing:14,size:10,alpha:.41,speed:62,chance:.85},
-      {spacing:19,size:13,alpha:.67,speed:96,chance:.88},
+      {spacing:11,size:8,alpha:.20,speed:32,chance:.84},
+      {spacing:14,size:10,alpha:.41,speed:62,chance:.90},
+      {spacing:19,size:13,alpha:.67,speed:96,chance:.93},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
@@ -34,8 +34,10 @@
       environment+'::'+String(state.overall||'unknown').toUpperCase(),
       'WEB::'+String(c.web||'unknown').toUpperCase(),
       'API::'+String(c.api||'unknown').toUpperCase(),
-      'POSTGRES::'+String(c.database||'unknown').toUpperCase(),
+      'DB::'+String(c.database||'unknown').toUpperCase(),
       'SCHEMA::'+String(c.schema||'unknown').toUpperCase(),
+      'WORKER::'+String(c.worker||'unknown').toUpperCase(),
+      'PWA::'+String(c.pwa||'unknown').toUpperCase(),
       state.latencyMs==null?'LATENCY::UNKNOWN':'LATENCY::'+state.latencyMs+'ms',
       'OBSERVED::'+(state.checkedAt||'UNKNOWN'),
     ];
@@ -46,13 +48,14 @@
   function seedTelemetry(preservePosition=false){
     const fragments=realFragments(),h=innerHeight;
     const lanes=columns.filter(c=>c.size===10);
-    const count=Math.max(fragments.length,Math.floor(innerWidth/42));
+    // Only a few lanes carry readable telemetry; the rest remains cinematic rain.
+    const count=Math.min(fragments.length,Math.max(4,Math.floor(innerWidth/86)));
     const previous=preservePosition?telemetry:[];
     telemetry=Array.from({length:count},(_,i)=>{
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
       const text=fragments[i%fragments.length],step=12,old=previous[i];
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
-        alpha:.48+Math.random()*.28,speed:col?.speed??70,step,
+        alpha:.68+Math.random()*.18,speed:col?.speed??70,step,
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
     });
   }
@@ -82,7 +85,7 @@
         col.len=Math.max(9,Math.floor((innerHeight/col.size)*(.18+Math.random()*.34)));
       }
     });
-    ctx.shadowBlur=7;ctx.font='700 11px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.shadowBlur=8;ctx.font='700 12px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
       if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
