@@ -2,7 +2,13 @@
   const canvas=document.getElementById('matrixCanvas'),ctx=canvas.getContext('2d');
   const panel=document.getElementById('matrixMode');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const glyphs='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ¦:<>+=*';
+  const glyphs='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ¦:<>+=*#%&?';
+  const mix32=n=>{n=Math.imul(n^(n>>>16),0x45d9f3b);n=Math.imul(n^(n>>>16),0x45d9f3b);return (n^(n>>>16))>>>0};
+  function rainGlyph(col,j,now){
+    // Independent cell clocks + mixed hash: never walk the alphabet/string sequentially.
+    const tick=Math.floor(now/(105+((col.seed+j*13)%95)));
+    return glyphs[mix32(col.seed^Math.imul(j+1,0x9e3779b1)^tick)%glyphs.length];
+  }
   let columns=[],raf=0,running=false,last=0,telemetry=[],environment='CORE',state=null;
 
   function resize(){
@@ -24,7 +30,7 @@
         len:Math.max(9,Math.floor((h/layer.size)*(.18+Math.random()*.34))),
         alpha:layer.alpha+Math.random()*.14,size:layer.size,
         gap:layer.size*(1.02+Math.random()*.12),
-        mutate:Math.random()*1.8,
+        mutate:Math.random()*1.8,seed:(Math.random()*0xffffffff)>>>0,
       };
     }).filter(Boolean));
   }
@@ -79,11 +85,10 @@
         const y=col.y-j*col.gap;
         if(y<-col.size||y>innerHeight+col.size)continue;
         const fade=Math.pow(1-j/col.len,1.55),head=j===0;
-        ctx.font=(head?'700 ':'400 ')+col.size+'px ui-monospace,SFMono-Regular,Menlo,monospace';
+        ctx.font=(head?'700 ':'400 ')+col.size+'px "Matrix Code NFI",ui-monospace,SFMono-Regular,Menlo,monospace';
         ctx.fillStyle=head?'rgba(215,255,221,'+(col.alpha*.92)+')':'rgba(48,238,82,'+(col.alpha*fade*.72)+')';
         ctx.shadowBlur=head?9:2;ctx.shadowColor='#39ff63';
-        const seed=(j*17+Math.floor(col.mutate*3)+Math.floor(col.x))%glyphs.length;
-        ctx.fillText(glyphs[seed],col.x,y);
+        ctx.fillText(rainGlyph(col,j,now),col.x,y);
       }
       // Re-enter above the viewport at a random offset. No global cycle or synchronized reset.
       if(col.y-col.len*col.gap>innerHeight){
