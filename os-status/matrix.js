@@ -62,7 +62,7 @@
       const text=fragments[i%fragments.length],step=14,old=previous[i];
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
         alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
-        revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
+        revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length),history:old?.history??[]};
     });
   }
   const lookalikes={A:'4',E:'3',I:'1',L:'|',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2',P:'¶',C:'(',D:')',H:'#',X:'×',V:'\\/'};
@@ -100,18 +100,22 @@
     ctx.shadowBlur=1;ctx.font='700 14px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
-      if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
-      if(t.y>innerHeight+20){t.y=-t.text.length*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1}
-      // Match the decorative streams: readable telemetry gets a softer phosphor tail while it descends.
       if(!reduced&&t.revealed>=t.text.length){
-        const trailSteps=8;
-        for(let k=trailSteps;k>=1;k--){
-          // Trail follows above the descending text (opposite its direction of travel).
-          const trailAlpha=t.alpha*.38*(1-k/(trailSteps+1));
-          ctx.fillStyle='rgba(62,244,91,'+trailAlpha+')';ctx.shadowColor='rgba(57,255,99,.30)';ctx.shadowBlur=3;
+        t.y+=t.speed*dt;
+        t.history.push({y:t.y,at:now});
+        // Real temporal persistence, sampled from previous positions like the rain's phosphor trail.
+        if(t.history.length>16)t.history.shift();
+      }
+      if(t.y>innerHeight+20){t.y=-t.text.length*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1;t.history=[]}
+      if(!reduced&&t.history.length>1){
+        for(let h=0;h<t.history.length-1;h++){
+          const sample=t.history[h],age=(now-sample.at)/1000;
+          if(age>.72)continue;
+          const trailAlpha=t.alpha*.55*(1-age/.72)*(h/t.history.length);
+          ctx.fillStyle='rgba(48,238,82,'+trailAlpha+')';ctx.shadowColor='#39ff63';ctx.shadowBlur=2;
           for(let i=0;i<t.text.length;i++){
-            const y=t.y+i*t.step-k*6;if(y<0||y>innerHeight)continue;
-            ctx.fillText(telemetryGlyph(t.text[i],i,now-k*46),t.x,y);
+            const y=sample.y+i*t.step;if(y<0||y>innerHeight)continue;
+            ctx.fillText(telemetryGlyph(t.text[i],i,sample.at),t.x,y);
           }
         }
       }
