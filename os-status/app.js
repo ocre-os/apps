@@ -35,13 +35,26 @@
       return '<article class="check" data-status="'+value+'"><div class="check-head"><div><span class="check-label">CHECK / '+key.toUpperCase()+'</span><div class="check-name">'+name+'</div></div><span class="check-status">'+statusText(value)+'</span></div><p>'+desc+'</p></article>';
     }).join('');
   }
+  function orbStates(state){
+    const priority=['failed','degraded','unknown'];
+    const present=new Set(Object.values(state.checks||{}));
+    return priority.filter(value=>value!==state.overall&&present.has(value)).slice(0,2);
+  }
+  function renderOrb(state){
+    const orb=$('statusOrb'),secondary=orbStates(state);
+    orb.className='status-orb '+state.overall+(secondary.length?' has-secondary':'');
+    orb.style.setProperty('--orb-main','var(--'+state.overall+')');
+    orb.style.setProperty('--orb-alt','var(--'+(secondary[0]||state.overall)+')');
+    orb.style.setProperty('--orb-alt2','var(--'+(secondary[1]||secondary[0]||state.overall)+')');
+    orb.dataset.states=[state.overall,...secondary].join(' ');
+  }
   function render(state){
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
     $('overallLabel').textContent=statusText(state.overall);
     $('heroMessage').textContent=message(state);
-    $('statusOrb').className='status-orb '+state.overall;
+    renderOrb(state);
     $('latency').textContent=state.latencyMs==null?'—':state.latencyMs+' ms';
     $('checkedAt').textContent=formatTime(state.checkedAt);
     $('age').textContent='muestra actual';
