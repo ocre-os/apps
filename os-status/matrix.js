@@ -102,6 +102,18 @@
       if(!reduced)t.revealed+=t.speed*dt/t.step;
       if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
       if(t.y>innerHeight+20){t.y=-t.text.length*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1}
+      // Match the decorative streams: readable telemetry gets a softer phosphor tail while it descends.
+      if(!reduced&&t.revealed>=t.text.length){
+        const trailSteps=5;
+        for(let k=trailSteps;k>=1;k--){
+          const trailAlpha=t.alpha*.11*(1-k/(trailSteps+1));
+          ctx.fillStyle='rgba(78,235,101,'+trailAlpha+')';ctx.shadowColor='rgba(57,255,99,.12)';
+          for(let i=0;i<t.text.length;i++){
+            const y=t.y+i*t.step-k*3.2;if(y<0||y>innerHeight)continue;
+            ctx.fillText(telemetryGlyph(t.text[i],i,now-k*34),t.x,y);
+          }
+        }
+      }
       ctx.fillStyle='rgba(174,255,185,'+t.alpha+')';ctx.shadowColor='rgba(96,255,123,.22)';
       for(let i=0;i<Math.min(t.text.length,Math.floor(t.revealed));i++){
         const y=t.y+i*t.step;if(y<0||y>innerHeight)continue;
