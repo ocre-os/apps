@@ -12,8 +12,8 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:10,size:8,alpha:.20,speed:32,chance:.94},
-      {spacing:13,size:10,alpha:.41,speed:62,chance:.94},
+      {spacing:7,size:6,alpha:.075,speed:18,chance:.90},
+      {spacing:11,size:8,alpha:.18,speed:34,chance:.92},
       {spacing:18,size:13,alpha:.67,speed:96,chance:.99},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
@@ -47,7 +47,7 @@
   }
   function seedTelemetry(preservePosition=false){
     const fragments=realFragments(),h=innerHeight;
-    const lanes=columns.filter(c=>c.size===10);
+    const lanes=columns.filter(c=>c.size===8);
     // Only a few lanes carry readable telemetry; the rest remains cinematic rain.
     const count=Math.min(fragments.length,Math.max(4,Math.floor(innerWidth/86)));
     const previous=preservePosition?telemetry:[];
@@ -55,7 +55,7 @@
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
       const text=fragments[i%fragments.length],step=12,old=previous[i];
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
-        alpha:.68+Math.random()*.18,speed:col?.speed??70,step,
+        alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
     });
   }
@@ -63,8 +63,8 @@
   function telemetryGlyph(ch,index,now){
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
-    const phase=(Math.floor(now/240)+index*7)%17;
-    return phase===0||phase===1?alt:ch;
+    const phase=(Math.floor(now/520)+index*7)%31;
+    return phase===0?alt:ch;
   }
   function draw(now){
     if(!running)return;
@@ -92,12 +92,12 @@
         col.len=Math.max(9,Math.floor((innerHeight/col.size)*(.18+Math.random()*.34)));
       }
     });
-    ctx.shadowBlur=8;ctx.font='700 12px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.shadowBlur=1;ctx.font='700 12px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
       if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
       if(t.y>innerHeight+20){t.y=-t.text.length*t.step-Math.random()*80;t.text=realFragments()[(Math.random()*realFragments().length)|0];t.revealed=1}
-      ctx.fillStyle='rgba(135,255,151,'+t.alpha+')';ctx.shadowColor='#60ff7b';
+      ctx.fillStyle='rgba(174,255,185,'+t.alpha+')';ctx.shadowColor='rgba(96,255,123,.22)';
       for(let i=0;i<Math.min(t.text.length,Math.floor(t.revealed));i++){
         const y=t.y+i*t.step;if(y<0||y>innerHeight)continue;
         ctx.fillText(telemetryGlyph(t.text[i],i,now),t.x,y);
