@@ -2,7 +2,13 @@
   const canvas=document.getElementById('matrixCanvas'),ctx=canvas.getContext('2d');
   const panel=document.getElementById('matrixMode');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const glyphs='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ¦:<>+=*';
+  const glyphs='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ¦:<>+=*#%&?';
+  const mix32=n=>{n=Math.imul(n^(n>>>16),0x45d9f3b);n=Math.imul(n^(n>>>16),0x45d9f3b);return (n^(n>>>16))>>>0};
+  function rainGlyph(col,j,now){
+    // Independent cell clocks + mixed hash: never walk the alphabet/string sequentially.
+    const tick=Math.floor(now/(105+((col.seed+j*13)%95)));
+    return glyphs[mix32(col.seed^Math.imul(j+1,0x9e3779b1)^tick)%glyphs.length];
+  }
   let columns=[],raf=0,running=false,last=0,telemetry=[],environment='CORE',state=null;
 
   function resize(){
@@ -12,9 +18,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:7,size:6,alpha:.075,speed:18,chance:.90},
-      {spacing:11,size:8,alpha:.18,speed:34,chance:.92},
-      {spacing:18,size:13,alpha:.67,speed:96,chance:.99},
+      {spacing:15,size:15,alpha:.075,speed:18,chance:.90},
+      {spacing:17,size:16,alpha:.18,speed:34,chance:.92},
+      {spacing:21,size:17,alpha:.67,speed:96,chance:.99},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
@@ -24,7 +30,7 @@
         len:Math.max(9,Math.floor((h/layer.size)*(.18+Math.random()*.34))),
         alpha:layer.alpha+Math.random()*.14,size:layer.size,
         gap:layer.size*(1.02+Math.random()*.12),
-        mutate:Math.random()*1.8,
+        mutate:Math.random()*1.8,seed:(Math.random()*0xffffffff)>>>0,
       };
     }).filter(Boolean));
   }
@@ -47,24 +53,24 @@
   }
   function seedTelemetry(preservePosition=false){
     const fragments=realFragments(),h=innerHeight;
-    const lanes=columns.filter(c=>c.size===8);
+    const lanes=columns.filter(c=>c.size===16);
     // Only a few lanes carry readable telemetry; the rest remains cinematic rain.
     const count=Math.min(fragments.length,Math.max(4,Math.floor(innerWidth/86)));
     const previous=preservePosition?telemetry:[];
     telemetry=Array.from({length:count},(_,i)=>{
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
-      const text=fragments[i%fragments.length],step=12,old=previous[i];
+      const text=fragments[i%fragments.length],step=14,old=previous[i];
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
         alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
     });
   }
-  const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'};
+  const lookalikes={A:'4',E:'3',I:'1',L:'|',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2',P:'¶',C:'(',D:')',H:'#',X:'×',V:'\\/'};
   function telemetryGlyph(ch,index,now){
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
-    const phase=(Math.floor(now/520)+index*7)%31;
-    return phase===0?alt:ch;
+    const phase=(Math.floor(now/80)+index*7)%11;
+    return phase===0||phase===1||phase===2?alt:ch;
   }
   function draw(now){
     if(!running)return;
@@ -79,11 +85,10 @@
         const y=col.y-j*col.gap;
         if(y<-col.size||y>innerHeight+col.size)continue;
         const fade=Math.pow(1-j/col.len,1.55),head=j===0;
-        ctx.font=(head?'700 ':'400 ')+col.size+'px ui-monospace,SFMono-Regular,Menlo,monospace';
+        ctx.font=(head?'700 ':'400 ')+col.size+'px "Matrix Code NFI",ui-monospace,SFMono-Regular,Menlo,monospace';
         ctx.fillStyle=head?'rgba(215,255,221,'+(col.alpha*.92)+')':'rgba(48,238,82,'+(col.alpha*fade*.72)+')';
         ctx.shadowBlur=head?9:2;ctx.shadowColor='#39ff63';
-        const seed=(j*17+Math.floor(col.mutate*3)+Math.floor(col.x))%glyphs.length;
-        ctx.fillText(glyphs[seed],col.x,y);
+        ctx.fillText(rainGlyph(col,j,now),col.x,y);
       }
       // Re-enter above the viewport at a random offset. No global cycle or synchronized reset.
       if(col.y-col.len*col.gap>innerHeight){
@@ -92,7 +97,7 @@
         col.len=Math.max(9,Math.floor((innerHeight/col.size)*(.18+Math.random()*.34)));
       }
     });
-    ctx.shadowBlur=1;ctx.font='700 12px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.shadowBlur=1;ctx.font='700 14px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
       if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
