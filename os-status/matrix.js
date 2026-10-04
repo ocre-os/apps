@@ -18,8 +18,8 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:11,size:11,alpha:.075,speed:18,chance:.90},
-      {spacing:14,size:13,alpha:.18,speed:34,chance:.92},
+      {spacing:13,size:13,alpha:.075,speed:18,chance:.90},
+      {spacing:16,size:15,alpha:.18,speed:34,chance:.92},
       {spacing:20,size:16,alpha:.67,speed:96,chance:.99},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
@@ -53,7 +53,7 @@
   }
   function seedTelemetry(preservePosition=false){
     const fragments=realFragments(),h=innerHeight;
-    const lanes=columns.filter(c=>c.size===13);
+    const lanes=columns.filter(c=>c.size===15);
     // Only a few lanes carry readable telemetry; the rest remains cinematic rain.
     const count=Math.min(fragments.length,Math.max(4,Math.floor(innerWidth/86)));
     const previous=preservePosition?telemetry:[];
