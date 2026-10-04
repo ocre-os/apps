@@ -12,9 +12,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:11,size:8,alpha:.18,speed:32,chance:.72},
-      {spacing:14,size:10,alpha:.38,speed:62,chance:.78},
-      {spacing:19,size:13,alpha:.64,speed:96,chance:.82},
+      {spacing:11,size:8,alpha:.20,speed:32,chance:.79},
+      {spacing:14,size:10,alpha:.41,speed:62,chance:.85},
+      {spacing:19,size:13,alpha:.67,speed:96,chance:.88},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
@@ -70,7 +70,7 @@
         if(y<-col.size||y>innerHeight+col.size)continue;
         const fade=Math.pow(1-j/col.len,1.55),head=j===0;
         ctx.font=(head?'700 ':'400 ')+col.size+'px ui-monospace,SFMono-Regular,Menlo,monospace';
-        ctx.fillStyle=head?'rgba(215,255,221,'+(col.alpha*.92)+')':'rgba(48,238,82,'+(col.alpha*fade*.66)+')';
+        ctx.fillStyle=head?'rgba(215,255,221,'+(col.alpha*.92)+')':'rgba(48,238,82,'+(col.alpha*fade*.72)+')';
         ctx.shadowBlur=head?9:2;ctx.shadowColor='#39ff63';
         const seed=(j*17+Math.floor(col.mutate*3)+Math.floor(col.x))%glyphs.length;
         ctx.fillText(glyphs[seed],col.x,y);
