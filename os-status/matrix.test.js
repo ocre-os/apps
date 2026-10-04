@@ -21,7 +21,7 @@ const state={overall:'healthy',checks:{web:'healthy',api:'healthy',database:'fai
 test('telemetry is upright single glyphs in increasing y order, never horizontal phrases',()=>{
   const r=renderer(390,true);r.api.enter('CORE',state);r.draw(40);
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1),'horizontal phrase was drawn');
-  const real=r.calls.filter(c=>c.color.startsWith('rgba(145,255,160,'));
+  const real=r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,'));
   assert.ok(real.length>0);
   const first=real.slice(0,13);
   assert.equal(first.map(c=>c.text).join(''),'CORE::HEALTHY');
@@ -31,11 +31,11 @@ test('telemetry is upright single glyphs in increasing y order, never horizontal
   assert.ok(real.map(c=>c.text).join('').includes('LATENCY::123ms'));
 });
 
-test('rain is densely populated on mobile and desktop from the first frame',()=>{
+test('rain stays populated at the reduced cinematic density on mobile and desktop',()=>{
   for(const width of [390,1440]){
     const r=renderer(width,true);r.api.enter('CORE',state);r.draw(40);
-    assert.ok(r.calls.length>width*5,`${width}: sparse first frame`);
-    assert.ok(new Set(r.calls.map(c=>c.x)).size>width/5,'missing overlapping columns');
+    assert.ok(r.calls.length>width*2,`${width}: sparse first frame`);
+    assert.ok(new Set(r.calls.map(c=>c.x)).size>width/8,'missing layered columns');
   }
 });
 
@@ -54,14 +54,14 @@ test('exit cancels rendering and reduced motion does not keep scheduling frames'
 
 test('live updates replace old telemetry and animated frames reveal downwards',()=>{
   const r=renderer();r.api.enter('CORE',state);r.draw(40);
-  const before=r.calls.filter(c=>c.color.startsWith('rgba(145,255,160,')).length;
+  const before=r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).length;
   r.draw(180);
-  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(145,255,160,')).length>before);
+  assert.ok(r.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).length>before);
   r.api.setTelemetry('STAGING',{...state,overall:'failed'});r.draw(220);
   assert.ok(r.calls.every(c=>Array.from(c.text).length===1));
   r.api.exit();assert.equal(r.frames.size,0);
   const still=renderer(390,true);still.api.enter('CORE',state);still.draw(40);
   still.api.setTelemetry('STAGING',{...state,overall:'failed'});still.draw(80);
-  const text=still.calls.filter(c=>c.color.startsWith('rgba(145,255,160,')).map(c=>c.text).join('');
+  const text=still.calls.filter(c=>c.color.startsWith('rgba(135,255,151,')).map(c=>c.text).join('');
   assert.ok(text.includes('STAGING::FAILED'));assert.ok(!text.includes('CORE::HEALTHY'));
 });
