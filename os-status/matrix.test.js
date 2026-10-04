@@ -66,5 +66,8 @@ test('live updates replace old telemetry and animated frames reveal downwards',(
   assert.ok(text.includes('STAGING::FAILED'));assert.ok(!text.includes('CORE::HEALTHY'));
 });
 
-assert.ok(source.includes("const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'}"));
-assert.ok(source.includes('telemetryGlyph(t.text[i],i,now)'));
+test('telemetry glyph mutation uses reversible visual lookalikes',()=>{
+  const source=fs.readFileSync(__dirname+'/matrix.js','utf8');
+  assert.ok(source.includes("const lookalikes={A:'4',E:'3',I:'1',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2'}"));
+  assert.ok(source.includes('telemetryGlyph(t.text[i],i,now)'));
+});
