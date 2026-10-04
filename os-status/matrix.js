@@ -18,9 +18,9 @@
     // Sparse overlapping depths: roughly two thirds of the previous stream count.
     // Each stream gets its own phase, length and speed so the rain never moves as a grid.
     columns=[
-      {spacing:9,size:9,alpha:.075,speed:18,chance:.90},
-      {spacing:12,size:11,alpha:.18,speed:34,chance:.92},
-      {spacing:18,size:14,alpha:.67,speed:96,chance:.99},
+      {spacing:11,size:11,alpha:.075,speed:18,chance:.90},
+      {spacing:14,size:13,alpha:.18,speed:34,chance:.92},
+      {spacing:20,size:16,alpha:.67,speed:96,chance:.99},
     ].flatMap((layer,depth)=>Array.from({length:Math.ceil(w/layer.spacing)},(_,i)=>{
       if(Math.random()>layer.chance)return null;
       return {
@@ -53,13 +53,13 @@
   }
   function seedTelemetry(preservePosition=false){
     const fragments=realFragments(),h=innerHeight;
-    const lanes=columns.filter(c=>c.size===11);
+    const lanes=columns.filter(c=>c.size===13);
     // Only a few lanes carry readable telemetry; the rest remains cinematic rain.
     const count=Math.min(fragments.length,Math.max(4,Math.floor(innerWidth/86)));
     const previous=preservePosition?telemetry:[];
     telemetry=Array.from({length:count},(_,i)=>{
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
-      const text=fragments[i%fragments.length],step=12,old=previous[i];
+      const text=fragments[i%fragments.length],step=14,old=previous[i];
       return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
         alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length)};
@@ -97,7 +97,7 @@
         col.len=Math.max(9,Math.floor((innerHeight/col.size)*(.18+Math.random()*.34)));
       }
     });
-    ctx.shadowBlur=1;ctx.font='700 12px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.shadowBlur=1;ctx.font='700 14px ui-monospace,SFMono-Regular,Menlo,monospace';
     telemetry.forEach(t=>{
       if(!reduced)t.revealed+=t.speed*dt/t.step;
       if(!reduced&&t.revealed>=t.text.length)t.y+=t.speed*dt;
