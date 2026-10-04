@@ -27,7 +27,7 @@ test('telemetry is upright single glyphs in increasing y order, never horizontal
   assert.equal(first.map(c=>c.text).join(''),'CORE::HEALTHY');
   assert.ok(first.every(c=>c.x===first[0].x));
   assert.ok(first.slice(1).every((c,i)=>c.y>first[i].y));
-  assert.ok(real.map(c=>c.text).join('').includes('POSTGRES::FAILED'));
+  assert.ok(real.map(c=>c.text).join('').includes('DB::FAILED'));
   assert.ok(real.map(c=>c.text).join('').includes('LATENCY::123ms'));
 });
 
