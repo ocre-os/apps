@@ -5,16 +5,17 @@ const fs = require('node:fs');
 
 function renderer(width=390, reduced=false) {
   const calls=[], frames=new Map(), events={}; let id=0, clears=0;
-  const ctx={setTransform(){},clearRect(){clears++},fillRect(){},fillText(text,x,y){calls.push({text,x,y,color:this.fillStyle})}};
-  const canvas={style:{},getContext:()=>ctx}, panel={hidden:true}, body={style:{}};
+  const ctx={setTransform(){},clearRect(){clears++},fillRect(){calls.length=0},fillText(text,x,y){calls.push({text,x,y,color:this.fillStyle})}};
+  const canvas={style:{},getContext:()=>ctx}, panel={hidden:true}, body={style:{overflow:''}};
   const math=Object.create(Math); math.random=()=>.5;
-  const sandbox={document:{body,getElementById:id=>id==='matrixCanvas'?canvas:panel},window:{},
+  const focusable={focus(){}};
+  const sandbox={document:{body,activeElement:focusable,querySelector:()=>({inert:false}),addEventListener:(name,fn)=>events[name]=fn,getElementById:id=>id==='matrixCanvas'?canvas:id==='matrixExit'?focusable:panel},window:{},
     innerWidth:width,innerHeight:844,devicePixelRatio:2,Math:math,performance:{now:()=>0},
-    matchMedia:()=>({matches:reduced}),addEventListener:(name,fn)=>events[name]=fn,
+    matchMedia:()=>({matches:reduced,addEventListener(){}}),addEventListener:(name,fn)=>events[name]=fn,
     requestAnimationFrame:fn=>{frames.set(++id,fn);return id},cancelAnimationFrame:id=>frames.delete(id)};
   vm.runInNewContext(fs.readFileSync(__dirname+'/matrix.js','utf8'),sandbox);
   return {api:sandbox.window.OcreMatrix,calls,frames,panel,body,events,get clears(){return clears},
-    draw(now){calls.length=0;const [key,fn]=frames.entries().next().value;frames.delete(key);fn(now)}};
+    draw(now){if(!frames.size)return;calls.length=0;const [key,fn]=frames.entries().next().value;frames.delete(key);fn(now)}};
 }
 const state={overall:'healthy',checks:{web:'healthy',api:'healthy',database:'failed',schema:'unknown'},latencyMs:123,checkedAt:'2026-10-03T12:00:00Z'};
 
@@ -28,7 +29,7 @@ test('telemetry is upright single glyphs in increasing y order, never horizontal
   assert.ok(first.every(c=>c.x===first[0].x));
   assert.ok(first.slice(1).every((c,i)=>c.y>first[i].y));
   assert.ok(new Set(real.map(c=>c.x)).size<=5,'telemetry should remain sparse');
-  assert.ok(real.some(c=>'4031058672'.includes(c.text)),'visible telemetry should contain an active lookalike mutation');
+  assert.ok(real.map(c=>c.text).join('').includes('CORE::HEALTHY'),'reduced-motion telemetry must remain literal and stable');
 });
 
 test('rain stays populated at the reduced cinematic density on mobile and desktop',()=>{

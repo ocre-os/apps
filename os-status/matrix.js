@@ -1,7 +1,10 @@
 (() => {
   const canvas=document.getElementById('matrixCanvas'),ctx=canvas.getContext('2d');
   const panel=document.getElementById('matrixMode');
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motion=matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced=motion.matches;
+  const exitButton=document.getElementById('matrixExit'),shell=document.querySelector('.shell');
+  let previousFocus=null,previousOverflow='',previousInert=false;
   const glyphs='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ¦:<>+=*#%&?';
   const mix32=n=>{n=Math.imul(n^(n>>>16),0x45d9f3b);n=Math.imul(n^(n>>>16),0x45d9f3b);return (n^(n>>>16))>>>0};
   function rainGlyph(col,j,now){
@@ -60,13 +63,17 @@
     telemetry=Array.from({length:count},(_,i)=>{
       const col=lanes.length?lanes[Math.floor(i*lanes.length/count)]:columns[i%Math.max(columns.length,1)];
       const text=fragments[i%fragments.length],step=14,old=previous[i],tailLen=10;
-      return {text,x:col?.x??i*42,y:old?.y??Math.random()*Math.max(0,h-text.length*step),
+      const animatedY=old?.y??Math.random()*Math.max(0,h-text.length*step);
+      // A stopped stream must remain visible, including after a long animated session.
+      const y=reduced?Math.max(0,Math.min(animatedY,Math.max(0,h-text.length*step))):animatedY;
+      return {text,x:col?.x??i*42,y,
         alpha:.86+Math.random()*.10,speed:30+Math.random()*10,step,
         revealed:reduced?text.length:Math.min(old?.revealed??(1+Math.floor(Math.random()*text.length)),text.length),history:old?.history??[],tailLen};
     });
   }
   const lookalikes={A:'4',E:'3',I:'1',L:'|',O:'0',S:'5',B:'8',G:'6',T:'7',Z:'2',P:'¶',C:'(',D:')',H:'#',X:'×',V:'\\/'};
   function telemetryGlyph(ch,index,now){
+    if(reduced)return ch;
     const alt=lookalikes[ch.toUpperCase()];
     if(!alt)return ch;
     const phase=(Math.floor(now/80)+index*7)%11;
@@ -77,7 +84,7 @@
     if(!reduced&&now-last<40){raf=requestAnimationFrame(draw);return}
     const dt=Math.min((now-last||40)/1000,.1);last=now;
     // A translucent veil leaves short phosphor trails without ever clearing the frame.
-    ctx.fillStyle='rgba(0,3,0,'+(reduced?'.46':'.19')+')';ctx.fillRect(0,0,innerWidth,innerHeight);
+    ctx.fillStyle='rgba(0,3,0,'+(reduced?'1':'.19')+')';ctx.fillRect(0,0,innerWidth,innerHeight);
     ctx.textBaseline='top';
     columns.forEach(col=>{
       if(!reduced){col.y+=col.speed*dt;col.mutate+=dt}
@@ -141,19 +148,41 @@
     if(!reduced)raf=requestAnimationFrame(draw);
   }
   function enter(env,current){
-    environment=env||environment;state=current||state;panel.hidden=false;document.body.style.overflow='hidden';
-    resize();seedTelemetry();ctx.clearRect(0,0,innerWidth,innerHeight);running=true;last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(draw);
+    if(!running){
+      previousFocus=document.activeElement;previousOverflow=document.body.style.overflow;
+      previousInert=shell?.inert||false;
+    }
+    environment=env||environment;state=current||null;panel.hidden=false;document.body.style.overflow='hidden';
+    if(shell)shell.inert=true;
+    exitButton.focus();
+    resize();seedTelemetry();ctx.clearRect(0,0,innerWidth,innerHeight);running=true;last=performance.now();cancelAnimationFrame(raf);
+    if(reduced)draw(last);else raf=requestAnimationFrame(draw);
   }
-  function exit(){running=false;cancelAnimationFrame(raf);panel.hidden=true;document.body.style.overflow=''}
+  function exit(){
+    if(!running)return;
+    running=false;cancelAnimationFrame(raf);panel.hidden=true;
+    document.body.style.overflow=previousOverflow;
+    if(shell)shell.inert=previousInert;
+    previousFocus?.focus();
+  }
   function setTelemetry(env,current){
     const previous=state?.overall;environment=env;state=current;
     if(running){
-      // Keep the existing rain and positions alive: status polling must never flash/reset Matrix.
+      // Polling preserves the published renderer's rain positions and native trails.
       seedTelemetry(true);
       if(previous&&previous!==current?.overall)columns.forEach(c=>{c.alpha=Math.min(.82,c.alpha+.05)});
-      if(reduced){cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}
+      if(reduced)draw(performance.now());
     }
   }
-  addEventListener('resize',()=>{if(running){resize();seedTelemetry();if(reduced){cancelAnimationFrame(raf);raf=requestAnimationFrame(draw)}}});
+  addEventListener('resize',()=>{if(running){resize();seedTelemetry();if(reduced)draw(performance.now())}});
+  document.addEventListener('keydown',(event)=>{
+    if(running&&event.key==='Tab'){event.preventDefault();exitButton.focus()}
+  });
+  motion.addEventListener('change',(event)=>{
+    reduced=event.matches;
+    if(!running)return;
+    cancelAnimationFrame(raf);last=performance.now();
+    if(reduced){seedTelemetry(true);draw(last)}else raf=requestAnimationFrame(draw);
+  });
   window.OcreMatrix={enter,exit,setTelemetry};
 })();
