@@ -7,6 +7,7 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import time
+import urllib.error
 import urllib.request
 
 def runtime_state(turns, pending, alive):
@@ -111,6 +112,14 @@ def snapshot(home,collector):
       "claude":{"state":claude_wsl(collector),"observed_at":stamp},
       "codex":{"state":codex_windows(home),"observed_at":stamp}}}
 
+USER_AGENT="OCRE-Agent-Monitor/1"
+
+def build_request(url,data,token):
+    # A named client is required: the edge blocks the default Python user agent.
+    return urllib.request.Request(url,data=data,method="POST",headers={
+        "Content-Type":"application/json","User-Agent":USER_AGENT,
+        "Authorization":"Bearer "+token})
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--codex-home",type=Path,default=Path(os.environ["USERPROFILE"])/".codex")
@@ -128,9 +137,9 @@ def main():
             tmp=a.output.with_suffix(".tmp");tmp.write_bytes(data);tmp.replace(a.output)
         if a.url:
             try:
-                req=urllib.request.Request(a.url,data=data,method="POST",headers={
-                  "Content-Type":"application/json","Authorization":"Bearer "+a.token_file.read_text().strip()})
+                req=build_request(a.url,data,a.token_file.read_text().strip())
                 with urllib.request.urlopen(req,timeout=3) as response:response.read(1024)
+            except urllib.error.HTTPError as error:print(f"Monitor: envio rechazado (HTTP {error.code}).",flush=True)
             except (OSError,ValueError):print("Monitor: envio no disponible.",flush=True)
         else:print(data.decode(),flush=True)
         if not a.watch:return

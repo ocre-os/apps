@@ -1,7 +1,7 @@
 import unittest
 import json
 import sqlite3
-from native_monitor import runtime_state, inspect_projection
+from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -67,5 +67,12 @@ class ProjectionTests(unittest.TestCase):
     def test_inprogress_command_in_latest_turn_is_working(self):
         items=[("B","commandExecution",{"status":"inProgress"})]
         self.assertEqual(self.state(items),"working")
+
+class RequestTests(unittest.TestCase):
+    def test_request_names_the_client_and_carries_token(self):
+        req=build_request("https://staging.ocre.mx/api/agents",b"{}","secret")
+        self.assertEqual(req.get_header("User-agent"),USER_AGENT)
+        self.assertEqual(req.get_header("Authorization"),"Bearer secret")
+        self.assertEqual(req.get_method(),"POST")
 
 if __name__=="__main__":unittest.main()
