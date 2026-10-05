@@ -102,7 +102,8 @@
   }
   function selectEnv(env){
     if(!targets[env]||env===selected)return;
-    selected=env;
+    selected=env;lastState=null;
+    window.OcreMatrix?.setTelemetry(targets[env].label,null);
     document.querySelectorAll('.env').forEach(b=>b.classList.toggle('active',b.dataset.env===env));
     check();
   }
