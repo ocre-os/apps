@@ -36,11 +36,23 @@ class SourceTests(unittest.TestCase):
         db.execute("INSERT INTO thread_items VALUES('a','x','requestUserInput',?,990000,990000,NULL)",
                    (json.dumps({"status":"inProgress"}),))
         self.assertEqual(inspect_projection(db,1000),"working")
-    def test_stale_live_claude_record_is_unknown(self):
+    def claude_record(self,tmp,status,offset_seconds):
+        identity=Path(f"/proc/{os.getpid()}/stat").read_text().rsplit(")",1)[1].split()[19]
+        Path(tmp,"session.json").write_text(json.dumps({
+            "pid":os.getpid(),"procStart":identity,"status":status,
+            "updatedAt":int((time.time()+offset_seconds)*1000)}))
+    def test_long_idle_live_claude_record_is_waiting(self):
         with tempfile.TemporaryDirectory() as tmp:
-            identity=Path(f"/proc/{os.getpid()}/stat").read_text().rsplit(")",1)[1].split()[19]
-            Path(tmp,"session.json").write_text(json.dumps({
-                "pid":os.getpid(),"procStart":identity,"status":"idle","updatedAt":int((time.time()-60)*1000)}))
+            self.claude_record(tmp,"idle",-3600)
+            with tempfile.TemporaryDirectory() as empty_proc:
+                self.assertEqual(read_claude(Path(tmp),Path(empty_proc)),"waiting")
+    def test_long_busy_live_claude_record_is_working(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.claude_record(tmp,"busy",-600)
+            self.assertEqual(read_claude(Path(tmp)),"working")
+    def test_future_claude_record_is_unknown(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.claude_record(tmp,"idle",3600)
             self.assertEqual(read_claude(Path(tmp)),"unknown")
     def test_missing_process_identity_is_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:

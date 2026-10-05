@@ -56,7 +56,7 @@ def process_alive(pid, identity=None):
     except (OSError,ValueError,IndexError):
         return False
 
-def read_claude(directory):
+def read_claude(directory, proc_root=Path("/proc")):
     states=[]
     complete=True
     try:
@@ -68,15 +68,18 @@ def read_claude(directory):
                     continue
                 age=time.time()-float(session["updatedAt"])/1000
                 alive=process_alive(session["pid"],session["procStart"])
-                states.append("unknown" if alive and (age>30 or age< -5) else claude_state(session,alive))
+                # Claude rewrites this record only when its status changes, so a
+                # long turn or idle spell is old but valid; identity-verified
+                # liveness is the freshness proof. Future dates are not trusted.
+                states.append("unknown" if alive and age< -5 else claude_state(session,alive))
             except (OSError,ValueError,KeyError):
                 complete=False
         # CLI inventory is essential: absent records cannot prove availability.
-        pids=[p.name for p in Path("/proc").iterdir() if p.name.isdigit()]
+        pids=[p.name for p in proc_root.iterdir() if p.name.isdigit()]
         found=[]
         for pid in pids:
             try:
-                if Path(f"/proc/{pid}/comm").read_text().strip()=="claude":
+                if (proc_root/pid/"comm").read_text().strip()=="claude":
                     found.append(pid)
             except FileNotFoundError:
                 pass
