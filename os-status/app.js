@@ -19,6 +19,7 @@
   let timer = null;
   let checking = false;
   let lastState = null;
+  let orbCycleTimer = null;
   const $ = (id) => document.getElementById(id);
 
   function statusText(value){return ({healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',unknown:'DESCONOCIDO'})[value] || 'DESCONOCIDO'}
@@ -35,13 +36,38 @@
       return '<article class="check" data-status="'+value+'"><div class="check-head"><div><span class="check-label">CHECK / '+key.toUpperCase()+'</span><div class="check-name">'+name+'</div></div><span class="check-status">'+statusText(value)+'</span></div><p>'+desc+'</p></article>';
     }).join('');
   }
+  const orbColors={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',unknown:'#7d8b92'};
+  function orbStates(state){
+    const present=new Set([state.overall,...Object.values(state.checks||{})]);
+    return ['failed','degraded','unknown','healthy'].filter(value=>present.has(value));
+  }
+  function setOrbColor(orb,status,transitionMs=0){
+    orb.style.setProperty('--orb-color',orbColors[status]||orbColors.unknown);
+    orb.style.setProperty('--orb-transition',transitionMs+'ms');
+    orb.dataset.currentStatus=status;
+  }
+  function renderOrb(state){
+    const orb=$('statusOrb'),states=orbStates(state);
+    clearTimeout(orbCycleTimer);
+    orb.className='status-orb '+state.overall+(states.length>1?' has-secondary':'');
+    orb.dataset.states=states.join(' ');
+    setOrbColor(orb,state.overall,0);
+    if(states.length<2)return;
+    let index=states.indexOf(state.overall);
+    const advance=()=>{
+      index=(index+1)%states.length;
+      setOrbColor(orb,states[index],2000);
+      orbCycleTimer=setTimeout(advance,3000);
+    };
+    orbCycleTimer=setTimeout(advance,1000);
+  }
   function render(state){
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
     $('overallLabel').textContent=statusText(state.overall);
     $('heroMessage').textContent=message(state);
-    $('statusOrb').className='status-orb '+state.overall;
+    renderOrb(state);
     $('latency').textContent=state.latencyMs==null?'—':state.latencyMs+' ms';
     $('checkedAt').textContent=formatTime(state.checkedAt);
     $('age').textContent='muestra actual';
@@ -52,12 +78,20 @@
     renderChecks(state);
     if(window.OcreMatrix) window.OcreMatrix.setTelemetry(target.label,state);
   }
+  function loadingDots(){return '<span class="loading-dots" aria-label="Comprobando"><i></i><i></i><i></i></span>'}
   function renderChecking(){
     $('environmentName').textContent=targets[selected].label;
-    $('overallLabel').textContent='COMPROBANDO';
-    $('heroMessage').textContent='Consultando los puntos críticos de OCRE-OS.';
-    $('statusOrb').className='status-orb checking';
-    $('cycleState').textContent='Comprobación en curso…';
+    $('overallLabel').innerHTML=loadingDots();
+    $('heroMessage').innerHTML=loadingDots();
+    $('statusOrb').className='status-orb checking loading-placeholder';
+    $('latency').innerHTML=loadingDots();
+    $('checkedAt').innerHTML=loadingDots();
+    $('age').textContent='';
+    $('contractState').innerHTML=loadingDots();
+    $('version').innerHTML=loadingDots();
+    $('commit').textContent='';
+    $('cycleState').innerHTML=loadingDots();
+    $('checksGrid').innerHTML='';
   }
   async function check(){
     checking=true;$('refreshButton').classList.add('loading');renderChecking();
@@ -68,7 +102,8 @@
   }
   function selectEnv(env){
     if(!targets[env]||env===selected)return;
-    selected=env;
+    selected=env;lastState=null;
+    window.OcreMatrix?.setTelemetry(targets[env].label,null);
     document.querySelectorAll('.env').forEach(b=>b.classList.toggle('active',b.dataset.env===env));
     check();
   }
@@ -79,5 +114,5 @@
   document.addEventListener('keydown',(e)=>{if(e.key==='Escape')window.OcreMatrix?.exit()});
   check();
   timer=setInterval(check,10000);
-  window.addEventListener('beforeunload',()=>clearInterval(timer));
+  window.addEventListener('beforeunload',()=>{clearInterval(timer);clearTimeout(orbCycleTimer)});
 })();
