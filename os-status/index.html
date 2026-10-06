@@ -45,6 +45,15 @@
       <article><span>VERSIÓN</span><strong id="version">—</strong><small id="commit">commit no informado</small></article>
     </section>
 
+    <section class="agents-panel" aria-labelledby="agents-heading">
+      <div class="section-heading"><div><p>AGENTES / THINKPAD</p><h2 id="agents-heading">Actividad de los agentes</h2></div><span id="agents-time" class="cycle-state">Sin muestra reciente</span></div>
+      <div class="agents-grid">
+        <article id="agent-claude" class="agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
+        <article id="agent-codex" class="agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
+      </div>
+      <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
+    </section>
+
     <section class="diagnostics">
       <div class="section-heading">
         <div><p>DIAGNÓSTICO</p><h2>Puntos de comprobación</h2></div>
@@ -79,5 +88,7 @@
   <script src="status.js"></script>
   <script src="matrix.js?v=20261005-accessibility01"></script>
   <script src="app.js?v=20261005-accessibility01"></script>
+  <script src="agents.js"></script>
+  <script src="agents-ui.js"></script>
 </body>
 </html>
