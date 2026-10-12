@@ -40,6 +40,12 @@ Muestra ejemplificativa, **no una medición real**. Los estados son `available`,
 - **Cambios posteriores:** ejecutar QA/CI y publicar sólo tras evidencia; poner tareas en espera si no hay cuota y reconsultarlas al llegar `retry_at`. Nunca hacer failover infinito.
 - **Desconocido:** no equivale a agotado ni a disponible. La admisión sigue `agent-quota.py` y reglas OCRE-024/039/048; la vista de Status es informativa, no una nueva autoridad de ejecución.
 
+## Adaptadores incrementales existentes
+
+`os-status/quota-adapters.js` incorpora funciones puras `codex(snapshot, nowSeconds)` y `claude(snapshot, nowSeconds)` que aceptan **únicamente** resultados agregados de `scripts/agent-quota.py` en Core; no leen credenciales, cuentas ni API privadas. Rechazan lecturas incompletas, caducadas o ventanas de reset vencidas, y usan la ventana más restrictiva para porcentaje restante. Son utilidades de transformación **para un futuro agregador servidor**, no se cargan en el navegador ni convierten el sitio público en lector de cuotas. `codex.blocked` significa agotado aunque resten porcentajes. No se presupone que las fuentes de Claude sean eventos recientes fiables hasta recibir ambas ventanas normalizadas.
+
+**Pendiente una decisión de privacidad/acceso** antes de conectar estas funciones a un endpoint real. El PR no constituye autorización para exponer estas métricas en la URL pública.
+
 ## Entrega pendiente
 
 1. Resolver privacidad y autenticación del agregador: separar detalle privado para coordinación y un resumen público aprobado.
