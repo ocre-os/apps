@@ -54,6 +54,15 @@
       <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
     </section>
 
+    <section class="quotas-panel" aria-labelledby="quotas-heading">
+      <div class="section-heading">
+        <div><p>RECURSOS DE DESARROLLO</p><h2 id="quotas-heading">Cuotas y disponibilidad</h2></div>
+        <span id="quotas-time" class="cycle-state">Sin muestra verificable</span>
+      </div>
+      <div id="quotas-grid" class="quotas-grid" aria-live="polite"></div>
+      <p class="agents-note">Disponibilidad de cuota ≠ sesión autenticada, capacidad de ejecución ni autorización. Datos ausentes o vencidos se muestran como desconocidos; nunca se estiman porcentajes.</p>
+    </section>
+
     <section class="diagnostics">
       <div class="section-heading">
         <div><p>DIAGNÓSTICO</p><h2>Puntos de comprobación</h2></div>
@@ -90,5 +99,7 @@
   <script src="app.js?v=20261005-accessibility01"></script>
   <script src="agents.js"></script>
   <script src="agents-ui.js"></script>
+  <script src="quotas.js"></script>
+  <script src="quotas-ui.js"></script>
 </body>
 </html>
