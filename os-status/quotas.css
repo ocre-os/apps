@@ -1,0 +1,11 @@
+.quotas-panel{padding:42px 0 8px}
+.quotas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.quota-card{padding:17px;border:1px solid var(--line);background:var(--panel);border-radius:12px;min-height:155px}
+.quota-card small{font-size:10px;color:var(--muted);letter-spacing:.08em}
+.quota-card h3{margin:9px 0;font-size:15px;font-weight:700}
+.quota-state{color:var(--unknown);font-weight:750;margin:6px 0}
+.quota-card[data-state="available"] .quota-state{color:var(--healthy)}
+.quota-card[data-state="limited"] .quota-state{color:var(--degraded)}
+.quota-card[data-state="exhausted"] .quota-state{color:var(--failed)}
+.quota-detail{font-size:11px;line-height:1.5;color:#9ab0b8;overflow-wrap:anywhere}
+@media(max-width:520px){.quotas-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quota-card{padding:12px;min-height:155px}}
