@@ -3,23 +3,38 @@
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.OcreQuotas=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
- const providers=['claude','codex','work'];
+ const services=[
+  ['chatgpt','ChatGPT','IA'],['work','ChatGPT Work','IA'],
+  ['codex','Codex','IA'],['claude','Claude','IA'],
+  ['github_actions','GitHub Actions','Desarrollo'],
+  ['desktop_commander','Desktop Commander','Desarrollo'],
+  ['openai_api','OpenAI API','API / Infraestructura'],
+  ['anthropic_api','Anthropic API','API / Infraestructura'],
+  ['mcp_tunnel','MCP Tunnel','API / Infraestructura'],
+  ['hosting','Hosting / VPS','API / Infraestructura']
+ ];
+ const valid=new Set(['available','limited','exhausted','unknown']);
+ const sources=new Set(['api','cli','event','admin','manual']);
+ const empty=()=>({state:'unknown',remaining:null,unit:null,resetsAt:null,source:null});
  function normalize(payload={},now=Date.now()){
-  const empty=()=>({state:'unknown',remaining:null,resetsAt:null});
-  const result={observedAt:null,providers:Object.fromEntries(providers.map(p=>[p,empty()]))};
-  if(!payload||payload.contract!=='ocre-ai-quotas-v1')return result;
+  const result={observedAt:null,services:Object.fromEntries(services.map(([id])=>[id,empty()]))};
+  if(!payload||payload.contract!=='ocre-resource-quotas-v1')return result;
   const observed=Date.parse(payload.observed_at);
   if(!Number.isFinite(observed)||now-observed>300000||observed-now>5000)return result;
   result.observedAt=payload.observed_at;
-  for(const name of providers){
-   const source=payload.providers?.[name];
-   if(!source||!['available','limited','exhausted','unknown'].includes(source.state))continue;
-   const remaining=source.remaining_percentage;
-   const reset=Date.parse(source.resets_at);
-   result.providers[name]={
-    state:source.state,
-    remaining:Number.isFinite(remaining)&&remaining>=0&&remaining<=100?remaining:null,
-    resetsAt:Number.isFinite(reset)&&reset>now?source.resets_at:null
+  for(const [id] of services){
+   const x=payload.services?.[id];
+   if(!x||!valid.has(x.state))continue;
+   const sample=Date.parse(x.observed_at||payload.observed_at);
+   if(!Number.isFinite(sample)||now-sample>300000||sample-now>5000)continue;
+   const remaining=x.remaining;
+   const reset=Date.parse(x.resets_at);
+   result.services[id]={
+    state:x.state,
+    remaining:typeof remaining==='number'&&Number.isFinite(remaining)&&remaining>=0?remaining:null,
+    unit:['percent','minutes','requests','credits','usd'].includes(x.unit)?x.unit:null,
+    resetsAt:Number.isFinite(reset)&&reset>now?x.resets_at:null,
+    source:sources.has(x.source)?x.source:null
    };
   }
   return result;
@@ -37,8 +52,8 @@
     const response=await this.fetcher(url,{signal:controller.signal,cache:'no-store'});
     state=response.ok?normalize(await response.json()):normalize();
    }catch{state=normalize();}finally{clearTimeout(timer);}
-   return {cycle,state,latest:cycle===this.cycle};
+   return {state,latest:cycle===this.cycle};
   }
  }
- return {normalize,QuotaMonitor};
+ return {services,normalize,QuotaMonitor};
 });
