@@ -4,11 +4,31 @@
  else root.OcreAgents=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  const states=new Set(['working','waiting','available','unknown']);
+ const capacityStates=new Set(['available','exhausted','temporarily_unavailable','unknown']);
+ const capacityReasons=new Set(['quota','permission','service','runner_offline','timeout','not_checked','none']);
+ const capacityProviders=['claude','codex','desktop_commander','github_actions'];
+ function normalizeCapacity(payload={},now=Date.now()){
+  const result={};
+  for(const provider of capacityProviders)result[provider]={availability:'unknown',reason:'not_checked',observedAt:null};
+  if(payload.contract!=='ocre-executor-capacity-v1'||!payload.executors||typeof payload.executors!=='object')return result;
+  for(const provider of capacityProviders){
+   const entry=payload.executors[provider];
+   if(!entry||typeof entry!=='object')continue;
+   const observed=Date.parse(entry.observed_at);
+   if(!Number.isFinite(observed)||now-observed>300000||now-observed< -5000)continue;
+   const availability=capacityStates.has(entry.availability)?entry.availability:'unknown';
+   result[provider]={availability,reason:capacityReasons.has(entry.reason)?entry.reason:'not_checked',
+                     observedAt:entry.observed_at};
+  }
+  return result;
+ }
+
  function normalize(payload={},now=Date.now()){
-  const result={states:{claude:'unknown',codex:'unknown'},observedAt:null,reasons:{}};
+  const result={states:{claude:'unknown',codex:'unknown'},observedAt:null,reasons:{},capacity:normalizeCapacity()};
   const time=Date.parse(payload.observed_at);
   if(payload.contract!=='ocre-agents-v1'||!Number.isFinite(time)||now-time>30000||now-time< -5000)return result;
   result.observedAt=payload.observed_at;
+  result.capacity=normalizeCapacity(payload.capacity,now);
   for(const name of ['claude','codex']){
    const agent=payload.agents?.[name];
    if(agent?.observed_at&&Date.parse(agent.observed_at)!==time)continue;
@@ -34,5 +54,5 @@
    return state;
   }
  }
- return {normalize,AgentMonitor};
+ return {normalize,AgentMonitor,normalizeCapacity,capacityProviders};
 });
