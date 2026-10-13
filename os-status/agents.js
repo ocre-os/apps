@@ -24,10 +24,11 @@
  }
 
  function normalize(payload={},now=Date.now()){
-  const result={states:{claude:'unknown',codex:'unknown'},observedAt:null,reasons:{}};
+  const result={states:{claude:'unknown',codex:'unknown'},observedAt:null,reasons:{},capacity:normalizeCapacity()};
   const time=Date.parse(payload.observed_at);
   if(payload.contract!=='ocre-agents-v1'||!Number.isFinite(time)||now-time>30000||now-time< -5000)return result;
   result.observedAt=payload.observed_at;
+  result.capacity=normalizeCapacity(payload.capacity,now);
   for(const name of ['claude','codex']){
    const agent=payload.agents?.[name];
    if(agent?.observed_at&&Date.parse(agent.observed_at)!==time)continue;
