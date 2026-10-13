@@ -52,6 +52,14 @@
         <article id="agent-codex" class="agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
       </div>
       <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
+      <div class="section-heading"><div><p>CAPACIDAD / EJECUTORES</p><h2>Cuotas y disponibilidad</h2></div><span id="capacity-time" class="cycle-state">Sin telemetría validada</span></div>
+      <div class="agents-grid" aria-label="Disponibilidad de ejecutores">
+        <article id="capacity-claude" class="agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state">Sin información</p><p class="agent-detail">No autoriza ejecución</p></article>
+        <article id="capacity-codex" class="agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state">Sin información</p><p class="agent-detail">No autoriza ejecución</p></article>
+        <article id="capacity-desktop_commander" class="agent-card" data-state="unknown"><h3>Desktop Commander</h3><p class="agent-state">Sin información</p><p class="agent-detail">No autoriza ejecución</p></article>
+        <article id="capacity-github_actions" class="agent-card" data-state="unknown"><h3>GitHub Actions</h3><p class="agent-state">Sin información</p><p class="agent-detail">No autoriza ejecución</p></article>
+      </div>
+      <p class="agents-note">Disponibilidad y actividad son independientes. Datos ausentes o caducados nunca significan cuota libre.</p>
     </section>
 
     <section class="diagnostics">
@@ -88,7 +96,7 @@
   <script src="status.js"></script>
   <script src="matrix.js?v=20261005-accessibility01"></script>
   <script src="app.js?v=20261005-accessibility01"></script>
-  <script src="agents.js"></script>
-  <script src="agents-ui.js"></script>
+  <script src="agents.js?v=20261013-capacity01"></script>
+  <script src="agents-ui.js?v=20261013-capacity01"></script>
 </body>
 </html>
