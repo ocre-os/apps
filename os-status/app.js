@@ -1,5 +1,5 @@
 (() => {
-  const { StatusMonitor } = window.OcreStatus;
+  const { StatusMonitor, applyStaleness } = window.OcreStatus;
   const targets = {
     core: { label: 'CORE', url: 'https://os.ocre.mx/api/status' },
     staging: { label: 'STAGING', url: 'https://staging.ocre.mx/api/status' },
@@ -19,27 +19,42 @@
   let timer = null;
   let checking = false;
   let lastState = null;
+  let rawState = null;
   let orbCycleTimer = null;
   const $ = (id) => document.getElementById(id);
 
-  function statusText(value){return ({healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',unknown:'DESCONOCIDO'})[value] || 'DESCONOCIDO'}
+  function statusText(value){return ({healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',stale:'OBSOLETO',unknown:'DESCONOCIDO'})[value] || 'DESCONOCIDO'}
   function message(state){
     if(state.overall==='healthy') return 'Los puntos críticos observables responden correctamente.';
     if(state.overall==='degraded') return 'OCRE-OS responde, pero uno o más servicios secundarios requieren atención.';
     if(state.overall==='failed') return 'Hay una interrupción crítica que puede impedir el acceso normal a OCRE-OS.';
+    if(state.overall==='stale') return 'La última muestra es antigua: no se confirma el estado actual del entorno.';
     return 'No existe evidencia suficiente para confirmar el estado completo del entorno.';
+  }
+  const reasonText={
+    no_heartbeat:'Aún no ha reportado actividad.',invalid_heartbeat:'Su señal de actividad no es válida.',clock_skew:'El reloj del servicio no coincide.',
+    heartbeat_stale:'Su última señal de actividad es antigua.',heartbeat_expired:'Dejó de reportar actividad.',
+    not_writable:'No se puede escribir en el almacenamiento.',read_mismatch:'La lectura de prueba no coincide.',
+    no_channel_configured:'No hay canal de salida configurado.',backlog:'Hay notificaciones pendientes vencidas.',query_failed:'No se pudo consultar la cola.',
+    schema_not_ready:'Esperando un esquema válido.',database_unavailable:'Base de datos no disponible.',
+    not_configured:'Sondeo no configurado.',manifest_invalid:'El manifiesto no es válido.',manifest_unavailable:'No hay manifiesto.',
+    service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.'};
+  function checkDetail(state,key,value,desc){
+    if(value==='stale') return 'Muestra antigua; sin evidencia vigente.';
+    const reason=state.reasons&&state.reasons[key];
+    return reason&&reasonText[reason]&&value!=='healthy'?reasonText[reason]:desc;
   }
   function formatTime(iso){if(!iso)return '—';return new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(iso))}
   function renderChecks(state){
     $('checksGrid').innerHTML = Object.entries(checkMeta).map(([key,[name,desc]])=>{
       const value=state.checks[key]||'unknown';
-      return '<article class="check" data-status="'+value+'"><div class="check-head"><div><span class="check-label">CHECK / '+key.toUpperCase()+'</span><div class="check-name">'+name+'</div></div><span class="check-status">'+statusText(value)+'</span></div><p>'+desc+'</p></article>';
+      return '<article class="check" data-status="'+value+'"><div class="check-head"><div><span class="check-label">CHECK / '+key.toUpperCase()+'</span><div class="check-name">'+name+'</div></div><span class="check-status">'+statusText(value)+'</span></div><p>'+checkDetail(state,key,value,desc)+'</p></article>';
     }).join('');
   }
-  const orbColors={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',unknown:'#7d8b92'};
+  const orbColors={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',stale:'#b78cff',unknown:'#7d8b92'};
   function orbStates(state){
     const present=new Set([state.overall,...Object.values(state.checks||{})]);
-    return ['failed','degraded','unknown','healthy'].filter(value=>present.has(value));
+    return ['failed','degraded','stale','unknown','healthy'].filter(value=>present.has(value));
   }
   function setOrbColor(orb,status,transitionMs=0){
     orb.style.setProperty('--orb-color',orbColors[status]||orbColors.unknown);
@@ -62,6 +77,8 @@
     orbCycleTimer=setTimeout(advance,1000);
   }
   function render(state){
+    rawState=state;
+    state=applyStaleness(state);
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
@@ -102,7 +119,7 @@
   }
   function selectEnv(env){
     if(!targets[env]||env===selected)return;
-    selected=env;lastState=null;
+    selected=env;lastState=null;rawState=null;
     window.OcreMatrix?.setTelemetry(targets[env].label,null);
     document.querySelectorAll('.env').forEach(b=>b.classList.toggle('active',b.dataset.env===env));
     check();
@@ -114,5 +131,7 @@
   document.addEventListener('keydown',(e)=>{if(e.key==='Escape')window.OcreMatrix?.exit()});
   check();
   timer=setInterval(check,10000);
-  window.addEventListener('beforeunload',()=>{clearInterval(timer);clearTimeout(orbCycleTimer)});
+  // Si el sondeo se detiene, la muestra envejece sola y pasa a OBSOLETO sin intervención.
+  const expiry=setInterval(()=>{if(rawState&&!checking){const next=applyStaleness(rawState);if(next.stale&&!(lastState&&lastState.stale))render(rawState);}},1000);
+  window.addEventListener('beforeunload',()=>{clearInterval(timer);clearInterval(expiry);clearTimeout(orbCycleTimer)});
 })();
