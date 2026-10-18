@@ -3,6 +3,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -199,13 +200,36 @@ def run_json(command, timeout, cwd=None):
     except (OSError,ValueError,subprocess.SubprocessError):
         return None
 
+EVENT_KINDS=("deploy_ok","deploy_failed","monitor_stale","monitor_recovered")
+EVENT_REF=re.compile(r"^[0-9a-f]{7,40}$")
+
+def read_events(path, limit=5):
+    """Últimos eventos del registro local; se valida de nuevo cada línea (tipo fijo, hora y revisión hexadecimal)."""
+    events=[]
+    try:
+        lines=Path(path).read_text(encoding="utf-8").splitlines()[-200:]
+    except OSError:
+        return []
+    for line in lines:
+        try:
+            item=json.loads(line)
+            kind,at,ref=item.get("kind"),item.get("at"),item.get("ref")
+            dt.datetime.strptime(at,"%Y-%m-%dT%H:%M:%SZ")
+            if kind not in EVENT_KINDS or (ref is not None and not (isinstance(ref,str) and EVENT_REF.fullmatch(ref))):
+                continue
+            events.append({"at":at,"kind":kind,"ref":ref})
+        except (ValueError,TypeError,AttributeError):
+            continue
+    return sorted(events,key=lambda e:e["at"],reverse=True)[:limit]
+
 def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_json, now=None,
-                   ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex")):
+                   ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex"),
+                   events_path=Path("/home/ocre/.ocre-os/status-events.jsonl")):
     # `ocre-agent` resuelve el registro desde el repositorio actual: se ejecuta dentro del checkout de core,
     # no en el directorio heredado de Windows (por eso las reservas salían ilegibles bajo wsl.exe).
     """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
     slots=slots_by_provider(runner([str(ocre_agent),"status"],15,core_scripts.parent))
-    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now)}
+    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path)}
     if with_quota:
         result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result
