@@ -92,10 +92,32 @@ def read_claude(directory, proc_root=Path("/proc")):
         complete=False
     return aggregate(states,complete)
 
-def read_codex(directory):
-    # Rollouts prove a running turn only while events are recent. They do not
-    # provide a complete inventory of approvals/background tasks, so we never
-    # infer waiting/availability from a completed transcript.
+def codex_processes(proc_root=Path("/proc")):
+    """PIDs of running Codex CLI processes, or None when the inventory cannot be read."""
+    try:
+        found=[]
+        for entry in proc_root.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                if (entry/"comm").read_text().strip()=="codex":
+                    found.append(entry.name)
+            except OSError:
+                continue
+        return found
+    except OSError:
+        return None
+
+def read_codex(directory, proc_root=Path("/proc")):
+    # Absence of any codex process proves there is no session: available.
+    # With a process alive, rollouts prove a running turn only while events are
+    # recent. They do not provide a complete inventory of approvals/background
+    # tasks, so we never infer waiting from a completed transcript.
+    alive=codex_processes(proc_root)
+    if alive is None:
+        return "unknown"
+    if not alive:
+        return "available"
     states=[]
     now=time.time()
     try:
@@ -116,11 +138,11 @@ def read_codex(directory):
         return "unknown"
     return aggregate(states,False)
 
-def collect_snapshot(claude_directory, codex_directory):
+def collect_snapshot(claude_directory, codex_directory, proc_root=Path("/proc")):
     stamp=utc_now()
     return {"contract":"ocre-agents-v1","observed_at":stamp,"agents":{
-        "claude":{"state":read_claude(claude_directory),"observed_at":stamp},
-        "codex":{"state":read_codex(codex_directory),"observed_at":stamp}}}
+        "claude":{"state":read_claude(claude_directory,proc_root),"observed_at":stamp},
+        "codex":{"state":read_codex(codex_directory,proc_root),"observed_at":stamp}}}
 
 def main():
     parser=argparse.ArgumentParser()
