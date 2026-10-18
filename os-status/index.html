@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#070b0d">
   <title>OCRE OS Status</title>
-  <link rel="stylesheet" href="styles.css?v=20261004-loading01">
+  <link rel="stylesheet" href="styles.css?v=20261018-ocre058f1">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -27,61 +27,60 @@
       <span id="livePulse" class="live-pill"><i></i> LIVE</span>
     </section>
 
-    <section class="hero" aria-live="polite">
-      <div class="hero-copy">
+    <section class="verdict" aria-live="polite">
+      <div class="orb-wrap" aria-hidden="true">
+        <div id="statusOrb" class="status-orb checking"><span></span></div>
+      </div>
+      <div class="verdict-copy">
         <p id="eyebrow" class="eyebrow">ESTADO DEL SISTEMA</p>
         <h1><span id="environmentName">CORE</span> <em>·</em> <span id="overallLabel">COMPROBANDO</span></h1>
         <p id="heroMessage" class="hero-message">Consultando los puntos críticos de OCRE-OS.</p>
       </div>
-      <div class="orb-wrap" aria-hidden="true">
-        <div id="statusOrb" class="status-orb checking"><span></span></div>
-      </div>
     </section>
 
-    <section class="metrics" aria-label="Métricas esenciales">
-      <article><span>LATENCIA</span><strong id="latency">—</strong><small>observador → plataforma</small></article>
-      <article><span>ÚLTIMA COMPROBACIÓN</span><strong id="checkedAt">—</strong><small id="age">sin muestra</small></article>
-      <article><span>CONTRATO</span><strong id="contractState">—</strong><small>ocre-status-v1</small></article>
-      <article><span>VERSIÓN</span><strong id="version">—</strong><small id="commit">commit no informado</small></article>
+    <section class="domains" aria-label="Dominios">
+      <button class="domain" data-domain="platform" data-tone="unknown" type="button"><span class="domain-name">PLATAFORMA</span><strong class="domain-state" id="domPlatformState">—</strong><span class="domain-text" id="domPlatformText"></span></button>
+      <button class="domain" data-domain="agents" data-tone="unknown" type="button"><span class="domain-name">AGENTES</span><strong class="domain-state" id="domAgentsState">—</strong><span class="domain-text" id="domAgentsText"></span></button>
+      <button class="domain" data-domain="dev" data-tone="unknown" type="button"><span class="domain-name">DESARROLLO</span><strong class="domain-state" id="domDevState">—</strong><span class="domain-text" id="domDevText"></span></button>
     </section>
 
-    <section class="agents-panel" aria-labelledby="agents-heading">
-      <div class="section-heading"><div><p>AGENTES / THINKPAD</p><h2 id="agents-heading">Actividad de los agentes</h2></div><span id="agents-time" class="cycle-state">Sin muestra reciente</span></div>
-      <div class="agents-grid">
-        <article id="agent-claude" class="agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
-        <article id="agent-codex" class="agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
-      </div>
-      <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
-    </section>
-    <section class="agents-panel xpress-panel" aria-labelledby="xpress-heading">
-      <div class="section-heading"><div><p>XPRESS / COORDINACIÓN</p><h2 id="xpress-heading">Bandeja de solicitudes</h2></div></div>
-      <article id="xpress-card" class="agent-card" data-state="unknown"><h3>Entregas</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p><p id="xpress-counts" class="agent-detail"></p></article>
-      <p class="agents-note">Solo contadores; no muestra mensajes ni identificadores.</p>
+    <section class="attention" aria-labelledby="attentionHeading">
+      <h2 id="attentionHeading">Requiere atención <span id="attentionCount" class="count"></span></h2>
+      <ul id="attentionList" class="attention-list"></ul>
     </section>
 
-    <section class="diagnostics">
-      <div class="section-heading">
-        <div><p>DIAGNÓSTICO</p><h2>Puntos de comprobación</h2></div>
-        <span id="cycleState" class="cycle-state">Preparando ciclo</span>
-      </div>
-      <div id="checksGrid" class="checks-grid"></div>
+    <section class="details" aria-label="Detalle">
+      <details id="det-platform" class="detail">
+        <summary><span>Plataforma</span><small id="cycleState" class="cycle-state">Preparando ciclo</small></summary>
+        <div id="checksGrid" class="rows"></div>
+      </details>
+      <details id="det-agents" class="detail agents-panel">
+        <summary><span>Agentes</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>
+        <div class="rows">
+          <article id="agent-claude" class="row agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
+          <article id="agent-codex" class="row agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
+        </div>
+        <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
+      </details>
+      <details id="det-dev" class="detail">
+        <summary><span>Desarrollo</span><small class="cycle-state">Versión, latencia y Xpress</small></summary>
+        <div class="rows">
+          <article class="row meta"><h3>Versión</h3><p><strong id="version">—</strong> <small id="commit">commit no informado</small></p></article>
+          <article class="row meta"><h3>Latencia</h3><p><strong id="latency">—</strong> <small>observador → plataforma</small></p></article>
+          <article class="row meta"><h3>Última comprobación</h3><p><strong id="checkedAt">—</strong> <small id="age">sin muestra</small></p></article>
+          <article class="row meta"><h3>Contrato</h3><p><strong id="contractState">—</strong> <small>ocre-status-v1</small></p></article>
+          <article id="xpress-card" class="row agent-card" data-state="unknown"><h3>Bandeja Xpress</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p><p id="xpress-counts" class="agent-detail"></p></article>
+        </div>
+        <p class="agents-note">Solo contadores de Xpress; no muestra mensajes ni identificadores. Validaciones, respaldos y cuota de agentes llegan en fases posteriores.</p>
+      </details>
     </section>
 
-    <section class="explain">
-      <div class="section-heading">
-        <div><p>LECTURA</p><h2>Cómo interpretar este estado</h2></div>
-      </div>
+    <footer>
       <div class="legend">
-        <span><i class="dot healthy"></i> Operativo</span>
-        <span><i class="dot degraded"></i> Degradado</span>
-        <span><i class="dot failed"></i> Falla</span>
-        <span><i class="dot stale"></i> Obsoleto</span>
-        <span><i class="dot unknown"></i> Desconocido</span>
+        <span><i class="dot healthy"></i> Operativo</span><span><i class="dot degraded"></i> Degradado</span><span><i class="dot failed"></i> Falla</span><span><i class="dot stale"></i> Obsoleto</span><span><i class="dot unknown"></i> Sin señal</span><span><i class="dot neutral"></i> No configurado</span>
       </div>
-      <p>Los datos se consultan en vivo desde este navegador. Si OCRE-OS no puede responder, los componentes internos se muestran como desconocidos en lugar de asumir una falla. «Obsoleto» significa que la última muestra es antigua o no avanza: no se confirma el estado actual.</p>
-    </section>
-
-    <footer>OCRE Tecnologías · diagnóstico público sanitizado · sin información de clientes</footer>
+      OCRE Tecnologías · diagnóstico público sanitizado · sin información de clientes
+    </footer>
   </main>
 
   <section id="matrixMode" class="matrix-mode" hidden role="dialog" aria-modal="true" aria-label="Matrix Mode">
@@ -92,8 +91,9 @@
   </section>
 
   <script src="status.js"></script>
+  <script src="view.js"></script>
   <script src="matrix.js?v=20261005-accessibility01"></script>
-  <script src="app.js?v=20261005-accessibility01"></script>
+  <script src="app.js?v=20261018-ocre058f1"></script>
   <script src="agents.js"></script>
   <script src="agents-ui.js"></script>
   <script src="xpress.js"></script>
