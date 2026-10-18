@@ -192,20 +192,22 @@ def quota_view(snapshot, now=None):
             "remaining_percent":remaining,
             "resets_at":dt.datetime.fromtimestamp(tight["resets_at"],dt.timezone.utc).isoformat().replace("+00:00","Z")}
 
-def run_json(command, timeout):
+def run_json(command, timeout, cwd=None):
     try:
-        result=subprocess.run(command,capture_output=True,text=True,timeout=timeout,check=True)
+        result=subprocess.run(command,capture_output=True,text=True,timeout=timeout,check=True,cwd=cwd)
         return json.loads(result.stdout)
     except (OSError,ValueError,subprocess.SubprocessError):
         return None
 
 def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_json, now=None,
                    ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex")):
+    # `ocre-agent` resuelve el registro desde el repositorio actual: se ejecuta dentro del checkout de core,
+    # no en el directorio heredado de Windows (por eso las reservas salían ilegibles bajo wsl.exe).
     """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
-    slots=slots_by_provider(runner([str(ocre_agent),"status"],15))
+    slots=slots_by_provider(runner([str(ocre_agent),"status"],15,core_scripts.parent))
     result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now)}
     if with_quota:
-        result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25),now)
+        result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result
 
 def collect_snapshot(claude_directory, codex_directory, proc_root=Path("/proc")):
