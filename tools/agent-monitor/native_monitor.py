@@ -2,6 +2,7 @@
 import argparse
 import datetime as dt
 import json
+import re
 import os
 from pathlib import Path
 import sqlite3
@@ -210,6 +211,19 @@ class DevenvSource:
             self.quota,self.quota_at=data["codex_quota"],now
         return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now)
 
+def clean_validations(raw):
+    """Revalida los resultados antes de publicarlos: hora UTC, revisión hexadecimal y pass/fail; todo lo demás se descarta."""
+    out=[]
+    for item in raw if isinstance(raw,list) else []:
+        if not isinstance(item,dict) or item.get("result") not in ("pass","fail") or not (isinstance(item.get("sha"),str) and re.fullmatch(r"[0-9a-f]{7,40}",item["sha"])):
+            continue
+        try:
+            dt.datetime.strptime(item.get("at"),"%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError,TypeError):
+            continue
+        out.append({"at":item["at"],"sha":item["sha"],"result":item["result"]})
+    return out[:3]
+
 def build_devenv_sample(data, codex_turn, codex_quota, now):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
@@ -221,7 +235,7 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
-        "events":events}
+        "events":events,"validations":clean_validations(data.get("validations"))}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""

@@ -100,3 +100,33 @@ test('event wording, short revision and relative time',()=>{
  assert.equal(D.ago(new Date(at).toISOString(),at+5*60000),'hace 5 min');
  assert.equal(D.ago(new Date(at).toISOString(),at+3*86400000),'hace 3 d');
 });
+const hoursAgo=(n)=>new Date(at-n*3600000).toISOString();
+const withValidations=(...items)=>({...sample(),validations:items});
+const val=(sha,result,h=1)=>({at:hoursAgo(h),sha,result});
+test('validations keep only a valid time, hexadecimal revision and pass/fail',()=>{
+ const out=D.normalize(withValidations({...val('6a3aaf9','pass'),log:'/home/ocre/x'},val('main','pass'),val('6a3aaf9','ok'),{at:'ayer',sha:'6a3aaf9',result:'pass'}),at);
+ assert.deepEqual(out.validations,[val('6a3aaf9','pass')]);
+ assert.doesNotMatch(JSON.stringify(out),/home|log/);
+ assert.deepEqual(D.normalize(sample(),at).validations,[]);
+ assert.equal(D.normalize(withValidations(val('a1b2c3d','pass',1),val('a1b2c3e','pass',2),val('a1b2c3f','pass',3),val('a1b2c30','pass',4)),at).validations.length,3);
+});
+test('the deployed revision is validated, failed, or has no validation; no data is never success',()=>{
+ const view=(items,sha)=>D.validationView(D.normalize(withValidations(...items),at),sha,at);
+ assert.equal(view([val('6a3aaf9f35ae','pass')],'6a3aaf9').tone,'healthy');
+ assert.equal(view([val('6a3aaf9','fail')],'6a3aaf9f35ae').tone,'failed');
+ const other=view([val('0c43fcc','pass')],'6a3aaf9');
+ assert.equal(other.tone,'neutral');assert.equal(other.label,'Sin validar');assert.match(other.text,/6a3aaf9.*no tiene validación/);
+ assert.equal(view([],'6a3aaf9').label,'Sin señal');
+ assert.equal(D.validationView(D.normalize(),'6a3aaf9',at).label,'Sin señal');
+ assert.equal(view([val('0c43fcc','pass')],null).tone,'neutral');
+});
+test('only a failed validation of the deployed revision asks for attention',()=>{
+ const state=(items)=>D.normalize(withValidations(...items),at);
+ assert.equal(D.validationIssues(state([val('6a3aaf9','fail')]),'6a3aaf9',at).length,1);
+ assert.equal(D.validationIssues(state([val('0c43fcc','fail')]),'6a3aaf9',at).length,0);
+ assert.equal(D.validationIssues(state([val('6a3aaf9','pass')]),'6a3aaf9',at).length,0);
+ assert.equal(D.validationIssues(D.normalize(),'6a3aaf9',at).length,0);
+ const issues=D.validationIssues(state([val('6a3aaf9','fail')]),'6a3aaf9',at);
+ const items=V.attention(null,null,null,{validationIssues:issues});
+ assert.equal(items[0].domain,'Desarrollo');assert.equal(V.devView(null,null,issues).label,'Atención');
+});
