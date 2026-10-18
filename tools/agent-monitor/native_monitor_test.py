@@ -175,7 +175,7 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(sample["contract"],"ocre-devenv-v1")
         self.assertEqual(sample["agents"]["claude"],{"slots_used":1,"turn_seconds":720,"quota":{"state":"unknown","remaining_percent":None,"resets_at":None}})
         self.assertEqual(sample["agents"]["codex"],{"slots_used":0,"turn_seconds":45,"quota":self.QUOTA})
-        self.assertEqual(set(sample),{"contract","observed_at","agents"})
+        self.assertEqual(set(sample),{"contract","observed_at","agents","events"})
     def test_unreadable_reservations_publish_nothing(self):
         for data in (None,{},{"slots":None},{"slots":{"claude":1}},{"slots":{"claude":"1","codex":0}}):
             self.assertIsNone(build_devenv_sample(data,None,None,1_800_000_000))
@@ -194,6 +194,13 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(asked,[True,False,True])
         self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
         self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
+    def test_events_ride_in_the_sample_and_are_capped_at_five(self):
+        events=[{"at":f"2026-10-18T12:0{i}:00Z","kind":"deploy_ok","ref":"3d84e77"} for i in range(7)]
+        sample=build_devenv_sample({**self.DATA,"events":events,},None,None,1_800_000_000)
+        self.assertEqual(len(sample["events"]),5)
+        self.assertEqual(build_devenv_sample(self.DATA,None,None,1_800_000_000)["events"],[])
+        junk=build_devenv_sample({**self.DATA,"events":["x",3,None,{"at":"a","kind":"deploy_ok","ref":None}]},None,None,1_800_000_000)
+        self.assertEqual(len(junk["events"]),1)
     def test_only_the_two_approved_endpoints_exist(self):
         self.assertEqual(APPROVED_URLS,("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv"))
 

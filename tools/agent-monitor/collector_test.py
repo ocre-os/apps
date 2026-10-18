@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 from collector import claude_state, codex_state, aggregate, codex_processes, read_codex
-from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv
+from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events
 import json
 class ActivityTests(unittest.TestCase):
     def test_claude_idle_is_waiting_not_busy(self):
@@ -128,4 +128,29 @@ class DevenvTests(unittest.TestCase):
         self.assertEqual(calls,["status"])
         with_quota=collect_devenv(directory,Path("/core/scripts"),True,runner,NOW)
         self.assertEqual(with_quota["codex_quota"]["remaining_percent"],31)
+
+class EventsTests(unittest.TestCase):
+    def log(self,*lines):
+        folder=tempfile.TemporaryDirectory();self.addCleanup(folder.cleanup)
+        path=Path(folder.name,"events.jsonl");path.write_text("\n".join(lines)+"\n");return path
+    def line(self,kind="deploy_ok",at="2026-10-18T12:00:00Z",ref="3d84e77a1b2c",**extra):
+        return json.dumps({"at":at,"kind":kind,"ref":ref,**extra})
+    def test_events_are_newest_first_and_capped(self):
+        lines=[self.line(at=f"2026-10-18T12:0{i}:00Z") for i in range(8)]
+        out=read_events(self.log(*lines))
+        self.assertEqual(len(out),5);self.assertEqual(out[0]["at"],"2026-10-18T12:07:00Z")
+    def test_invalid_lines_are_dropped_not_repaired(self):
+        out=read_events(self.log("no es json",self.line(kind="deploy_started"),self.line(ref="main"),self.line(ref="9fab2c1; rm -rf /"),
+            self.line(at="ayer"),'[1,2]',self.line(kind="monitor_stale",ref=None)))
+        self.assertEqual([e["kind"] for e in out],["monitor_stale"])
+    def test_extra_fields_never_pass_through(self):
+        out=read_events(self.log(self.line(secret="x",path="/home/ocre")))
+        self.assertEqual(set(out[0]),{"at","kind","ref"})
+    def test_missing_file_means_no_events(self):
+        self.assertEqual(read_events(Path("/definitely/missing.jsonl")),[])
+    def test_collect_devenv_includes_the_events(self):
+        path=self.log(self.line())
+        def runner(command,timeout,cwd=None):return {"reservations":[]}
+        result=collect_devenv(Path("/definitely/missing"),Path("/core/scripts"),False,runner,NOW,events_path=path)
+        self.assertEqual(result["events"][0]["kind"],"deploy_ok")
 if __name__=="__main__": unittest.main()

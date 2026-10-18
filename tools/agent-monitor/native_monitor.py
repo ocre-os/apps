@@ -216,10 +216,12 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     if not isinstance(slots,dict) or not all(isinstance(slots.get(k),int) for k in ("claude","codex")):
         return None
     unknown={"state":"unknown","remaining_percent":None,"resets_at":None}
+    events=[e for e in (data.get("events") or []) if isinstance(e,dict)][:5]
     stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
-        "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}}}
+        "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
+        "events":events}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""
