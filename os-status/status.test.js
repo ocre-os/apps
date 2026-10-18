@@ -147,3 +147,35 @@ test('clock skew between browser and server does not create false stale', async 
   const state = await new StatusMonitor({fetcher, timeoutMs: 1000}).check('https://s.test');
   assert.equal(state.overall, 'healthy');
 });
+
+const wire=(overrides)=>({contract:'ocre-status-v1',observed_at:new Date().toISOString(),checks:{api:{status:'healthy'},database:{status:'healthy'},schema:{status:'healthy'},worker:{status:'healthy'},storage:{status:'healthy'},notifications:{status:'healthy'},pwa:{status:'healthy'},...overrides}});
+function sequence(payloads){let i=0;return new StatusMonitor({fetcher:async()=>({ok:true,json:async()=>payloads[Math.min(i++,payloads.length-1)]})});}
+test('not_configured is accepted and neutral: it never degrades the overall state', () => {
+  const state = normalizeContract(wire({notifications:{status:'not_configured',reason:'no_channel_configured'},pwa:{status:'not_configured',reason:'not_configured'}}));
+  assert.equal(state.checks.notifications, 'not_configured');
+  assert.equal(state.reasons.notifications, 'no_channel_configured');
+  assert.equal(state.overall, 'healthy');
+});
+test('a single degraded sample after healthy is held; the second one is shown', async () => {
+  const bad=()=>wire({worker:{status:'degraded',reason:'heartbeat_stale'}});
+  const monitor=sequence([wire(),bad(),bad()]);
+  assert.equal((await monitor.check('u1')).overall,'healthy');
+  const held=await monitor.check('u1');
+  assert.equal(held.overall,'healthy');assert.equal(held.held,true);
+  assert.equal((await monitor.check('u1')).overall,'degraded');
+});
+test('a recovery resets the streak so a later single blip is held again', async () => {
+  const bad=()=>wire({storage:{status:'degraded'}});
+  const monitor=sequence([wire(),bad(),wire(),bad(),wire()]);
+  const out=[];for(let i=0;i<5;i++)out.push((await monitor.check('u1')).overall);
+  assert.deepEqual(out,['healthy','healthy','healthy','healthy','healthy']);
+});
+test('degraded is shown immediately when there is no healthy history', async () => {
+  const monitor=sequence([wire({worker:{status:'degraded'}})]);
+  assert.equal((await monitor.check('u1')).overall,'degraded');
+});
+test('a critical failure is never held', async () => {
+  const monitor=sequence([wire(),wire({database:{status:'failed'}})]);
+  await monitor.check('u1');
+  assert.equal((await monitor.check('u1')).overall,'failed');
+});

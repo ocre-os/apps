@@ -51,3 +51,10 @@ test('no state is a checking placeholder, not an alarm',()=>{
  assert.equal(V.platformView(null).label,'Comprobando');
  assert.deepEqual(V.attention(null,agents(),{state:'ok'},{}),[]);
 });
+test('native not_configured (OCRE-058 F2) is neutral and explained',()=>{
+ const s=state({checks:{...state().checks,pwa:'not_configured'},reasons:{pwa:'not_configured'}});
+ assert.equal(V.checkView(s,'pwa').status,'not_configured');
+ assert.match(V.checkView(s,'pwa').text,/no configurado/i);
+ assert.deepEqual(V.attention(s,agents(),{state:'ok'},{}),[]);
+ assert.match(V.platformView(s).text,/1 sin configurar/);
+});

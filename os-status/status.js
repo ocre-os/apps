@@ -5,7 +5,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const CRITICAL = ['web', 'api', 'database', 'schema'];
   const DEGRADABLE = ['worker', 'storage', 'notifications', 'pwa'];
-  const VALID = new Set(['healthy', 'degraded', 'failed', 'stale', 'unknown']);
+  // `not_configured` (OCRE-058 F2): no hay nada que medir; es neutro y nunca degrada ni cuenta como falla.
+  const VALID = new Set(['healthy', 'degraded', 'failed', 'stale', 'unknown', 'not_configured']);
   const STALE_AFTER_MS = 30000;
   const FROZEN_AFTER_MS = 25000;
   const REASON_CODE = /^[a-z_]{1,40}$/;
@@ -70,6 +71,23 @@
       this.controller = null;
       this.state = null;
       this.seen = null;
+      this.stable = null;
+      this.degradedStreak = 0;
+    }
+
+    // Suavizado (OCRE-058 F2): pasar de operativo a degradado exige dos muestras consecutivas; una falla crítica, un estado
+    // obsoleto o un contrato inválido se muestran de inmediato.
+    smooth(state) {
+      if (state.overall === 'degraded') {
+        this.degradedStreak += 1;
+        if (this.degradedStreak < 2 && this.stable && this.stable.overall === 'healthy') {
+          return { ...this.stable, observedAt: state.observedAt, receivedAt: state.receivedAt, held: true };
+        }
+        return state;
+      }
+      this.degradedStreak = 0;
+      if (state.overall === 'healthy') this.stable = state;
+      return state;
     }
 
     async check(url) {
@@ -95,6 +113,7 @@
             this.seen = { url, observedAt: state.observedAt, firstSeenAt: state.receivedAt };
           }
           state = applyStaleness(state);
+          if (state.contractValid) state = this.smooth(state);
         }
         state.latencyMs = Date.now() - started;
       } catch (_error) {
