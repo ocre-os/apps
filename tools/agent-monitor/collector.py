@@ -222,14 +222,57 @@ def read_events(path, limit=5):
             continue
     return sorted(events,key=lambda e:e["at"],reverse=True)[:limit]
 
+BACKUP_DAILY=re.compile(r"^(\d{8}T\d{6}Z)$")
+BACKUP_DUMP=re.compile(r"^(pre-release|pre-deploy|pre-compact)-.+\.(dump|sql\.gz)$")
+
+def _backup_entry(path, at, kind):
+    try:
+        ok = path.is_file() and path.stat().st_size > 0
+    except OSError:
+        ok = False
+    return {"at":at.strftime("%Y-%m-%dT%H:%M:%SZ"),"kind":kind,"ok":ok}
+
+def latest_backup(directory, daily_file="postgres.dump", now=None):
+    """Respaldo más reciente de un directorio: sólo hora, tipo y resultado; nunca nombres ni rutas (OCRE-059).
+
+    `daily`: subdirectorio `AAAAMMDDTHHMMSSZ` con el volcado de PostgreSQL. `pre_release`: volcado suelto previo a un
+    despliegue, con la hora de modificación del archivo. Sin entradas legibles devuelve None (no se afirma éxito)."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    best = None
+    try:
+        entries = list(Path(directory).iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        try:
+            match = BACKUP_DAILY.fullmatch(entry.name)
+            if match and entry.is_dir():
+                at = dt.datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+                candidate = (at, "daily", entry / daily_file)
+            elif BACKUP_DUMP.fullmatch(entry.name) and entry.is_file():
+                at = dt.datetime.fromtimestamp(entry.stat().st_mtime, dt.timezone.utc)
+                candidate = (at, "pre_release", entry)
+            else:
+                continue
+        except (OSError, ValueError):
+            continue
+        if at <= now + dt.timedelta(minutes=5) and (best is None or at > best[0]):
+            best = candidate
+    return _backup_entry(best[2], best[0], best[1]) if best else None
+
+def collect_backups(core_dir, staging_dir, now=None):
+    return {"core":latest_backup(core_dir,now=now),"staging":latest_backup(staging_dir,now=now)}
+
 def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_json, now=None,
                    ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex"),
-                   events_path=Path("/home/ocre/.ocre-os/status-events.jsonl")):
+                   events_path=Path("/home/ocre/.ocre-os/status-events.jsonl"),
+                   backup_core=Path("/home/ocre/backups/ocre-os"), backup_staging=Path("/home/ocre/backups/ocre-staging")):
     # `ocre-agent` resuelve el registro desde el repositorio actual: se ejecuta dentro del checkout de core,
     # no en el directorio heredado de Windows (por eso las reservas salían ilegibles bajo wsl.exe).
     """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
     slots=slots_by_provider(runner([str(ocre_agent),"status"],15,core_scripts.parent))
-    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path)}
+    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path),
+            "backups":collect_backups(backup_core,backup_staging)}
     if with_quota:
         result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result

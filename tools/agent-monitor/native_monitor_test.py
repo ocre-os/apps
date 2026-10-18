@@ -3,7 +3,7 @@ import unittest.mock
 import json
 import sqlite3
 from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
-from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS
+from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_backups
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -175,7 +175,7 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(sample["contract"],"ocre-devenv-v1")
         self.assertEqual(sample["agents"]["claude"],{"slots_used":1,"turn_seconds":720,"quota":{"state":"unknown","remaining_percent":None,"resets_at":None}})
         self.assertEqual(sample["agents"]["codex"],{"slots_used":0,"turn_seconds":45,"quota":self.QUOTA})
-        self.assertEqual(set(sample),{"contract","observed_at","agents","events"})
+        self.assertEqual(set(sample),{"contract","observed_at","agents","events","backups"})
     def test_unreadable_reservations_publish_nothing(self):
         for data in (None,{},{"slots":None},{"slots":{"claude":1}},{"slots":{"claude":"1","codex":0}}):
             self.assertIsNone(build_devenv_sample(data,None,None,1_800_000_000))
@@ -203,5 +203,23 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(len(junk["events"]),1)
     def test_only_the_two_approved_endpoints_exist(self):
         self.assertEqual(APPROVED_URLS,("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv"))
+
+class BackupSanitizeTests(unittest.TestCase):
+    GOOD={"at":"2026-10-18T18:21:25Z","kind":"daily","ok":True}
+
+    def test_valid_backups_pass_through_without_extra_keys(self):
+        result=clean_backups({"core":{**self.GOOD,"path":"/home/ocre/backups"},"staging":None})
+        self.assertEqual(result,{"core":self.GOOD,"staging":None})
+
+    def test_invalid_entries_are_dropped(self):
+        for bad in ({"core":{**self.GOOD,"kind":"weekly"}},{"core":{**self.GOOD,"ok":"yes"}},{"core":{**self.GOOD,"at":"ayer"}},
+                    {"core":"x"},"x",None,{}):
+            self.assertIsNone(clean_backups(bad))
+
+    def test_sample_carries_backups_or_null(self):
+        data={"slots":{"claude":0,"codex":0},"backups":{"core":self.GOOD,"staging":None}}
+        self.assertEqual(build_devenv_sample(data,None,None,1_800_000_000)["backups"]["core"],self.GOOD)
+        self.assertIsNone(build_devenv_sample({"slots":{"claude":0,"codex":0}},None,None,1_800_000_000)["backups"])
+
 
 if __name__=="__main__":unittest.main()

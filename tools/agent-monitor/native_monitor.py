@@ -210,6 +210,24 @@ class DevenvSource:
             self.quota,self.quota_at=data["codex_quota"],now
         return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now)
 
+BACKUP_KINDS=("daily","pre_release")
+
+def clean_backup(item):
+    """Revalida un respaldo antes de publicarlo: hora UTC, tipo fijo y booleano; todo lo demás se descarta."""
+    if not isinstance(item,dict) or item.get("kind") not in BACKUP_KINDS or not isinstance(item.get("ok"),bool):
+        return None
+    try:
+        dt.datetime.strptime(item.get("at"),"%Y-%m-%dT%H:%M:%SZ")
+    except (ValueError,TypeError):
+        return None
+    return {"at":item["at"],"kind":item["kind"],"ok":item["ok"]}
+
+def clean_backups(raw):
+    if not isinstance(raw,dict):
+        return None
+    result={name:clean_backup(raw.get(name)) for name in ("core","staging")}
+    return result if any(result.values()) else None
+
 def build_devenv_sample(data, codex_turn, codex_quota, now):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
@@ -221,7 +239,7 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
-        "events":events}
+        "events":events,"backups":clean_backups(data.get("backups"))}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""

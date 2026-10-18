@@ -100,3 +100,38 @@ test('event wording, short revision and relative time',()=>{
  assert.equal(D.ago(new Date(at).toISOString(),at+5*60000),'hace 5 min');
  assert.equal(D.ago(new Date(at).toISOString(),at+3*86400000),'hace 3 d');
 });
+const hours=(n)=>new Date(at-n*3600000).toISOString();
+const backups=(core,staging)=>({...sample(),backups:{core,staging}});
+test('backups keep only a valid time, a fixed kind and a boolean',()=>{
+ const raw=backups({at:hours(3),kind:'daily',ok:true,path:'/home/ocre/backups/x'},{at:'ayer',kind:'daily',ok:true});
+ const out=D.normalize(raw,at);
+ assert.deepEqual(out.backups.core,{at:hours(3),kind:'daily',ok:true});
+ assert.equal(out.backups.staging,null);
+ assert.doesNotMatch(JSON.stringify(out),/home|path/);
+ assert.equal(D.normalize(backups({at:hours(3),kind:'weekly',ok:true},{at:hours(3),kind:'daily',ok:'si'}),at).backups.core,null);
+ assert.deepEqual(D.normalize(sample(),at).backups,{core:null,staging:null});
+});
+test('production backup warns after 26 h or when it failed; missing data is not success',()=>{
+ const view=(b,env='core')=>D.backupView(b,env,at);
+ assert.equal(view({at:hours(25),kind:'daily',ok:true}).tone,'healthy');
+ assert.equal(view({at:hours(27),kind:'daily',ok:true}).tone,'degraded');
+ assert.equal(view({at:hours(1),kind:'daily',ok:false}).tone,'failed');
+ assert.equal(view(null).tone,'neutral');
+ assert.equal(view(null).label,'Sin señal');
+ assert.equal(view({at:hours(-1),kind:'daily',ok:true}).tone,'healthy');
+});
+test('staging only warns when its last backup failed, not by age',()=>{
+ const view=(b)=>D.backupView(b,'staging',at);
+ assert.equal(view({at:hours(300),kind:'pre_release',ok:true}).tone,'healthy');
+ assert.equal(view({at:hours(2),kind:'pre_release',ok:false}).tone,'failed');
+});
+test('backup issues name the environment and feed the attention list',()=>{
+ const state=D.normalize(backups({at:hours(30),kind:'daily',ok:true},{at:hours(2),kind:'pre_release',ok:false}),at);
+ const issues=D.backupIssues(state,at);
+ assert.deepEqual(issues.map((i)=>i.name),['Respaldo de producción desactualizado','Respaldo de staging falló']);
+ assert.deepEqual(D.backupIssues(D.normalize(),at),[]);
+ assert.deepEqual(D.backupIssues(D.normalize(sample(),at),at),[]);
+ const items=V.attention(null,null,null,{backupIssues:issues});
+ assert.equal(items.length,2);assert.ok(items.every((i)=>i.domain==='Desarrollo'));
+ assert.equal(V.devView(null,null,issues).label,'Atención');
+});

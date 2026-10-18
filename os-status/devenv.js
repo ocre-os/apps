@@ -9,6 +9,8 @@
  const EVENT_KINDS=new Set(['deploy_ok','deploy_failed','monitor_stale','monitor_recovered']);
  const REF=/^[0-9a-f]{7,40}$/;
  const MAX_EVENTS=5;
+ const BACKUP_KINDS=new Set(['daily','pre_release']);
+ const BACKUP_MAX_HOURS=26; // OCRE-059: el respaldo de producción es diario (02:30); un día fallido ya avisa
  function int(value,min,max){return Number.isSafeInteger(value)&&value>=min&&value<=max?value:null;}
  function normalizeAgent(raw,capacity){
   const slots=int(raw?.slots_used,0,capacity);
@@ -32,8 +34,14 @@
   }
   return out.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,MAX_EVENTS);
  }
+ // Respaldos (OCRE-059): solo hora válida, tipo fijo y booleano; cualquier otra cosa se descarta.
+ function normalizeBackup(raw){
+  if(!raw||!BACKUP_KINDS.has(raw.kind)||typeof raw.ok!=='boolean'||!Number.isFinite(Date.parse(raw.at)))return null;
+  return {at:raw.at,kind:raw.kind,ok:raw.ok};
+ }
+ function normalizeBackups(raw){return {core:normalizeBackup(raw?.core),staging:normalizeBackup(raw?.staging)};}
  function normalize(payload={},now=Date.now()){
-  const empty={valid:false,observedAt:null,agents:{},events:[]};
+  const empty={valid:false,observedAt:null,agents:{},events:[],backups:{core:null,staging:null}};
   const time=Date.parse(payload?.observed_at);
   if(payload?.contract!=='ocre-devenv-v1'||!Number.isFinite(time)||now-time>MAX_AGE_MS||now-time< -5000)return empty;
   const capacity=int(payload.capacity,1,8)??2;
@@ -42,7 +50,7 @@
    const agent=normalizeAgent(payload.agents?.[name],capacity);
    if(agent)agents[name]=agent;
   }
-  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events)}:empty;
+  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events),backups:normalizeBackups(payload.backups)}:empty;
  }
  // Arco de medio círculo (izquierda → derecha) para una fracción 0..1 y la posición de la aguja.
  function geometry(used,capacity){
@@ -100,6 +108,27 @@
   }
   return items;
  }
+ const BACKUP_ENV={core:'Producción',staging:'Staging'};
+ const BACKUP_KIND_TEXT={daily:'diario',pre_release:'previo a despliegue'};
+ function backupAgeHours(backup,now){return Math.max(0,(now-Date.parse(backup.at))/3600000);}
+ // Estado de un respaldo. Producción también avisa por antigüedad; staging no tiene respaldo programado (solo volcados previos a despliegue).
+ function backupView(backup,env,now=Date.now()){
+  if(!backup)return {tone:'neutral',label:'Sin señal',text:'Sin dato del último respaldo.'};
+  const kind=BACKUP_KIND_TEXT[backup.kind],when=ago(backup.at,now);
+  if(!backup.ok)return {tone:'failed',label:'Falló',text:'El último respaldo ('+kind+') no se completó · '+when+'.'};
+  if(env==='core'&&backupAgeHours(backup,now)>BACKUP_MAX_HOURS)return {tone:'degraded',label:'Desactualizado',text:'Último respaldo '+kind+' '+when+' (más de '+BACKUP_MAX_HOURS+' h).'};
+  return {tone:'healthy',label:'Al día',text:'Último respaldo '+kind+' '+when+'.'};
+ }
+ function backupIssues(devenv,now=Date.now()){
+  const items=[];
+  if(!devenv?.valid)return items;
+  for(const env of ['core','staging']){
+   const view=backupView(devenv.backups?.[env],env,now);
+   if(view.tone==='failed'||view.tone==='degraded')items.push({name:'Respaldo de '+BACKUP_ENV[env].toLowerCase()+(view.tone==='failed'?' falló':' desactualizado'),
+    short:'Respaldo de '+BACKUP_ENV[env].toLowerCase(),text:view.text});
+  }
+  return items;
+ }
  class DevenvMonitor{
   constructor({fetcher=(...args)=>fetch(...args),timeoutMs=5000}={}){this.fetcher=fetcher;this.timeoutMs=timeoutMs;this.cycle=0;this.controller=null;this.latest=normalize();}
   async check(url){
@@ -113,5 +142,5 @@
    return state;
   }
  }
- return {normalize,normalizeEvents,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
+ return {normalize,normalizeEvents,normalizeBackups,backupView,backupIssues,BACKUP_ENV,BACKUP_MAX_HOURS,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
 });

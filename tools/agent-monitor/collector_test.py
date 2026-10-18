@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 from collector import claude_state, codex_state, aggregate, codex_processes, read_codex
-from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events
+from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events, latest_backup, collect_backups
 import json
 class ActivityTests(unittest.TestCase):
     def test_claude_idle_is_waiting_not_busy(self):
@@ -153,4 +153,57 @@ class EventsTests(unittest.TestCase):
         def runner(command,timeout,cwd=None):return {"reservations":[]}
         result=collect_devenv(Path("/definitely/missing"),Path("/core/scripts"),False,runner,NOW,events_path=path)
         self.assertEqual(result["events"][0]["kind"],"deploy_ok")
+
+class BackupTests(unittest.TestCase):
+    def setUp(self):
+        import datetime as dt, os
+        self.dt, self.os = dt, os
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.now = dt.datetime(2026, 10, 18, 20, 0, tzinfo=dt.timezone.utc)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def daily(self, stamp, size=10):
+        folder = self.root / stamp
+        folder.mkdir()
+        (folder / "postgres.dump").write_bytes(b"x" * size)
+
+    def dump(self, name, hours_ago, size=10):
+        path = self.root / name
+        path.write_bytes(b"x" * size)
+        mtime = (self.now - self.dt.timedelta(hours=hours_ago)).timestamp()
+        self.os.utime(path, (mtime, mtime))
+
+    def test_daily_backup_uses_the_stamp_in_the_name(self):
+        self.daily("20261018T182125Z")
+        self.assertEqual(latest_backup(self.root, now=self.now), {"at": "2026-10-18T18:21:25Z", "kind": "daily", "ok": True})
+
+    def test_the_most_recent_of_daily_and_pre_release_wins(self):
+        self.daily("20261017T073000Z")
+        self.dump("pre-release-20261018-175034-0c43fcc.dump", 2)
+        self.assertEqual(latest_backup(self.root, now=self.now)["kind"], "pre_release")
+
+    def test_empty_or_missing_dump_is_not_ok(self):
+        self.daily("20261018T182125Z", size=0)
+        self.assertFalse(latest_backup(self.root, now=self.now)["ok"])
+        (self.root / "20261018T190000Z").mkdir()
+        self.assertFalse(latest_backup(self.root, now=self.now)["ok"])
+
+    def test_unrelated_future_or_unreadable_entries_are_ignored(self):
+        (self.root / "notas.txt").write_text("x")
+        self.daily("20271018T182125Z")
+        self.assertIsNone(latest_backup(self.root, now=self.now))
+        self.assertIsNone(latest_backup(self.root / "no-existe", now=self.now))
+
+    def test_staging_files_count_and_output_has_no_paths(self):
+        self.dump("pre-deploy-20261018-174159-f1c0ad6.dump", 3)
+        self.dump("pre-compact-20261018-132127.sql.gz", 1)
+        result = collect_backups(self.root / "x", self.root, now=self.now)
+        self.assertIsNone(result["core"])
+        self.assertEqual(set(result["staging"]), {"at", "kind", "ok"})
+        self.assertNotIn("/", json.dumps(result))
+
+
 if __name__=="__main__": unittest.main()

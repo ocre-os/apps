@@ -44,8 +44,9 @@
   const s=xpress?.state||'unknown';
   return ({ok:{tone:'healthy',label:'Al día'},late:{tone:'degraded',label:'Atención tardía'},reconcile:{tone:'degraded',label:'Requiere reconciliar'},disabled:{tone:'neutral',label:'No habilitado'},unknown:{tone:'unknown',label:'Sin información'}})[s]||{tone:'unknown',label:'Sin información'};
  }
- function devView(state,xpress){
+ function devView(state,xpress,backupIssues){
   const x=xpressView(xpress),version=state?.deployment?.version;
+  if(backupIssues&&backupIssues.length)return {tone:'degraded',label:'Atención',text:backupIssues.map((i)=>i.short).join(' · ')};
   const sha=state?.deployment?.commit;
   return {tone:x.tone,label:x.tone==='neutral'?'Sin señales aún':x.label,text:'Versión '+(version||'—')+(sha?' · '+String(sha).slice(0,7):'')+' · Xpress '+x.label.toLowerCase()};
  }
@@ -60,6 +61,7 @@
    if(flags.monitorStale)items.push({domain:'Agentes',name:'Monitor de agentes',tone:'stale',text:'monitor_stale: el monitor dejó de publicar.'});
    else if(agents&&Object.values(agents.states||{}).includes('unknown'))items.push({domain:'Agentes',name:'Agentes',tone:'unknown',text:'Falta la señal de uno de los agentes.'});
   }
+  for(const issue of flags.backupIssues||[])items.push({domain:'Desarrollo',name:issue.name,tone:'degraded',text:issue.text});
   const x=xpress?.state;
   if(x==='late'||x==='reconcile')items.push({domain:'Desarrollo',name:'Bandeja Xpress',tone:'degraded',text:x==='late'?'Hay una entrega pendiente de más de 15 minutos.':'Hay entregas con lease vencido o bloqueadas.'});
   else if(flags.xpressChecked&&x==='unknown')items.push({domain:'Desarrollo',name:'Bandeja Xpress',tone:'unknown',text:'Sin una señal reciente confirmada.'});
