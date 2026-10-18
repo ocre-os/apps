@@ -138,6 +138,76 @@ def read_codex(directory, proc_root=Path("/proc")):
         return "unknown"
     return aggregate(states,False)
 
+def claude_turn_seconds(directory, now=None):
+    """Antigüedad del turno `busy` más largo con proceso vivo. Solo tiempo: nada del contenido."""
+    now=time.time() if now is None else now
+    ages=[]
+    try:
+        for path in directory.glob("*.json"):
+            try:
+                session=json.loads(path.read_text())
+                if session.get("status")!="busy" or not session.get("procStart") or not session.get("updatedAt"):
+                    continue
+                if not process_alive(session["pid"],session["procStart"]):
+                    continue
+                age=now-float(session["updatedAt"])/1000
+                if 0<=age<=7*86400:ages.append(int(age))
+            except (OSError,ValueError,KeyError,TypeError):
+                continue
+    except OSError:
+        return None
+    return max(ages) if ages else None
+
+def slots_by_provider(status, capacity=2):
+    """Reservas activas por proveedor efectivo, a partir de `ocre-agent status`. Solo conteos."""
+    counts={"claude":0,"codex":0}
+    items=status.get("reservations") if isinstance(status,dict) else None
+    if not isinstance(items,list):
+        return None
+    for item in items:
+        provider=item.get("effective_provider") or item.get("provider") if isinstance(item,dict) else None
+        if provider in counts:counts[provider]+=1
+    return {key:min(value,capacity) for key,value in counts.items()}
+
+LOW_QUOTA_PERCENT=15
+
+def quota_view(snapshot, now=None):
+    """Cuota de Codex (salida de agent-quota.py) como estado fijo y la ventana con menos margen."""
+    now=time.time() if now is None else now
+    unknown={"state":"unknown","remaining_percent":None,"resets_at":None}
+    data=snapshot.get("snapshot") if isinstance(snapshot,dict) else None
+    if not isinstance(data,dict):
+        return unknown
+    windows=[w for w in data.get("windows",[]) if isinstance(w,dict)
+             and isinstance(w.get("remaining"),(int,float)) and isinstance(w.get("resets_at"),(int,float))]
+    if data.get("blocked"):
+        reset=min((w["resets_at"] for w in windows),default=None)
+        return {"state":"exhausted","remaining_percent":0,
+                "resets_at":dt.datetime.fromtimestamp(reset,dt.timezone.utc).isoformat().replace("+00:00","Z") if reset else None}
+    if not windows or not data.get("complete"):
+        return unknown
+    tight=min(windows,key=lambda w:w["remaining"])
+    remaining=max(0,min(100,int(tight["remaining"])))
+    return {"state":"exhausted" if remaining==0 else "low" if remaining<=LOW_QUOTA_PERCENT else "available",
+            "remaining_percent":remaining,
+            "resets_at":dt.datetime.fromtimestamp(tight["resets_at"],dt.timezone.utc).isoformat().replace("+00:00","Z")}
+
+def run_json(command, timeout):
+    try:
+        result=subprocess.run(command,capture_output=True,text=True,timeout=timeout,check=True)
+        return json.loads(result.stdout)
+    except (OSError,ValueError,subprocess.SubprocessError):
+        return None
+
+def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_json, now=None,
+                   ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex")):
+    """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
+    slots=slots_by_provider(runner([str(ocre_agent),"status"],15))
+    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now)}
+    if with_quota:
+        result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25),now)
+    return result
+
 def collect_snapshot(claude_directory, codex_directory, proc_root=Path("/proc")):
     stamp=utc_now()
     return {"contract":"ocre-agents-v1","observed_at":stamp,"agents":{
@@ -152,7 +222,13 @@ def main():
     parser.add_argument("--url")
     parser.add_argument("--token-file",type=Path)
     parser.add_argument("--watch",action="store_true")
+    parser.add_argument("--devenv",action="store_true")
+    parser.add_argument("--quota",action="store_true")
+    parser.add_argument("--core-scripts",type=Path,default=Path("/home/ocre/src/ocre-os/core/scripts"))
     args=parser.parse_args()
+    if args.devenv:
+        print(json.dumps(collect_devenv(args.claude_dir,args.core_scripts,args.quota)))
+        return
     if args.url and (args.url!="https://staging.ocre.mx/api/agents" or not args.token_file):
         parser.error("HTTPS URL and token file required for publishing")
     while True:

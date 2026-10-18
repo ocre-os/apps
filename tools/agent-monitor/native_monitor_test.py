@@ -1,7 +1,9 @@
 import unittest
+import unittest.mock
 import json
 import sqlite3
 from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
+from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -149,5 +151,50 @@ class RequestTests(unittest.TestCase):
         self.assertEqual(req.get_header("User-agent"),USER_AGENT)
         self.assertEqual(req.get_header("Authorization"),"Bearer secret")
         self.assertEqual(req.get_method(),"POST")
+
+class DevenvTurnTests(unittest.TestCase):
+    def test_longest_in_progress_turn_is_reported(self):
+        db=projection([("A","inProgress",NOW-120,None,1),("B","completed",NOW-2,NOW-1,2)],[("A","commandExecution",{"status":"completed"})])
+        db.execute("INSERT INTO thread_turns VALUES('d','C','inProgress',?,NULL,1)",(NOW-40,))
+        db.execute("INSERT INTO thread_items VALUES('d','C','x','{}',?,?,?)",(NOW*1000,NOW*1000,NOW*1000))
+        self.assertEqual(codex_turn_seconds(db,NOW,NOW-500),40)
+    def test_completed_and_orphan_turns_have_no_turn(self):
+        done=projection([("A","completed",NOW-5,NOW-4,1)],[])
+        self.assertIsNone(codex_turn_seconds(done,NOW,NOW-500))
+        orphan=projection([("A","inProgress",NOW-9000,None,1)],[])
+        self.assertIsNone(codex_turn_seconds(orphan,NOW,NOW-10))
+    def test_silent_turn_is_not_presented_as_running(self):
+        silent=projection([("A","inProgress",NOW-400,None,1)],[])
+        self.assertIsNone(codex_turn_seconds(silent,NOW,NOW-9999))
+
+class DevenvSampleTests(unittest.TestCase):
+    DATA={"slots":{"claude":1,"codex":0},"claude_turn_seconds":720}
+    QUOTA={"state":"low","remaining_percent":12,"resets_at":"2026-10-18T18:01:00Z"}
+    def test_sample_follows_the_contract_and_stays_sanitized(self):
+        sample=build_devenv_sample(self.DATA,45,self.QUOTA,1_800_000_000)
+        self.assertEqual(sample["contract"],"ocre-devenv-v1")
+        self.assertEqual(sample["agents"]["claude"],{"slots_used":1,"turn_seconds":720,"quota":{"state":"unknown","remaining_percent":None,"resets_at":None}})
+        self.assertEqual(sample["agents"]["codex"],{"slots_used":0,"turn_seconds":45,"quota":self.QUOTA})
+        self.assertEqual(set(sample),{"contract","observed_at","agents"})
+    def test_unreadable_reservations_publish_nothing(self):
+        for data in (None,{},{"slots":None},{"slots":{"claude":1}},{"slots":{"claude":"1","codex":0}}):
+            self.assertIsNone(build_devenv_sample(data,None,None,1_800_000_000))
+    def test_missing_quota_is_unknown_not_invented(self):
+        sample=build_devenv_sample(self.DATA,None,None,1_800_000_000)
+        self.assertEqual(sample["agents"]["codex"]["quota"]["state"],"unknown")
+    def test_quota_is_refreshed_only_every_five_minutes(self):
+        clock=[1000.0];asked=[]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        def fake(with_quota):
+            asked.append(with_quota)
+            return {**self.DATA,**({"codex_quota":self.QUOTA} if with_quota else {})}
+        source.wsl=fake
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            first=source.sample();clock[0]+=60;second=source.sample();clock[0]+=300;third=source.sample()
+        self.assertEqual(asked,[True,False,True])
+        self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
+        self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
+    def test_only_the_two_approved_endpoints_exist(self):
+        self.assertEqual(APPROVED_URLS,("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv"))
 
 if __name__=="__main__":unittest.main()
