@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import sqlite3
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -102,6 +103,40 @@ def inspect_projection(db, timestamp, engine_started=None):
     if "waiting" in states:return "waiting"
     return "available"
 
+def codex_turn_seconds(db, timestamp, engine_started=None):
+    """Antigüedad del turno `inProgress` más largo de Codex Desktop que sigue en ejecución. Solo tiempo."""
+    ages=[]
+    rows=db.execute("""
+      SELECT t.thread_id,t.turn_id,t.status,t.started_at
+      FROM thread_turns t WHERE t.rollout_ordinal =
+      (SELECT MAX(s.rollout_ordinal) FROM thread_turns s WHERE s.thread_id=t.thread_id)
+    """).fetchall()
+    for thread,turn,status,started in rows:
+        if status!="inProgress" or not isinstance(started,(int,float)):continue
+        items=db.execute("SELECT created_at_ms,started_at_ms,completed_at_ms FROM thread_items WHERE thread_id=? AND turn_id=?",
+                         (thread,turn)).fetchall()
+        latest=max([started]+[item_activity(*item) for item in items])
+        # Un turno anterior al motor vivo está huérfano; uno sin actividad reciente no se presenta como en curso.
+        if engine_started is not None and latest<engine_started:continue
+        if timestamp-latest>30 or timestamp-latest< -5:continue
+        age=timestamp-started
+        if 0<=age<=7*86400:ages.append(int(age))
+    return max(ages) if ages else None
+
+def codex_desktop_turn(home):
+    try:
+        result=subprocess.run(["powershell.exe","-NoProfile","-Command",
+           "Get-Process codex -ErrorAction SilentlyContinue | ForEach-Object { "
+           "[int](($_.StartTime.ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds) }"],
+           capture_output=True,text=True,timeout=3,check=True)
+        starts=parse_start_times(result.stdout)
+        if not starts:return None
+        db=sqlite3.connect("file:"+str(home/"thread_history_1.sqlite").replace("\\","/")+"?mode=ro",uri=True,timeout=1)
+        try:return codex_turn_seconds(db,time.time(),min(starts))
+        finally:db.close()
+    except (OSError,ValueError,sqlite3.Error,subprocess.SubprocessError):
+        return None
+
 def parse_start_times(output):
     """Epoch start times (one per line) of the live Codex Desktop processes."""
     return [int(line) for line in output.split() if line.strip().isdigit()]
@@ -148,6 +183,56 @@ def snapshot(home,collector):
       "claude":{"state":claude,"observed_at":stamp},
       "codex":{"state":codex,"observed_at":stamp}}}
 
+QUOTA_REFRESH_SECONDS=300
+DEVENV_REFRESH_SECONDS=15
+APPROVED_URLS=("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv")
+
+class DevenvSource:
+    """Arma la muestra `ocre-devenv-v1`; la cuota cambia despacio y se consulta cada QUOTA_REFRESH_SECONDS."""
+    def __init__(self,home,collector,clock=time.time):
+        self.home,self.collector,self.clock=home,collector,clock
+        self.quota=None;self.quota_at=0.0
+
+    def wsl(self,with_quota):
+        command=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",self.collector,
+                 "--codex-dir","/home/ocre/.codex/sessions","--devenv"]+(["--quota"] if with_quota else [])
+        try:
+            result=subprocess.run(command,capture_output=True,text=True,timeout=40 if with_quota else 20,check=True)
+            return json.loads(result.stdout)
+        except (OSError,ValueError,subprocess.SubprocessError):
+            return None
+
+    def sample(self):
+        now=self.clock()
+        refresh=now-self.quota_at>=QUOTA_REFRESH_SECONDS
+        data=self.wsl(refresh)
+        if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
+            self.quota,self.quota_at=data["codex_quota"],now
+        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now)
+
+def build_devenv_sample(data, codex_turn, codex_quota, now):
+    """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
+    slots=data.get("slots") if isinstance(data,dict) else None
+    if not isinstance(slots,dict) or not all(isinstance(slots.get(k),int) for k in ("claude","codex")):
+        return None
+    unknown={"state":"unknown","remaining_percent":None,"resets_at":None}
+    stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
+    return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
+        "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
+        "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}}}
+
+def publish_devenv(source,url,token_file,stop):
+    """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""
+    while not stop.is_set():
+        try:
+            sample=source.sample()
+            if sample:
+                req=build_request(url,json.dumps(sample).encode(),token_file.read_text().strip())
+                with urllib.request.urlopen(req,timeout=3) as response:response.read(1024)
+        except urllib.error.HTTPError as error:print(f"Monitor devenv: envio rechazado (HTTP {error.code}).",flush=True)
+        except (OSError,ValueError,subprocess.SubprocessError):print("Monitor devenv: envio no disponible.",flush=True)
+        stop.wait(DEVENV_REFRESH_SECONDS)
+
 USER_AGENT="OCRE-Agent-Monitor/1"
 
 def build_request(url,data,token):
@@ -165,8 +250,11 @@ def main():
     p.add_argument("--output",type=Path)
     p.add_argument("--watch",action="store_true")
     a=p.parse_args()
-    if a.url and (a.url!="https://staging.ocre.mx/api/agents" or not a.token_file):
+    if a.url and (a.url!=APPROVED_URLS[0] or not a.token_file):
         p.error("Only the approved Staging endpoint and a token file are allowed")
+    stop=threading.Event()
+    if a.url and a.watch:
+        threading.Thread(target=publish_devenv,args=(DevenvSource(a.codex_home,a.collector),APPROVED_URLS[1],a.token_file,stop),daemon=True).start()
     while True:
         data=json.dumps(snapshot(a.codex_home,a.collector)).encode()
         if a.output:
