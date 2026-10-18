@@ -53,6 +53,11 @@
       </div>
       <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
     </section>
+    <section class="agents-panel xpress-panel" aria-labelledby="xpress-heading">
+      <div class="section-heading"><div><p>XPRESS / COORDINACIÓN</p><h2 id="xpress-heading">Bandeja de solicitudes</h2></div></div>
+      <article id="xpress-card" class="agent-card" data-state="unknown"><h3>Entregas</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p><p id="xpress-counts" class="agent-detail"></p></article>
+      <p class="agents-note">Solo contadores; no muestra mensajes ni identificadores.</p>
+    </section>
 
     <section class="diagnostics">
       <div class="section-heading">
@@ -91,5 +96,7 @@
   <script src="app.js?v=20261005-accessibility01"></script>
   <script src="agents.js"></script>
   <script src="agents-ui.js"></script>
+  <script src="xpress.js"></script>
+  <script src="xpress-ui.js"></script>
 </body>
 </html>
