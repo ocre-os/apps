@@ -16,6 +16,13 @@
    +'<p class="gauge-count"><strong>'+agent.slotsUsed+'</strong> / '+agent.capacity+'<small>tareas activas</small></p>'
    +'<dl class="gauge-rows"><dt>Turno en curso</dt><dd>'+D.duration(agent.turnSeconds)+'</dd><dt>Cuota</dt><dd style="color:'+tones[quota.tone]+'">'+quota.text+'</dd></dl></article>';
  }
+ const dots={healthy:'#48e5a8',failed:'#ff5f6d',stale:'#b78cff'};
+ function renderActivity(state){
+  const list=document.getElementById('activityList'),count=document.getElementById('activityCount');
+  const events=state.valid?state.events:[];
+  count.textContent=events.length?events.length+' recientes':'Sin eventos';
+  list.innerHTML=events.length?events.map((e)=>{const v=D.eventView(e);return '<li><i style="background:'+dots[v.tone]+'"></i><span>'+v.label+'</span><small>'+v.when+'</small></li>';}).join(''):'<li class="activity-empty">Sin eventos recientes.</li>';
+ }
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:D.normalize();
   const next=(state.valid?state.observedAt:'none')+'|'+(last!==null);
@@ -25,6 +32,7 @@
   const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>gauge(n,state.agents[n])).join('');
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
   document.getElementById('loadTime').textContent=state.valid?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt)):'Sin muestra reciente';
+  renderActivity(state);
   window.dispatchEvent(new CustomEvent('ocre:devenv',{detail:{state,checked:last!==null}}));
  }
  async function check(){const cycle=monitor.cycle+1;const state=await monitor.check(url);if(cycle===monitor.cycle){last=state;render();}}

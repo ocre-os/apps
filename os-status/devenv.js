@@ -6,6 +6,9 @@
  // OCRE-058 F3: medidor de carga por agente. Solo números y estados fijos validados; nada más del payload se conserva.
  const QUOTA_STATES=new Set(['available','low','exhausted','unknown']);
  const MAX_AGE_MS=30000;
+ const EVENT_KINDS=new Set(['deploy_ok','deploy_failed','monitor_stale','monitor_recovered']);
+ const REF=/^[0-9a-f]{7,40}$/;
+ const MAX_EVENTS=5;
  function int(value,min,max){return Number.isSafeInteger(value)&&value>=min&&value<=max?value:null;}
  function normalizeAgent(raw,capacity){
   const slots=int(raw?.slots_used,0,capacity);
@@ -17,8 +20,20 @@
   const turn=raw.turn_seconds===null||raw.turn_seconds===undefined?null:int(raw.turn_seconds,0,7*86400);
   return {slotsUsed:slots,capacity,turnSeconds:turn,quota:{state,remainingPercent:percent,resetsAt:resets}};
  }
+ // Actividad reciente (F4): solo tipo fijo, hora válida y revisión hexadecimal; cualquier otra cosa se descarta.
+ function normalizeEvents(raw){
+  if(!Array.isArray(raw))return [];
+  const out=[];
+  for(const item of raw){
+   const at=Date.parse(item?.at);
+   if(!EVENT_KINDS.has(item?.kind)||!Number.isFinite(at))continue;
+   const ref=typeof item.ref==='string'&&REF.test(item.ref)?item.ref:null;
+   out.push({at:item.at,kind:item.kind,ref});
+  }
+  return out.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,MAX_EVENTS);
+ }
  function normalize(payload={},now=Date.now()){
-  const empty={valid:false,observedAt:null,agents:{}};
+  const empty={valid:false,observedAt:null,agents:{},events:[]};
   const time=Date.parse(payload?.observed_at);
   if(payload?.contract!=='ocre-devenv-v1'||!Number.isFinite(time)||now-time>MAX_AGE_MS||now-time< -5000)return empty;
   const capacity=int(payload.capacity,1,8)??2;
@@ -27,7 +42,7 @@
    const agent=normalizeAgent(payload.agents?.[name],capacity);
    if(agent)agents[name]=agent;
   }
-  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents}:empty;
+  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events)}:empty;
  }
  // Arco de medio círculo (izquierda → derecha) para una fracción 0..1 y la posición de la aguja.
  function geometry(used,capacity){
@@ -58,6 +73,21 @@
   return {text:'Sin dato',tone:'neutral'};
  }
  const NAMES={claude:'Claude',codex:'Codex'};
+ const EVENT_TEXT={deploy_ok:['Despliegue de staging','healthy'],deploy_failed:['Despliegue de staging falló','failed'],
+  monitor_stale:['Monitor detenido','stale'],monitor_recovered:['Monitor recuperado','healthy']};
+ function ago(iso,now=Date.now()){
+  const seconds=Math.max(0,Math.floor((now-Date.parse(iso))/1000));
+  if(seconds<60)return 'hace un momento';
+  const minutes=Math.floor(seconds/60);
+  if(minutes<60)return 'hace '+minutes+' min';
+  const hours=Math.floor(minutes/60);
+  if(hours<24)return 'hace '+hours+' h';
+  return 'hace '+Math.floor(hours/24)+' d';
+ }
+ function eventView(event,now=Date.now()){
+  const [label,tone]=EVENT_TEXT[event.kind];
+  return {label:label+(event.ref?' · '+event.ref.slice(0,7):''),tone,when:ago(event.at,now)};
+ }
  // Lo que pide atención: carga completa y cuota agotada. Cuota baja solo se muestra, no alarma.
  function issues(devenv){
   const items=[];
@@ -83,5 +113,5 @@
    return state;
   }
  }
- return {normalize,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
+ return {normalize,normalizeEvents,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
 });
