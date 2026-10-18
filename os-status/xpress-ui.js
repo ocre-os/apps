@@ -10,6 +10,7 @@
   card.dataset.state=state.state;
   card.querySelector('.agent-state').textContent=labels[state.state];
   card.querySelector('.agent-detail').textContent=details[state.state];
+  window.dispatchEvent(new CustomEvent('ocre:xpress',{detail:{state,checked:last!==null}}));
   const c=state.counts;
   document.getElementById('xpress-counts').textContent=state.state==='ok'||state.state==='late'||state.state==='reconcile'
    ?`Pendientes ${c.pending} · Reclamadas ${c.claimed} · Vencidas ${c.lease_expired} · Bloqueadas ${c.blocked} · Confirmadas 24 h ${c.acked_24h}`:'';

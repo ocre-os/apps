@@ -18,6 +18,7 @@
     state.states[name]==='available'?'Sin sesión activa confirmada':
     stale?'monitor_stale: el monitor dejó de publicar':'Sin una señal reciente confirmada';
   }
+  window.dispatchEvent(new CustomEvent('ocre:agents',{detail:{state,stale,checked:last!==null}}));
   document.getElementById('agents-time').textContent=state.observedAt
    ?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt))
    :stale?'monitor_stale · sin muestra reciente':'Sin muestra reciente';
