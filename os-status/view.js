@@ -11,7 +11,7 @@
   no_heartbeat:'Aún no ha reportado actividad.',invalid_heartbeat:'Su señal de actividad no es válida.',clock_skew:'El reloj del servicio no coincide.',
   heartbeat_stale:'Su última señal de actividad es antigua.',heartbeat_expired:'Dejó de reportar actividad.',
   not_writable:'No se puede escribir en el almacenamiento.',read_mismatch:'La lectura de prueba no coincide.',
-  backlog:'Hay notificaciones pendientes vencidas.',query_failed:'No se pudo consultar la cola.',
+  no_channel_configured:'No hay canal de salida configurado.',backlog:'Hay notificaciones pendientes vencidas.',query_failed:'No se pudo consultar la cola.',
   schema_not_ready:'Esperando un esquema válido.',database_unavailable:'Base de datos no disponible.',
   not_configured:'Sondeo no configurado.',manifest_invalid:'El manifiesto no es válido.',manifest_unavailable:'No hay manifiesto.',
   service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.'};
@@ -19,6 +19,8 @@
  function checkView(state,key){
   const value=state?.checks?.[key]||'unknown';
   const reason=state?.reasons?.[key];
+  if(value==='not_configured')return {status:'not_configured',text:reasonText[reason]||'No configurado.'};
+  // Compatibilidad: backends anteriores a OCRE-058 F2 informaban este caso como `unknown`.
   if(key==='notifications'&&value==='unknown'&&reason==='no_channel_configured')return {status:'not_configured',text:'No hay canal de salida configurado.'};
   if(value==='stale')return {status:'stale',text:'Muestra antigua; sin evidencia vigente.'};
   return {status:value,text:value!=='healthy'&&reasonText[reason]?reasonText[reason]:''};
