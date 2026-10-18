@@ -76,3 +76,27 @@ test('network failure and http errors leave no measurement',async()=>{
  assert.equal((await new D.DevenvMonitor({fetcher:async()=>{throw Error('x');}}).check('u')).valid,false);
  assert.equal((await new D.DevenvMonitor({fetcher:async()=>({ok:false})}).check('u')).valid,false);
 });
+test('recent activity keeps only fixed kinds, valid times and hexadecimal revisions, newest first, at most five',()=>{
+ const base=(i,extra={})=>({at:new Date(at-i*60000).toISOString(),kind:'deploy_ok',ref:'3d84e77a1b2c',...extra});
+ const raw=[base(7),base(1,{kind:'monitor_stale',ref:null}),base(3,{kind:'texto libre'}),base(2,{at:'no-es-fecha'}),base(4,{ref:'main'}),base(5),base(6),base(8),base(9)];
+ const out=D.normalize({...sample(),events:raw},at).events;
+ assert.equal(out.length,5);
+ assert.deepEqual(out.map((e)=>e.kind),['monitor_stale','deploy_ok','deploy_ok','deploy_ok','deploy_ok']);
+ assert.equal(out[1].ref,null);                       // ref inválida (no hexadecimal) se descarta, el evento se conserva
+ assert.ok(out.every((e,i)=>i===0||Date.parse(out[i-1].at)>=Date.parse(e.at)));
+});
+test('events never carry extra fields and a payload without events is fine',()=>{
+ const out=D.normalize({...sample(),events:[{at:stamp,kind:'deploy_ok',ref:'3d84e77',secret:'x',path:'/home'}]},at).events;
+ assert.deepEqual(Object.keys(out[0]).sort(),['at','kind','ref']);
+ assert.deepEqual(D.normalize(sample(),at).events,[]);
+ assert.deepEqual(D.normalize({...sample(),events:'x'},at).events,[]);
+});
+test('event wording, short revision and relative time',()=>{
+ const now=at+2*3600000;
+ assert.deepEqual(D.eventView({at:new Date(at+3600000).toISOString(),kind:'deploy_ok',ref:'3d84e77a1b2c'},now),{label:'Despliegue de staging · 3d84e77',tone:'healthy',when:'hace 1 h'});
+ assert.equal(D.eventView({at:stamp,kind:'deploy_failed',ref:null},now).tone,'failed');
+ assert.equal(D.eventView({at:stamp,kind:'monitor_stale',ref:null},now).label,'Monitor detenido');
+ assert.equal(D.ago(new Date(at).toISOString(),at+20000),'hace un momento');
+ assert.equal(D.ago(new Date(at).toISOString(),at+5*60000),'hace 5 min');
+ assert.equal(D.ago(new Date(at).toISOString(),at+3*86400000),'hace 3 d');
+});

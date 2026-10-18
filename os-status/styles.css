@@ -86,3 +86,6 @@ footer{margin-top:22px;padding-top:14px}.legend{gap:8px 14px;margin:0 0 10px}.le
 .gauge-card svg{display:block;margin:6px auto 0}.gauge-count{margin:-6px 0 0;text-align:center;font-size:26px;letter-spacing:-.02em;color:#78909a}.gauge-count strong{color:var(--text)}.gauge-count small{display:block;font-size:11px;margin-top:2px;letter-spacing:0}
 .gauge-rows{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:12px 0 0;padding-top:10px;border-top:1px solid #131d22;font-size:13px}.gauge-rows dt{color:#8ba0a9}.gauge-rows dd{margin:0;font-weight:700;text-align:right}
 @media(min-width:760px){.load-grid{grid-template-columns:1fr 1fr}}
+
+/* OCRE-058 F4: actividad reciente */
+.activity-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.activity-list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #131d22;font-size:13px}.activity-list li:last-child{border-bottom:0}.activity-list i{width:8px;height:8px;border-radius:50%;background:var(--unknown)}.activity-list small{color:#6f858e;font-size:11px}.activity-empty{display:block!important;color:#6f858e}
