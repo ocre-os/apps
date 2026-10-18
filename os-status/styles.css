@@ -78,3 +78,11 @@ footer{margin-top:22px;padding-top:14px}.legend{gap:8px 14px;margin:0 0 10px}.le
 @media(max-width:760px){.refresh-icon{font-size:17px}.hero{display:none}}
 .verdict .orb-wrap{position:static;order:2;width:56px;flex:none}.verdict-copy{order:1;flex:1;min-width:0}
 .detail.agents-panel{margin:0}
+
+/* OCRE-058 F3: medidor de carga por agente */
+.load{padding:16px 0 0}.load-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}.load h2{font-size:16px;margin:0;letter-spacing:-.01em}
+.load-grid{display:grid;gap:10px}.load-empty{margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#0d1317;color:#78909a;font-size:13px}
+.gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px}.gauge-card header{display:flex;align-items:center;justify-content:space-between;gap:10px}.gauge-card header strong{font-size:17px}.gauge-load{font-size:12px;font-weight:700}
+.gauge-card svg{display:block;margin:6px auto 0}.gauge-count{margin:-6px 0 0;text-align:center;font-size:26px;letter-spacing:-.02em;color:#78909a}.gauge-count strong{color:var(--text)}.gauge-count small{display:block;font-size:11px;margin-top:2px;letter-spacing:0}
+.gauge-rows{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:12px 0 0;padding-top:10px;border-top:1px solid #131d22;font-size:13px}.gauge-rows dt{color:#8ba0a9}.gauge-rows dd{margin:0;font-weight:700;text-align:right}
+@media(min-width:760px){.load-grid{grid-template-columns:1fr 1fr}}
