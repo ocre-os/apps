@@ -5,6 +5,8 @@
  let last=null;
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:window.OcreAgents.normalize();
+  const stale=window.OcreAgents.isMonitorStale(state,last);
+  document.querySelector('.agents-panel').dataset.monitor=stale?'monitor_stale':'ok';
   for(const name of ['claude','codex']){
    const card=document.getElementById('agent-'+name);
    card.dataset.state=state.states[name];
@@ -13,11 +15,12 @@
     state.reasons[name]==='waiting_input'?'Espera tu respuesta':
     state.states[name]==='working'?'Tarea en curso':
     state.states[name]==='waiting'?'Sesión abierta sin tarea activa':
-    state.states[name]==='available'?'Sin sesión activa confirmada':'Sin una señal reciente confirmada';
+    state.states[name]==='available'?'Sin sesión activa confirmada':
+    stale?'monitor_stale: el monitor dejó de publicar':'Sin una señal reciente confirmada';
   }
   document.getElementById('agents-time').textContent=state.observedAt
    ?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt))
-   :'Sin muestra reciente';
+   :stale?'monitor_stale · sin muestra reciente':'Sin muestra reciente';
  }
  async function check(){
   const cycle=monitor.cycle+1;
