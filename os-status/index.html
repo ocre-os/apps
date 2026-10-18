@@ -49,6 +49,12 @@
       <ul id="attentionList" class="attention-list"></ul>
     </section>
 
+    <section class="load" aria-labelledby="loadHeading">
+      <div class="load-head"><h2 id="loadHeading">Carga de los agentes</h2><small id="loadTime" class="cycle-state">Sin muestra reciente</small></div>
+      <div id="loadGrid" class="load-grid"><p class="load-empty">Sin medición reciente de la carga.</p></div>
+      <p class="agents-note">Carga = tareas activas ÷ capacidad de 2 tareas reservadas. Es trabajo asignado, no porcentaje de avance.</p>
+    </section>
+
     <section class="details" aria-label="Detalle">
       <details id="det-platform" class="detail">
         <summary><span>Plataforma</span><small id="cycleState" class="cycle-state">Preparando ciclo</small></summary>
@@ -98,5 +104,7 @@
   <script src="agents-ui.js"></script>
   <script src="xpress.js"></script>
   <script src="xpress-ui.js"></script>
+  <script src="devenv.js"></script>
+  <script src="devenv-ui.js"></script>
 </body>
 </html>

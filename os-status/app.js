@@ -47,7 +47,7 @@
       return '<article class="row check" data-status="'+view.status+'"><h3>'+name+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+(view.text||desc)+'</p></article>';
     }).join('');
   }
-  let agentsInfo=null,xpressInfo=null;
+  let agentsInfo=null,xpressInfo=null,devenvInfo=null;
   const toneWord={healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',stale:'OBSOLETO',unknown:'SIN SEÑAL',neutral:'NO CONFIGURADO'};
   function setDomain(id,view,text){
     const tile=document.querySelector('[data-domain="'+id+'"]');
@@ -58,9 +58,10 @@
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
   function renderDomains(){
     const state=lastState;
-    const items=V.attention(state,agentsInfo&&agentsInfo.state,xpressInfo&&xpressInfo.state,{agentsChecked:!!(agentsInfo&&agentsInfo.checked),monitorStale:!!(agentsInfo&&agentsInfo.stale),xpressChecked:!!(xpressInfo&&xpressInfo.checked)});
+    const devenvIssues=window.OcreDevenv?window.OcreDevenv.issues(devenvInfo&&devenvInfo.state):[];
+    const items=V.attention(state,agentsInfo&&agentsInfo.state,xpressInfo&&xpressInfo.state,{agentsChecked:!!(agentsInfo&&agentsInfo.checked),monitorStale:!!(agentsInfo&&agentsInfo.stale),xpressChecked:!!(xpressInfo&&xpressInfo.checked),devenvIssues});
     setDomain('platform',V.platformView(state));
-    setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale)));
+    setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state));
     $('attentionCount').textContent=state?String(items.length):'';
     $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+i.tone+'"><span class="att-domain">'+i.domain+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
@@ -68,6 +69,7 @@
   }
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:xpress',(e)=>{xpressInfo=e.detail;renderDomains();});
+  window.addEventListener('ocre:devenv',(e)=>{devenvInfo=e.detail;renderDomains();});
   document.querySelectorAll('.domain').forEach((tile)=>tile.addEventListener('click',()=>{
     const target=$('det-'+tile.dataset.domain);target.open=true;target.scrollIntoView({behavior:'smooth',block:'start'});
   }));

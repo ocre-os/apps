@@ -33,8 +33,9 @@
   const label={healthy:'Operativa',degraded:'Degradada',failed:'Con falla',stale:'Obsoleta',unknown:'Sin señal'}[tone]||'Sin señal';
   return {tone,label,text:ok+' de '+counted+' puntos operativos'+(neutral?' · '+neutral+' sin configurar':'')};
  }
- function agentsView(agents,monitorStale){
+ function agentsView(agents,monitorStale,devenvIssues){
   if(monitorStale)return {tone:'stale',label:'Monitor detenido',text:'monitor_stale · sin muestra reciente'};
+  if(devenvIssues&&devenvIssues.length)return {tone:'degraded',label:'Atención',text:devenvIssues.map((i)=>i.short).join(' · ')};
   const c=agents?.states?.claude||'unknown',x=agents?.states?.codex||'unknown';
   const tone=c==='unknown'||x==='unknown'?'unknown':'healthy';
   return {tone,label:tone==='healthy'?'En línea':'Sin señal',text:'Claude '+AGENT_LABEL[c]+' · Codex '+AGENT_LABEL[x]};
@@ -50,6 +51,7 @@
  }
  function attention(state,agents,xpress,flags={}){
   const items=[];
+  for(const issue of flags.devenvIssues||[])items.push({domain:'Agentes',name:issue.name,tone:'degraded',text:issue.text});
   if(state){
    for(const key of CHECKS){const v=checkView(state,key);if(!['healthy','not_configured'].includes(v.status))items.push({domain:'Plataforma',name:names[key],tone:v.status,text:v.text||'Sin evidencia suficiente.'});}
    if(state.overall==='stale'&&!items.length)items.push({domain:'Plataforma',name:'Muestra',tone:'stale',text:'La última muestra es antigua.'});
