@@ -130,3 +130,23 @@ test('only a failed validation of the deployed revision asks for attention',()=>
  const items=V.attention(null,null,null,{validationIssues:issues});
  assert.equal(items[0].domain,'Desarrollo');assert.equal(V.devView(null,null,issues).label,'Atención');
 });
+const sup=(extra={})=>({at:new Date(at-60000).toISOString(),phase:'F0',mode:'observe',stopped:false,valid:6,rejected:4,launched:0,...extra});
+const withSupervisor=(value)=>({...sample(),supervisor:value});
+test('the supervisor summary keeps only phase, mode, stop flag and bounded counts',()=>{
+ assert.deepEqual(D.normalize(withSupervisor({...sup(),task:'OCRE-TASK-9'}),at).supervisor,sup());
+ for(const bad of [{phase:'F9'},{mode:'turbo'},{valid:-1},{rejected:1000},{launched:'0'},{stopped:'no'},{at:'ayer'}])
+  assert.equal(D.normalize(withSupervisor(sup(bad)),at).supervisor,null);
+ assert.equal(D.normalize(sample(),at).supervisor,null);
+ assert.doesNotMatch(JSON.stringify(D.normalize(withSupervisor({...sup(),task:'OCRE-TASK-9'}),at)),/OCRE-TASK/);
+});
+test('the queue view says it only observes, shows counts, and never reports health without a recent summary',()=>{
+ const view=(s,now=at)=>D.supervisorView(D.normalize(withSupervisor(s),at),now);
+ const ok=view(sup());
+ assert.equal(ok.label,'F0 · Solo observa');assert.equal(ok.tone,'healthy');
+ assert.match(ok.text,/6 con contrato válido · 4 rechazadas · 0 lanzadas/);
+ assert.equal(view(sup({stopped:true})).label,'Detenida');
+ assert.equal(view(sup({mode:'run',phase:'F2'})).label,'F2 · Ejecutando');
+ assert.equal(view(undefined).label,'Sin señal');
+ assert.equal(view(sup(),at+16*60000+1).label,'Sin señal');
+ assert.equal(D.supervisorView(D.normalize(),at).label,'Sin señal');
+});

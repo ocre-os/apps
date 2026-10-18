@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 from collector import claude_state, codex_state, aggregate, codex_processes, read_codex
-from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events, read_validations
+from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events, read_validations, read_supervisor
 import json
 class ActivityTests(unittest.TestCase):
     def test_claude_idle_is_waiting_not_busy(self):
@@ -173,6 +173,28 @@ class ValidationReadTests(unittest.TestCase):
 
     def test_missing_file_is_empty_and_never_success(self):
         self.assertEqual(read_validations(Path("/no/existe.jsonl")), [])
+
+class SupervisorReadTests(unittest.TestCase):
+    GOOD = {"at": "2026-10-18T12:00:00Z", "phase": "F0", "mode": "observe", "stopped": False, "valid": 6, "rejected": 4, "launched": 0}
+
+    def read(self, value):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(value if isinstance(value, str) else json.dumps(value))
+            return read_supervisor(path)
+
+    def test_valid_summary_passes_unchanged(self):
+        self.assertEqual(self.read(self.GOOD), self.GOOD)
+
+    def test_extra_missing_mistyped_or_out_of_range_fields_are_refused(self):
+        for bad in ({**self.GOOD, "task": "OCRE-TASK-9"}, {k: v for k, v in self.GOOD.items() if k != "valid"},
+                    {**self.GOOD, "valid": -1}, {**self.GOOD, "valid": 1000}, {**self.GOOD, "valid": True},
+                    {**self.GOOD, "stopped": "no"}, {**self.GOOD, "phase": "F9"}, {**self.GOOD, "mode": "turbo"},
+                    {**self.GOOD, "at": "ayer"}, "no es json", "[]"):
+            self.assertIsNone(self.read(bad))
+
+    def test_missing_file_is_none_never_success(self):
+        self.assertIsNone(read_supervisor(Path("/no/existe.json")))
 
 
 if __name__=="__main__": unittest.main()

@@ -10,6 +10,7 @@
  const REF=/^[0-9a-f]{7,40}$/;
  const MAX_EVENTS=5;
  const MAX_VALIDATIONS=3;
+ const SUPERVISOR_MAX_AGE_MS=15*60*1000;
  function int(value,min,max){return Number.isSafeInteger(value)&&value>=min&&value<=max?value:null;}
  function normalizeAgent(raw,capacity){
   const slots=int(raw?.slots_used,0,capacity);
@@ -43,8 +44,16 @@
   }
   return out.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,MAX_VALIDATIONS);
  }
+ // Supervisor de cola (OCRE-060): solo fase, modo, parada y conteos acotados.
+ function normalizeSupervisor(raw){
+  const count=(v)=>int(v,0,999);
+  if(!raw||!['F0','F1','F2','F3'].includes(raw.phase)||!['observe','run'].includes(raw.mode)||typeof raw.stopped!=='boolean'||!Number.isFinite(Date.parse(raw.at)))return null;
+  const valid=count(raw.valid),rejected=count(raw.rejected),launched=count(raw.launched);
+  if(valid===null||rejected===null||launched===null)return null;
+  return {at:raw.at,phase:raw.phase,mode:raw.mode,stopped:raw.stopped,valid,rejected,launched};
+ }
  function normalize(payload={},now=Date.now()){
-  const empty={valid:false,observedAt:null,agents:{},events:[],validations:[]};
+  const empty={valid:false,observedAt:null,agents:{},events:[],validations:[],supervisor:null};
   const time=Date.parse(payload?.observed_at);
   if(payload?.contract!=='ocre-devenv-v1'||!Number.isFinite(time)||now-time>MAX_AGE_MS||now-time< -5000)return empty;
   const capacity=int(payload.capacity,1,8)??2;
@@ -53,7 +62,7 @@
    const agent=normalizeAgent(payload.agents?.[name],capacity);
    if(agent)agents[name]=agent;
   }
-  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events),validations:normalizeValidations(payload.validations)}:empty;
+  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events),validations:normalizeValidations(payload.validations),supervisor:normalizeSupervisor(payload.supervisor)}:empty;
  }
  // Arco de medio círculo (izquierda → derecha) para una fracción 0..1 y la posición de la aguja.
  function geometry(used,capacity){
@@ -134,6 +143,14 @@
   const view=validationView(devenv,deployedSha,now);
   return view.tone==='failed'?[{name:'Validación fallida',short:'Validación fallida',text:view.text}]:[];
  }
+ // Cola autónoma: en F0 solo observa. Sin dato o con más de 15 min: «Sin señal», nunca «en orden».
+ function supervisorView(devenv,now=Date.now()){
+  const s=devenv?.valid?devenv.supervisor:null;
+  if(!s||now-Date.parse(s.at)>SUPERVISOR_MAX_AGE_MS)return {tone:'neutral',label:'Sin señal',text:'Sin resumen reciente del supervisor.'};
+  if(s.stopped)return {tone:'neutral',label:'Detenida',text:'Interruptor de parada activo; no se evalúa ni se lanza nada.'};
+  const mode=s.mode==='observe'?'Solo observa':'Ejecutando';
+  return {tone:'healthy',label:s.phase+' · '+mode,text:s.valid+' con contrato válido · '+s.rejected+' rechazadas · '+s.launched+' lanzadas · '+ago(s.at,now)+'.'};
+ }
  class DevenvMonitor{
   constructor({fetcher=(...args)=>fetch(...args),timeoutMs=5000}={}){this.fetcher=fetcher;this.timeoutMs=timeoutMs;this.cycle=0;this.controller=null;this.latest=normalize();}
   async check(url){
@@ -147,5 +164,5 @@
    return state;
   }
  }
- return {normalize,normalizeEvents,normalizeValidations,validationView,validationIssues,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
+ return {normalize,normalizeEvents,normalizeSupervisor,supervisorView,normalizeValidations,validationView,validationIssues,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
 });

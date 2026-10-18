@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#070b0d">
   <title>OCRE OS Status</title>
-  <link rel="stylesheet" href="styles.css?v=20261018-ocre059f2">
+  <link rel="stylesheet" href="styles.css?v=20261018-ocre060f0">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -69,13 +69,14 @@
         <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
       </details>
       <details id="det-dev" class="detail">
-        <summary><span>Desarrollo</span><small class="cycle-state">Versión, validación y Xpress</small></summary>
+        <summary><span>Desarrollo</span><small class="cycle-state">Versión, validación, cola y Xpress</small></summary>
         <div class="rows">
           <article class="row meta"><h3>Versión</h3><p><strong id="version">—</strong> <small id="commit">commit no informado</small></p></article>
           <article class="row meta"><h3>Latencia</h3><p><strong id="latency">—</strong> <small>observador → plataforma</small></p></article>
           <article class="row meta"><h3>Última comprobación</h3><p><strong id="checkedAt">—</strong> <small id="age">sin muestra</small></p></article>
           <article class="row meta"><h3>Contrato</h3><p><strong id="contractState">—</strong> <small>ocre-status-v1</small></p></article>
           <article id="validation-card" class="row agent-card" data-state="unknown"><h3>Última validación</h3><p class="agent-state" aria-live="polite">Sin señal</p><p class="agent-detail">Sin resultado de validación registrado.</p></article>
+          <article id="supervisor-card" class="row agent-card" data-state="unknown"><h3>Cola autónoma</h3><p class="agent-state" aria-live="polite">Sin señal</p><p class="agent-detail">Sin resumen reciente del supervisor.</p></article>
           <article id="xpress-card" class="row agent-card" data-state="unknown"><h3>Bandeja Xpress</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p><p id="xpress-counts" class="agent-detail"></p></article>
         </div>
         <p class="agents-note">Solo contadores de Xpress; no muestra mensajes ni identificadores. Validaciones, respaldos y cuota de agentes llegan en fases posteriores.</p>
@@ -102,15 +103,15 @@
     <div id="matrixHint" class="matrix-hint">LIVE TELEMETRY / OCRE OS</div>
   </section>
 
-  <script src="status.js?v=20261018-ocre059f2"></script>
-  <script src="view.js?v=20261018-ocre059f2"></script>
-  <script src="matrix.js?v=20261018-ocre059f2"></script>
-  <script src="app.js?v=20261018-ocre059f2"></script>
-  <script src="agents.js?v=20261018-ocre059f2"></script>
-  <script src="agents-ui.js?v=20261018-ocre059f2"></script>
-  <script src="xpress.js?v=20261018-ocre059f2"></script>
-  <script src="xpress-ui.js?v=20261018-ocre059f2"></script>
-  <script src="devenv.js?v=20261018-ocre059f2"></script>
-  <script src="devenv-ui.js?v=20261018-ocre059f2"></script>
+  <script src="status.js?v=20261018-ocre060f0"></script>
+  <script src="view.js?v=20261018-ocre060f0"></script>
+  <script src="matrix.js?v=20261018-ocre060f0"></script>
+  <script src="app.js?v=20261018-ocre060f0"></script>
+  <script src="agents.js?v=20261018-ocre060f0"></script>
+  <script src="agents-ui.js?v=20261018-ocre060f0"></script>
+  <script src="xpress.js?v=20261018-ocre060f0"></script>
+  <script src="xpress-ui.js?v=20261018-ocre060f0"></script>
+  <script src="devenv.js?v=20261018-ocre060f0"></script>
+  <script src="devenv-ui.js?v=20261018-ocre060f0"></script>
 </body>
 </html>

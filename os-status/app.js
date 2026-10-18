@@ -65,6 +65,10 @@
       const view=window.OcreDevenv.validationView(devenvInfo&&devenvInfo.state,state&&state.deployment&&state.deployment.commit),card=$('validation-card');
       card.dataset.state=view.tone;card.querySelector('.agent-state').textContent=view.label;card.querySelector('.agent-detail').textContent=view.text;
     }
+    if(window.OcreDevenv){
+      const queue=window.OcreDevenv.supervisorView(devenvInfo&&devenvInfo.state),qcard=$('supervisor-card');
+      qcard.dataset.state=queue.tone;qcard.querySelector('.agent-state').textContent=queue.label;qcard.querySelector('.agent-detail').textContent=queue.text;
+    }
     setDomain('platform',V.platformView(state));
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));

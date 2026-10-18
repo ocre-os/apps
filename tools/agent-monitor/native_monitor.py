@@ -224,6 +224,23 @@ def clean_validations(raw):
         out.append({"at":item["at"],"sha":item["sha"],"result":item["result"]})
     return out[:3]
 
+def clean_supervisor(raw):
+    """Revalida el resumen del supervisor antes de publicarlo; ante cualquier duda no se publica."""
+    keys={"at":str,"phase":str,"mode":str,"stopped":bool,"valid":int,"rejected":int,"launched":int}
+    if not isinstance(raw,dict) or set(raw)!=set(keys):
+        return None
+    for key,kind in keys.items():
+        value=raw[key]
+        if not isinstance(value,kind) or (kind is int and (isinstance(value,bool) or not 0<=value<=999)):
+            return None
+    try:
+        dt.datetime.strptime(raw["at"],"%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+    if raw["phase"] not in ("F0","F1","F2","F3") or raw["mode"] not in ("observe","run"):
+        return None
+    return dict(raw)
+
 def build_devenv_sample(data, codex_turn, codex_quota, now):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
@@ -235,7 +252,7 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
-        "events":events,"validations":clean_validations(data.get("validations"))}
+        "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor"))}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""
