@@ -59,10 +59,19 @@
   function renderDomains(){
     const state=lastState;
     const devenvIssues=window.OcreDevenv?window.OcreDevenv.issues(devenvInfo&&devenvInfo.state):[];
-    const items=V.attention(state,agentsInfo&&agentsInfo.state,xpressInfo&&xpressInfo.state,{agentsChecked:!!(agentsInfo&&agentsInfo.checked),monitorStale:!!(agentsInfo&&agentsInfo.stale),xpressChecked:!!(xpressInfo&&xpressInfo.checked),devenvIssues});
+    const validationIssues=window.OcreDevenv?window.OcreDevenv.validationIssues(devenvInfo&&devenvInfo.state,state&&state.deployment&&state.deployment.commit):[];
+    const items=V.attention(state,agentsInfo&&agentsInfo.state,xpressInfo&&xpressInfo.state,{agentsChecked:!!(agentsInfo&&agentsInfo.checked),monitorStale:!!(agentsInfo&&agentsInfo.stale),xpressChecked:!!(xpressInfo&&xpressInfo.checked),devenvIssues,validationIssues});
+    if(window.OcreDevenv){
+      const view=window.OcreDevenv.validationView(devenvInfo&&devenvInfo.state,state&&state.deployment&&state.deployment.commit),card=$('validation-card');
+      card.dataset.state=view.tone;card.querySelector('.agent-state').textContent=view.label;card.querySelector('.agent-detail').textContent=view.text;
+    }
+    if(window.OcreDevenv){
+      const queue=window.OcreDevenv.supervisorView(devenvInfo&&devenvInfo.state),qcard=$('supervisor-card');
+      qcard.dataset.state=queue.tone;qcard.querySelector('.agent-state').textContent=queue.label;qcard.querySelector('.agent-detail').textContent=queue.text;
+    }
     setDomain('platform',V.platformView(state));
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
-    setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state));
+    setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));
     $('attentionCount').textContent=state?String(items.length):'';
     $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+i.tone+'"><span class="att-domain">'+i.domain+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
     if(state&&state.overall==='healthy')$('heroMessage').textContent=V.verdictText(items,state);

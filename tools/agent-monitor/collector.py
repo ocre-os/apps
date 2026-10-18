@@ -222,14 +222,58 @@ def read_events(path, limit=5):
             continue
     return sorted(events,key=lambda e:e["at"],reverse=True)[:limit]
 
+VALIDATION_RESULTS=("pass","fail")
+
+def read_validations(path, limit=3):
+    """Últimos resultados de validación por revisión (OCRE-059 F2); cada línea se valida de nuevo: hora, hex y pass/fail."""
+    items=[]
+    try:
+        lines=Path(path).read_text(encoding="utf-8").splitlines()[-200:]
+    except OSError:
+        return []
+    for line in lines:
+        try:
+            item=json.loads(line)
+            at,sha,result=item.get("at"),item.get("sha"),item.get("result")
+            dt.datetime.strptime(at,"%Y-%m-%dT%H:%M:%SZ")
+            if result not in VALIDATION_RESULTS or not (isinstance(sha,str) and EVENT_REF.fullmatch(sha)):
+                continue
+            items.append({"at":at,"sha":sha,"result":result})
+        except (ValueError,TypeError,AttributeError):
+            continue
+    return sorted(items,key=lambda v:v["at"],reverse=True)[:limit]
+
+SUPERVISOR_KEYS={"at":str,"phase":str,"mode":str,"stopped":bool,"valid":int,"rejected":int,"launched":int}
+
+def read_supervisor(path):
+    """Resumen del supervisor de cola (OCRE-060): sólo fase, modo, parada y conteos acotados; nada más sale de aquí."""
+    try:
+        item=json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(item,dict) or set(item)!=set(SUPERVISOR_KEYS):
+            return None
+        for key,kind in SUPERVISOR_KEYS.items():
+            value=item[key]
+            if not isinstance(value,kind) or (kind is int and (isinstance(value,bool) or not 0<=value<=999)):
+                return None
+        dt.datetime.strptime(item["at"],"%Y-%m-%dT%H:%M:%SZ")
+        if item["phase"] not in ("F0","F1","F2","F3") or item["mode"] not in ("observe","run"):
+            return None
+        return item
+    except (OSError,ValueError,TypeError):
+        return None
+
 def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_json, now=None,
                    ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex"),
-                   events_path=Path("/home/ocre/.ocre-os/status-events.jsonl")):
+                   events_path=Path("/home/ocre/.ocre-os/status-events.jsonl"),
+                   validations_path=Path("/home/ocre/.ocre-os/validations.jsonl"),
+                   supervisor_path=Path("/home/ocre/.ocre-os/supervisor-status.json")):
     # `ocre-agent` resuelve el registro desde el repositorio actual: se ejecuta dentro del checkout de core,
     # no en el directorio heredado de Windows (por eso las reservas salían ilegibles bajo wsl.exe).
     """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
     slots=slots_by_provider(runner([str(ocre_agent),"status"],15,core_scripts.parent))
-    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path)}
+    result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path),
+            "validations":read_validations(validations_path),
+            "supervisor":read_supervisor(supervisor_path)}
     if with_quota:
         result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result

@@ -89,3 +89,4 @@ footer{margin-top:22px;padding-top:14px}.legend{gap:8px 14px;margin:0 0 10px}.le
 
 /* OCRE-058 F4: actividad reciente */
 .activity-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.activity-list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #131d22;font-size:13px}.activity-list li:last-child{border-bottom:0}.activity-list i{width:8px;height:8px;border-radius:50%;background:var(--unknown)}.activity-list small{color:#6f858e;font-size:11px}.activity-empty{display:block!important;color:#6f858e}
+.agent-card[data-state=healthy] .agent-state::before{background:#4ade80}.agent-card[data-state=failed] .agent-state::before{background:#fb7185}.agent-card[data-state=neutral] .agent-state::before{background:#94a3b8}
