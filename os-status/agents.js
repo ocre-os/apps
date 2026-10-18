@@ -17,6 +17,8 @@
   }
   return result;
  }
+ // OCRE-056 CA-03: tras al menos una consulta, la ausencia de muestra vigente es monitor_stale (publicador o endpoint detenidos).
+ function isMonitorStale(state,checked){return Boolean(checked)&&!state?.observedAt;}
  class AgentMonitor{
   constructor({fetcher=(...args)=>fetch(...args),timeoutMs=5000}={}){
    this.fetcher=fetcher;this.timeoutMs=timeoutMs;this.cycle=0;this.controller=null;this.latest=normalize();
@@ -34,5 +36,5 @@
    return state;
   }
  }
- return {normalize,AgentMonitor};
+ return {normalize,AgentMonitor,isMonitorStale};
 });

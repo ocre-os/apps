@@ -16,3 +16,9 @@ test('old request cannot overwrite fresh request',async()=>{
  const a=m.check('test');await m.check('test');resolve({ok:true,json:async()=>sample()});await a;
  assert.equal(m.latest.states.claude,'unknown');
 });
+test('monitor_stale only after a check without a current sample',()=>{
+ const {isMonitorStale,normalize}=require('./agents.js');
+ assert.equal(isMonitorStale(normalize(),null),false);
+ assert.equal(isMonitorStale(normalize(),normalize()),true);
+ assert.equal(isMonitorStale(normalize(sample(),Date.parse(stamp)),{}),false);
+});
