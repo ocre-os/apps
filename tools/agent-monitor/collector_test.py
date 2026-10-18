@@ -110,9 +110,16 @@ class DevenvTests(unittest.TestCase):
         self.assertEqual(quota_view(self.quota(windows=[{"name":"p","remaining":0,"resets_at":NOW+5}]),NOW)["state"],"exhausted")
         for bad in (None,{},{"snapshot":{"complete":False,"windows":[]}},self.quota(complete=False)):
             self.assertEqual(quota_view(bad,NOW)["state"],"unknown")
+    def test_commands_run_inside_the_core_checkout_not_the_inherited_directory(self):
+        seen=[]
+        def runner(command,timeout,cwd=None):
+            seen.append(cwd);return {"reservations":[]} if command[1]=="status" else self.quota()
+        collect_devenv(self.sessions(),Path("/core/scripts"),True,runner,NOW)
+        self.assertEqual(seen,[Path("/core"),Path("/core")])
     def test_collect_devenv_asks_for_quota_only_when_requested(self):
         calls=[]
-        def runner(command,timeout):
+        def runner(command,timeout,cwd=None):
+            self.assertEqual(cwd,Path("/core"))
             calls.append(command[1] if len(command)>1 else command[0])
             return {"reservations":[]} if command[1]=="status" else self.quota()
         directory=self.sessions()
