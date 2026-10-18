@@ -1,7 +1,7 @@
 import unittest
 import json
 import sqlite3
-from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT
+from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -67,6 +67,81 @@ class ProjectionTests(unittest.TestCase):
     def test_inprogress_command_in_latest_turn_is_working(self):
         items=[("B","commandExecution",{"status":"inProgress"})]
         self.assertEqual(self.state(items),"working")
+
+class IdleEngineTests(unittest.TestCase):
+    """A live engine process is positive evidence about which persisted records are dead."""
+    ENGINE=NOW-500
+
+    def state(self,turns,items=(),engine=ENGINE,now=NOW):
+        return inspect_projection(projection(turns,list(items)),now,engine)
+
+    def test_old_resolved_history_under_live_engine_is_available(self):
+        # The app-server stays alive for days; idle history is not a session.
+        self.assertEqual(self.state([("A","completed",NOW-100,NOW-90,1)]),"available")
+        self.assertEqual(self.state([("A","failed",NOW-100,NOW-90,1)]),"available")
+
+    def test_just_finished_turn_still_waits(self):
+        self.assertEqual(self.state([("A","completed",NOW-20,NOW-10,1)]),"waiting")
+
+    def timed(self,turns,items):
+        """items: (turn, kind, value, activity_epoch_seconds)."""
+        db=projection(turns,[])
+        for turn,kind,value,when in items:
+            db.execute("INSERT INTO thread_items VALUES('c',?,?,?,?,?,?)",
+                       (turn,kind,json.dumps(value),when*1000,when*1000,when*1000))
+        return db
+
+    def test_orphan_inprogress_turn_from_before_the_engine_is_available(self):
+        db=self.timed([("A","inProgress",self.ENGINE-5000,None,1)],[("A","userMessage",{},self.ENGINE-5000)])
+        self.assertEqual(inspect_projection(db,NOW,self.ENGINE),"available")
+
+    def test_orphan_inprogress_command_from_before_the_engine_is_ignored(self):
+        turns=[("A","completed",self.ENGINE-100,self.ENGINE-90,1),("B","completed",NOW-100,NOW-90,2)]
+        db=self.timed(turns,[("A","commandExecution",{"status":"inProgress"},self.ENGINE-95)])
+        self.assertEqual(inspect_projection(db,NOW,self.ENGINE),"available")
+
+    def test_same_command_after_the_engine_started_is_still_uncertain(self):
+        turns=[("A","completed",self.ENGINE+10,self.ENGINE+20,1),("B","completed",NOW-100,NOW-90,2)]
+        db=self.timed(turns,[("A","commandExecution",{"status":"inProgress"},self.ENGINE+15)])
+        self.assertEqual(inspect_projection(db,NOW,self.ENGINE),"unknown")
+
+    def test_inprogress_turn_started_under_this_engine_but_silent_is_unknown(self):
+        db=self.timed([("A","inProgress",NOW-200,None,1)],[("A","userMessage",{},NOW-200)])
+        self.assertEqual(inspect_projection(db,NOW,self.ENGINE),"unknown")
+
+    def test_live_unresolved_item_under_this_engine_is_unknown(self):
+        turns=[("A","completed",NOW-100,NOW-90,1)]
+        db=self.timed(turns,[("A","commandExecution",{"status":"completed","processId":"7","exitCode":None},NOW-95)])
+        self.assertEqual(inspect_projection(db,NOW,self.ENGINE),"unknown")
+
+    def test_future_dated_history_is_never_available(self):
+        self.assertEqual(self.state([("A","completed",NOW+500,NOW+510,1)]),"unknown")
+
+    def test_without_engine_evidence_old_history_stays_unknown(self):
+        self.assertEqual(self.state([("A","completed",NOW-100,NOW-90,1)],engine=None),"unknown")
+
+    def test_no_threads_is_unknown(self):
+        self.assertEqual(self.state([]),"unknown")
+
+class CombineTests(unittest.TestCase):
+    def test_work_in_either_source_wins(self):
+        self.assertEqual(combine_states(["available","working"]),"working")
+        self.assertEqual(combine_states(["unknown","working"]),"working")
+
+    def test_any_unknown_source_blocks_available(self):
+        self.assertEqual(combine_states(["available","unknown"]),"unknown")
+
+    def test_both_idle_is_available_and_waiting_beats_available(self):
+        self.assertEqual(combine_states(["available","available"]),"available")
+        self.assertEqual(combine_states(["available","waiting"]),"waiting")
+
+    def test_no_sources_is_unknown(self):
+        self.assertEqual(combine_states([]),"unknown")
+
+class StartTimeTests(unittest.TestCase):
+    def test_parses_epoch_lines_and_ignores_noise(self):
+        self.assertEqual(parse_start_times("1791946099\r\n1792227436\r\n"),[1791946099,1792227436])
+        self.assertEqual(parse_start_times("error: acceso denegado"),[])
 
 class RequestTests(unittest.TestCase):
     def test_request_names_the_client_and_carries_token(self):

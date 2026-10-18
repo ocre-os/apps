@@ -1,10 +1,10 @@
 name: Status tests
 on:
   pull_request:
-    paths: ['os-status/**', '.github/workflows/status-tests.yml']
+    paths: ['os-status/**', 'tools/agent-monitor/**', '.github/workflows/status-tests.yml']
   push:
     branches: [main]
-    paths: ['os-status/**', '.github/workflows/status-tests.yml']
+    paths: ['os-status/**', 'tools/agent-monitor/**', '.github/workflows/status-tests.yml']
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,3 +16,8 @@ jobs:
           node-version: '22'
       - run: node --test os-status/*.test.js
       - run: node --check os-status/matrix.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest collector_test native_monitor_test sources_test
+        working-directory: tools/agent-monitor

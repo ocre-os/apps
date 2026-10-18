@@ -45,7 +45,15 @@ def pending_label(kind,value):
     # fileChange inProgress or future item types: cannot confirm closure.
     return "uncertain" if item_status not in TERMINAL_ITEM_STATUSES else None
 
-def inspect_projection(db, timestamp):
+def item_activity(created,began,done):
+    return max(created or 0,began or 0,done or 0)/1000
+
+def inspect_projection(db, timestamp, engine_started=None):
+    """State of the persisted Codex Desktop history.
+
+    engine_started (epoch seconds of the oldest live Codex process) is positive evidence of
+    which records can no longer be executing: a turn or item whose last activity predates the
+    running engine is orphaned. Without it every unresolved record stays uncertain."""
     turns=db.execute("""
       SELECT t.thread_id,t.turn_id,t.status,t.started_at,t.completed_at
       FROM thread_turns t WHERE t.rollout_ordinal =
@@ -62,11 +70,13 @@ def inspect_projection(db, timestamp):
         """,(thread,)).fetchall()
         current=[r for r in rows if r[0]==turn]
         latest=max([started or 0,ended or 0]+[
-            max(created or 0,began or 0,done or 0)/1000 for _,_,_,created,began,done in current])
-        # Persisted history is not a live engine connection. Expire uncertain
-        # projections instead of republishing historical state as current.
-        if timestamp-latest>30 or timestamp-latest< -5:
-            states.append("unknown");continue
+            item_activity(created,began,done) for _,_,_,created,began,done in current])
+        orphan=engine_started is not None and latest<engine_started
+        if orphan:
+            # The engine that wrote an unfinished turn is gone: nothing still executes it.
+            if status=="inProgress":status="interrupted"
+        if engine_started is not None:
+            rows=[r for r in rows if item_activity(r[3],r[4],r[5])>=engine_started]
         pending=[]
         for item_turn,kind,raw,_,_,_ in rows:
             try:value=json.loads(raw)
@@ -78,39 +88,65 @@ def inspect_projection(db, timestamp):
             # An unfinished item of an earlier turn cannot be confirmed closed.
             if label and item_turn!=turn:label="uncertain"
             if label:pending.append(label)
+        stale=timestamp-latest>30 or timestamp-latest< -5
+        if stale:
+            # Persisted history is not a live engine connection: expire uncertain
+            # projections instead of republishing historical state as current. Only a
+            # resolved history under a known live engine proves nothing is in flight.
+            idle=(engine_started is not None and timestamp>=latest and not pending
+                  and status in {"completed","failed","interrupted"})
+            states.append("available" if idle else "unknown");continue
         states.append(runtime_state([status],pending,True))
     if "working" in states:return "working"
     if not states or "unknown" in states:return "unknown"
     if "waiting" in states:return "waiting"
     return "available"
 
+def parse_start_times(output):
+    """Epoch start times (one per line) of the live Codex Desktop processes."""
+    return [int(line) for line in output.split() if line.strip().isdigit()]
+
 def codex_windows(home):
     try:
         result=subprocess.run(["powershell.exe","-NoProfile","-Command",
-           "(Get-Process codex -ErrorAction SilentlyContinue | Measure-Object).Count"],
+           "Get-Process codex -ErrorAction SilentlyContinue | ForEach-Object { "
+           "[int](($_.StartTime.ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds) }"],
            capture_output=True,text=True,timeout=3,check=True)
-        alive=int(result.stdout.strip())>0
-        if not alive:return "available"
+        starts=parse_start_times(result.stdout)
+        if not starts:
+            # No output at all means no process; unparseable output is not proof.
+            return "unknown" if result.stdout.strip() else "available"
         db=sqlite3.connect("file:"+str(home/"thread_history_1.sqlite").replace("\\","/")+"?mode=ro",uri=True,timeout=1)
-        try:return inspect_projection(db,time.time())
+        try:return inspect_projection(db,time.time(),min(starts))
         finally:db.close()
     except (OSError,ValueError,sqlite3.Error,subprocess.SubprocessError):
         return "unknown"
 
-def claude_wsl(collector):
+def combine_states(states):
+    """One verdict per source; any unknown source keeps the agent unknown unless work is proven."""
+    if "working" in states:return "working"
+    if not states or "unknown" in states:return "unknown"
+    if "waiting" in states:return "waiting"
+    return "available"
+
+def wsl_agents(collector):
     try:
         result=subprocess.run(["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",
             collector,"--codex-dir","/home/ocre/.codex/sessions"],
             capture_output=True,text=True,timeout=4,check=True)
-        return json.loads(result.stdout)["agents"]["claude"]["state"]
+        agents=json.loads(result.stdout)["agents"]
+        return agents["claude"]["state"],agents["codex"]["state"]
     except (OSError,ValueError,KeyError,subprocess.SubprocessError):
-        return "unknown"
+        return "unknown","unknown"
 
 def snapshot(home,collector):
     stamp=dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
+    claude,codex_cli=wsl_agents(collector)
+    # Codex runs both as the Windows desktop app and as the CLI inside WSL.
+    codex=combine_states([codex_windows(home),codex_cli])
     return {"contract":"ocre-agents-v1","observed_at":stamp,"agents":{
-      "claude":{"state":claude_wsl(collector),"observed_at":stamp},
-      "codex":{"state":codex_windows(home),"observed_at":stamp}}}
+      "claude":{"state":claude,"observed_at":stamp},
+      "codex":{"state":codex,"observed_at":stamp}}}
 
 USER_AGENT="OCRE-Agent-Monitor/1"
 
