@@ -4,7 +4,9 @@
   else root.OcreStatus = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const CRITICAL = ['web', 'api', 'database', 'schema'];
-  const DEGRADABLE = ['worker', 'storage', 'notifications', 'pwa'];
+  const DEGRADABLE = ['worker', 'media', 'storage', 'notifications', 'pwa'];
+  // Comprobaciones que un backend anterior puede no informar: se muestran neutrales, nunca como falla o sin señal.
+  const OPTIONAL = new Set(['media']);
   // `not_configured` (OCRE-058 F2): no hay nada que medir; es neutro y nunca degrada ni cuenta como falla.
   const VALID = new Set(['healthy', 'degraded', 'failed', 'stale', 'unknown', 'not_configured']);
   const STALE_AFTER_MS = 30000;
@@ -28,6 +30,11 @@
     const checks = { web: 'healthy' };
     const reasons = {};
     [...CRITICAL.slice(1), ...DEGRADABLE].forEach((key) => {
+      if (OPTIONAL.has(key) && payload && payload.contract === 'ocre-status-v1' && source[key] === undefined) {
+        checks[key] = 'not_configured';
+        reasons[key] = 'not_reported';
+        return;
+      }
       checks[key] = cleanStatus(source[key]?.status);
       const reason = source[key]?.reason;
       if (typeof reason === 'string' && REASON_CODE.test(reason)) reasons[key] = reason;

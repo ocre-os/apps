@@ -67,7 +67,7 @@ test('issues feed the agents tile and the attention list',()=>{
  const issues=D.issues(s);
  const tile=V.agentsView({states:{claude:'working',codex:'available'}},false,issues);
  assert.equal(tile.tone,'degraded');assert.match(tile.text,/Claude carga completa/);
- const state={checks:{web:'healthy',api:'healthy',database:'healthy',schema:'healthy',worker:'healthy',storage:'healthy',notifications:'healthy',pwa:'healthy'},overall:'healthy',reasons:{}};
+ const state={checks:{web:'healthy',api:'healthy',database:'healthy',schema:'healthy',worker:'healthy',media:'healthy',storage:'healthy',notifications:'healthy',pwa:'healthy'},overall:'healthy',reasons:{}};
  const items=V.attention(state,{states:{claude:'working',codex:'available'}},{state:'ok'},{devenvIssues:issues});
  assert.equal(items.length,1);assert.equal(items[0].domain,'Agentes');
  assert.equal(V.agentsView({states:{claude:'working',codex:'available'}},true,issues).label,'Monitor detenido');

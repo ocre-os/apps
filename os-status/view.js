@@ -4,7 +4,7 @@
  else root.OcreView=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  // OCRE-058 F1: lógica pura de la vista (sin DOM). `not_configured`/`disabled` son neutros: no son falla ni degradan el veredicto.
- const CHECKS=['web','api','database','schema','worker','storage','notifications','pwa'];
+ const CHECKS=['web','api','database','schema','worker','media','storage','notifications','pwa'];
  const SEVERITY={failed:0,stale:1,degraded:2,unknown:3};
  const AGENT_LABEL={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin información'};
  const reasonText={
@@ -14,16 +14,20 @@
   no_channel_configured:'No hay canal de salida configurado.',backlog:'Hay notificaciones pendientes vencidas.',query_failed:'No se pudo consultar la cola.',
   schema_not_ready:'Esperando un esquema válido.',database_unavailable:'Base de datos no disponible.',
   not_configured:'Sondeo no configurado.',manifest_invalid:'El manifiesto no es válido.',manifest_unavailable:'No hay manifiesto.',
-  service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.'};
- const names={web:'Acceso externo',api:'API',database:'PostgreSQL',schema:'Esquema / migraciones',worker:'Notification worker',storage:'Almacenamiento',notifications:'Canales de salida',pwa:'PWA'};
+  service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.',
+  not_reported:'Este entorno aún no informa este punto.'};
+ // El mismo código puede significar otra cosa según el punto: el atraso de medios son fotos y videos sin procesar.
+ const keyedReason={media:{backlog:'Hay fotos o videos esperando más de 15 minutos.',no_heartbeat:'El procesador de medios aún no reporta actividad.',heartbeat_stale:'El procesador de medios no reporta actividad reciente.',heartbeat_expired:'El procesador de medios dejó de reportar actividad.'}};
+ function reasonFor(key,reason){return (keyedReason[key]&&keyedReason[key][reason])||reasonText[reason];}
+ const names={web:'Acceso externo',api:'API',database:'PostgreSQL',schema:'Esquema / migraciones',worker:'Notification worker',media:'Medios de Solicitudes',storage:'Almacenamiento',notifications:'Canales de salida',pwa:'PWA'};
  function checkView(state,key){
   const value=state?.checks?.[key]||'unknown';
   const reason=state?.reasons?.[key];
-  if(value==='not_configured')return {status:'not_configured',text:reasonText[reason]||'No configurado.'};
+  if(value==='not_configured')return {status:'not_configured',text:reasonFor(key,reason)||'No configurado.'};
   // Compatibilidad: backends anteriores a OCRE-058 F2 informaban este caso como `unknown`.
   if(key==='notifications'&&value==='unknown'&&reason==='no_channel_configured')return {status:'not_configured',text:'No hay canal de salida configurado.'};
   if(value==='stale')return {status:'stale',text:'Muestra antigua; sin evidencia vigente.'};
-  return {status:value,text:value!=='healthy'&&reasonText[reason]?reasonText[reason]:''};
+  return {status:value,text:value!=='healthy'&&reasonFor(key,reason)?reasonFor(key,reason):''};
  }
  function platformView(state){
   if(!state)return {tone:'unknown',label:'Comprobando',text:'Consultando la plataforma.'};

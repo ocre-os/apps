@@ -11,6 +11,7 @@
     database:['PostgreSQL','Conectividad con la base de datos.'],
     schema:['Esquema / migraciones','Compatibilidad del esquema desplegado.'],
     worker:['Notification worker','Procesamiento asíncrono de notificaciones.'],
+    media:['Medios de Solicitudes','Procesamiento de fotos y videos de las Solicitudes.'],
     storage:['Almacenamiento','Disponibilidad de archivos operativos.'],
     notifications:['Canales de salida','Correo y canales externos observables.'],
     pwa:['PWA','Recursos de aplicación instalable.'],
