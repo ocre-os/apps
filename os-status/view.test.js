@@ -31,7 +31,7 @@ test('monitor_stale only after a check',()=>{
  assert.equal(V.agentsView(agents('unknown','unknown'),true).label,'Monitor detenido');
 });
 test('agents and xpress summaries',()=>{
- assert.equal(V.agentsView(agents('working','waiting'),false).text,'Claude Trabajando · Codex En espera');
+ assert.equal(V.agentsView(agents('working','waiting'),false).text,'Claude Trabajando · Codex En espera · desde staging');
  assert.equal(V.agentsView(agents('available','unknown'),false).tone,'unknown');
  assert.equal(V.xpressView({state:'disabled'}).tone,'neutral');
  assert.equal(V.xpressView({state:'reconcile'}).tone,'degraded');
@@ -39,7 +39,7 @@ test('agents and xpress summaries',()=>{
 });
 test('dev summary shows version, short sha and xpress state',()=>{
  const d=V.devView(state({deployment:{version:'0.1.0',commit:'0123456789abcdef'}}),{state:'disabled'});
- assert.match(d.text,/Versión 0\.1\.0 · 0123456 · Xpress no habilitado/);
+ assert.match(d.text,/Versión 0\.1\.0 · 0123456 · Xpress \(staging\) no habilitado/);
  assert.equal(d.label,'Sin señales aún');
 });
 test('stale platform state is reported as stale',()=>{
