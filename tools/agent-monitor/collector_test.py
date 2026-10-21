@@ -5,6 +5,7 @@ from unittest import mock
 from collector import claude_state, codex_state, aggregate, codex_processes, read_codex
 from collector import claude_turn_seconds, slots_by_provider, quota_view, collect_devenv, read_events, read_validations, read_supervisor
 import json
+import os
 class ActivityTests(unittest.TestCase):
     def test_claude_idle_is_waiting_not_busy(self):
         self.assertEqual(claude_state({"status":"idle"}, True), "waiting")
@@ -198,3 +199,64 @@ class SupervisorReadTests(unittest.TestCase):
 
 
 if __name__=="__main__": unittest.main()
+
+
+class RemoteClaudeTests(unittest.TestCase):
+    NOW=1_800_000_000.0
+
+    def history(self, directory, offset_s):
+        path=Path(directory)/"claude_tool_call.log"
+        path.write_text("contenido que no se lee")
+        os.utime(path,(self.NOW-offset_s,self.NOW-offset_s))
+        return path
+
+    def run_record(self, directory, status, pid, updated_offset_s=7200):
+        import datetime as dt
+        updated=dt.datetime.fromtimestamp(self.NOW-updated_offset_s,dt.timezone.utc).isoformat()
+        path=Path(directory)/"full.json"
+        path.write_text(json.dumps({"status":status,"pid":pid,"updated_at":updated}))
+        return Path(directory)
+
+    def test_recent_desktop_commander_call_means_working(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            history=self.history(d,30)
+            self.assertTrue(remote_claude_working(self.NOW,history,Path(d)/"sin-corridas",lambda pid:False))
+
+    def test_old_call_without_live_run_is_not_a_signal(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            history=self.history(d,600)
+            self.assertFalse(remote_claude_working(self.NOW,history,Path(d)/"sin-corridas",lambda pid:False))
+
+    def test_live_bounded_run_means_working_even_when_calls_are_old(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            history=self.history(d,3600)
+            runs=self.run_record(d,"running",123)
+            self.assertTrue(remote_claude_working(self.NOW,history,runs,lambda pid:pid==123))
+
+    def test_dead_or_finished_runs_do_not_count(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            history=self.history(d,3600)
+            self.assertFalse(remote_claude_working(self.NOW,history,self.run_record(d,"running",123),lambda pid:False))
+            self.assertFalse(remote_claude_working(self.NOW,history,self.run_record(d,"passed",123),lambda pid:True))
+
+    def test_missing_history_is_not_a_signal_and_never_raises(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            self.assertFalse(remote_claude_working(self.NOW,Path(d)/"no-existe.jsonl",Path(d)/"sin-corridas",lambda pid:False))
+
+    def test_signal_only_upgrades_to_working(self):
+        from collector import claude_with_remote
+        self.assertEqual(claude_with_remote("available",True),"working")
+        self.assertEqual(claude_with_remote("waiting",False),"waiting")
+        self.assertEqual(claude_with_remote("unknown",False),"unknown")
+
+    def test_run_finished_minutes_ago_still_counts_but_not_hours_later(self):
+        from collector import remote_claude_working
+        with tempfile.TemporaryDirectory() as d:
+            history=self.history(d,3600)
+            self.assertTrue(remote_claude_working(self.NOW,history,self.run_record(d,"passed",1,updated_offset_s=240),lambda pid:False))
+            self.assertFalse(remote_claude_working(self.NOW,history,self.run_record(d,"passed",1,updated_offset_s=7200),lambda pid:False))

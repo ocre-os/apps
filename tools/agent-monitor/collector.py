@@ -278,10 +278,61 @@ def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_
         result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result
 
+REMOTE_ACTIVITY_WINDOW_S=120
+DC_ACTIVITY_LOG=Path("/mnt/c/Users/OCRE/.claude-server-commander/claude_tool_call.log")
+BOUNDED_RUNS=Path("/home/ocre/src/ocre-os/core/.git/ocre-agent/runs")
+
+def last_desktop_commander_call(log=DC_ACTIVITY_LOG):
+    """Hora (epoch) de la última llamada a Desktop Commander, o None. Sólo se consulta la fecha de modificación
+    del registro de llamadas: su contenido nunca se lee."""
+    try:
+        return log.stat().st_mtime
+    except OSError:
+        return None
+
+RECENT_RUN_WINDOW_S=600
+
+def live_bounded_run(runs=BOUNDED_RUNS, alive=process_alive, now=None):
+    """True si hay una corrida acotada (bounded-run) viva, o que cambió de estado en los últimos 10 minutos:
+    entre una corrida y la siguiente el implementador sigue en su tarea."""
+    now=time.time() if now is None else now
+    try:
+        for path in runs.glob("*.json"):
+            try:
+                record=json.loads(path.read_text())
+            except (OSError,ValueError):
+                continue
+            if not isinstance(record,dict):
+                continue
+            if record.get("status")=="running" and alive(record.get("pid")):
+                return True
+            try:
+                updated=dt.datetime.fromisoformat(str(record.get("updated_at"))).timestamp()
+            except ValueError:
+                continue
+            if 0<=now-updated<=RECENT_RUN_WINDOW_S:
+                return True
+    except OSError:
+        pass
+    return False
+
+def remote_claude_working(now=None, log=DC_ACTIVITY_LOG, runs=BOUNDED_RUNS, alive=process_alive):
+    """Una sesión de Claude que opera la laptop sin CLI local (por Desktop Commander) no deja registro en
+    ~/.claude/sessions. Se considera trabajando si usó Desktop Commander en los últimos 120 s o si mantiene una
+    corrida acotada viva o reciente (10 min). Sólo afirma «trabajando»: que no haya señal no demuestra que esté libre."""
+    now=time.time() if now is None else now
+    last=last_desktop_commander_call(log)
+    if last is not None and 0<=now-last<=REMOTE_ACTIVITY_WINDOW_S:
+        return True
+    return live_bounded_run(runs,alive,now)
+
+def claude_with_remote(state, working):
+    return "working" if working else state
+
 def collect_snapshot(claude_directory, codex_directory, proc_root=Path("/proc")):
     stamp=utc_now()
     return {"contract":"ocre-agents-v1","observed_at":stamp,"agents":{
-        "claude":{"state":read_claude(claude_directory,proc_root),"observed_at":stamp},
+        "claude":{"state":claude_with_remote(read_claude(claude_directory,proc_root),remote_claude_working()),"observed_at":stamp},
         "codex":{"state":read_codex(codex_directory,proc_root),"observed_at":stamp}}}
 
 def main():
