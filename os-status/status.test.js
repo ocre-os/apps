@@ -62,7 +62,7 @@ const healthyPayload = (observedAt, extra = {}) => ({
   observed_at: observedAt,
   checks: {
     api: {status: 'healthy'}, database: {status: 'healthy'}, schema: {status: 'healthy'},
-    worker: {status: 'healthy'}, storage: {status: 'healthy'}, notifications: {status: 'healthy'}, pwa: {status: 'healthy'},
+    worker: {status: 'healthy'}, media: {status: 'healthy'}, storage: {status: 'healthy'}, notifications: {status: 'healthy'}, pwa: {status: 'healthy'},
     ...extra,
   },
 });
@@ -148,7 +148,7 @@ test('clock skew between browser and server does not create false stale', async 
   assert.equal(state.overall, 'healthy');
 });
 
-const wire=(overrides)=>({contract:'ocre-status-v1',observed_at:new Date().toISOString(),checks:{api:{status:'healthy'},database:{status:'healthy'},schema:{status:'healthy'},worker:{status:'healthy'},storage:{status:'healthy'},notifications:{status:'healthy'},pwa:{status:'healthy'},...overrides}});
+const wire=(overrides)=>({contract:'ocre-status-v1',observed_at:new Date().toISOString(),checks:{api:{status:'healthy'},database:{status:'healthy'},schema:{status:'healthy'},worker:{status:'healthy'},media:{status:'healthy'},storage:{status:'healthy'},notifications:{status:'healthy'},pwa:{status:'healthy'},...overrides}});
 function sequence(payloads){let i=0;return new StatusMonitor({fetcher:async()=>({ok:true,json:async()=>payloads[Math.min(i++,payloads.length-1)]})});}
 test('not_configured is accepted and neutral: it never degrades the overall state', () => {
   const state = normalizeContract(wire({notifications:{status:'not_configured',reason:'no_channel_configured'},pwa:{status:'not_configured',reason:'not_configured'}}));
@@ -178,4 +178,20 @@ test('a critical failure is never held', async () => {
   const monitor=sequence([wire(),wire({database:{status:'failed'}})]);
   await monitor.check('u1');
   assert.equal((await monitor.check('u1')).overall,'failed');
+});
+
+test('media (procesador de fotos y videos) degrada el estado general cuando falla', () => {
+  const state = normalizeContract(wire({media: {status: 'degraded', reason: 'backlog'}}));
+  assert.equal(state.checks.media, 'degraded');
+  assert.equal(state.reasons.media, 'backlog');
+  assert.equal(state.overall, 'degraded');
+});
+
+test('un entorno que aún no informa media queda neutral y no degrada ni queda sin señal', () => {
+  const payload = wire({});
+  delete payload.checks.media;
+  const state = normalizeContract(payload);
+  assert.equal(state.checks.media, 'not_configured');
+  assert.equal(state.reasons.media, 'not_reported');
+  assert.equal(state.overall, 'healthy');
 });

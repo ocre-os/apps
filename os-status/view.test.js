@@ -1,13 +1,13 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const V=require('./view.js');
-function state(over={}){return {contractValid:true,overall:'healthy',deployment:{version:'0.1.0'},reasons:{},checks:{web:'healthy',api:'healthy',database:'healthy',schema:'healthy',worker:'healthy',storage:'healthy',notifications:'healthy',pwa:'healthy'},...over};}
+function state(over={}){return {contractValid:true,overall:'healthy',deployment:{version:'0.1.0'},reasons:{},checks:{web:'healthy',api:'healthy',database:'healthy',schema:'healthy',worker:'healthy',media:'healthy',storage:'healthy',notifications:'healthy',pwa:'healthy'},...over};}
 const agents=(c='available',x='available')=>({states:{claude:c,codex:x}});
 test('no_channel_configured is neutral, not unknown',()=>{
  const s=state({checks:{...state().checks,notifications:'unknown'},reasons:{notifications:'no_channel_configured'}});
  assert.equal(V.checkView(s,'notifications').status,'not_configured');
  assert.deepEqual(V.attention(s,agents(),{state:'disabled'},{agentsChecked:true,xpressChecked:true}),[]);
- assert.match(V.platformView(s).text,/7 de 7 puntos operativos · 1 sin configurar/);
+ assert.match(V.platformView(s).text,/8 de 8 puntos operativos · 1 sin configurar/);
 });
 test('real unknown stays unknown and needs attention',()=>{
  const s=state({checks:{...state().checks,worker:'unknown'},reasons:{worker:'no_heartbeat'}});
@@ -57,4 +57,16 @@ test('native not_configured (OCRE-058 F2) is neutral and explained',()=>{
  assert.match(V.checkView(s,'pwa').text,/no configurado/i);
  assert.deepEqual(V.attention(s,agents(),{state:'ok'},{}),[]);
  assert.match(V.platformView(s).text,/1 sin configurar/);
+});
+
+test('media atrasada explica que hay fotos o videos sin procesar',()=>{
+  const s=state({overall:'degraded',checks:{...state().checks,media:'degraded'},reasons:{media:'backlog'}});
+  assert.match(V.checkView(s,'media').text,/fotos o videos/);
+  assert.equal(V.checkView(s,'worker').text,'');
+});
+
+test('un entorno que no informa media se muestra neutral con su motivo',()=>{
+  const s=state({checks:{...state().checks,media:'not_configured'},reasons:{media:'not_reported'}});
+  assert.equal(V.checkView(s,'media').status,'not_configured');
+  assert.match(V.checkView(s,'media').text,/aún no informa/);
 });

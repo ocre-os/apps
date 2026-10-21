@@ -46,6 +46,7 @@
       'DB::'+String(c.database||'unknown').toUpperCase(),
       'SCHEMA::'+String(c.schema||'unknown').toUpperCase(),
       'WORKER::'+String(c.worker||'unknown').toUpperCase(),
+      'MEDIA::'+String(c.media||'unknown').toUpperCase(),
       'PWA::'+String(c.pwa||'unknown').toUpperCase(),
       state.latencyMs==null?'LATENCY::UNKNOWN':'LATENCY::'+state.latencyMs+'ms',
       'OBSERVED::'+(state.checkedAt||'UNKNOWN'),
