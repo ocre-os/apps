@@ -42,7 +42,7 @@
   if(devenvIssues&&devenvIssues.length)return {tone:'degraded',label:'Atención',text:devenvIssues.map((i)=>i.short).join(' · ')};
   const c=agents?.states?.claude||'unknown',x=agents?.states?.codex||'unknown';
   const tone=c==='unknown'||x==='unknown'?'unknown':'healthy';
-  return {tone,label:tone==='healthy'?'En línea':'Sin señal',text:'Claude '+AGENT_LABEL[c]+' · Codex '+AGENT_LABEL[x]};
+  return {tone,label:tone==='healthy'?'En línea':'Sin señal',text:'Claude '+AGENT_LABEL[c]+' · Codex '+AGENT_LABEL[x]+' · desde staging'};
  }
  function xpressView(xpress){
   const s=xpress?.state||'unknown';
@@ -52,7 +52,7 @@
   const x=xpressView(xpress),version=state?.deployment?.version;
   if(validationIssues&&validationIssues.length)return {tone:'degraded',label:'Atención',text:validationIssues.map((i)=>i.short).join(' · ')};
   const sha=state?.deployment?.commit;
-  return {tone:x.tone,label:x.tone==='neutral'?'Sin señales aún':x.label,text:'Versión '+(version||'—')+(sha?' · '+String(sha).slice(0,7):'')+' · Xpress '+x.label.toLowerCase()};
+  return {tone:x.tone,label:x.tone==='neutral'?'Sin señales aún':x.label,text:'Versión '+(version||'—')+(sha?' · '+String(sha).slice(0,7):'')+' · Xpress (staging) '+x.label.toLowerCase()};
  }
  function attention(state,agents,xpress,flags={}){
   const items=[];
