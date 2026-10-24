@@ -2,20 +2,27 @@
  const monitor=new window.OcreDevenv.DevenvMonitor();
  const url='https://staging.ocre.mx/api/devenv';
  const D=window.OcreDevenv;
- let last=null,signature=null;
- const tones={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',neutral:'#9fb0b7'};
- function gauge(name,agent){
-  const g=D.geometry(agent.slotsUsed,agent.capacity),tone=D.loadTone(agent.slotsUsed,agent.capacity),color=tones[tone];
+ let last=null,signature=null,agentLive=null;
+ function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function agentRow(name,agent,state){
+  // Occupancy, live activity, quota and authentication are different signals.
   const quota=D.quotaText(agent.quota);
-  return '<article class="gauge-card" data-agent="'+name+'"><header><strong>'+D.NAMES[name]+'</strong><span class="gauge-load" style="color:'+color+'">'+D.loadLabel(agent.slotsUsed,agent.capacity)+'</span></header>'
-   +'<svg viewBox="0 0 160 100" width="200" height="125" role="img" aria-label="'+D.NAMES[name]+': '+agent.slotsUsed+' de '+agent.capacity+' tareas activas">'
-   +'<path d="'+g.track+'" fill="none" stroke="#1c2a31" stroke-width="12" stroke-linecap="round"/>'
-   +(g.arc?'<path d="'+g.arc+'" fill="none" stroke="'+color+'" stroke-width="12" stroke-linecap="round"/>':'')
-   +'<line x1="80" y1="78" x2="'+g.needle[0]+'" y2="'+g.needle[1]+'" stroke="#eaf3f5" stroke-width="2.5" stroke-linecap="round"/><circle cx="80" cy="78" r="5" fill="#eaf3f5"/>'
-   +'<text x="14" y="98" fill="#78909a" font-size="9" text-anchor="middle">0</text><text x="80" y="9" fill="#78909a" font-size="9" text-anchor="middle">'+(agent.capacity/2)+'</text><text x="146" y="98" fill="#78909a" font-size="9" text-anchor="middle">'+agent.capacity+'</text></svg>'
-   +'<p class="gauge-count"><strong>'+agent.slotsUsed+'</strong> / '+agent.capacity+'<small>tareas activas</small></p>'
-   +'<dl class="gauge-rows"><dt>Turno en curso</dt><dd>'+D.duration(agent.turnSeconds)+'</dd><dt>Cuota</dt><dd style="color:'+tones[quota.tone]+'">'+quota.text+'</dd></dl></article>';
+  const activity=state?.states?.[name];
+  const activityLabel=({working:'Trabajando',waiting:'En espera',available:'Sin turno',unknown:'Sin señal'})[activity]||'Sin señal';
+  const capacity=agent.slotsUsed+'/'+agent.capacity;
+  const bars=Array.from({length:Math.max(0,Math.min(8,agent.capacity))},(_,i)=>'<i class="'+(i<agent.slotsUsed?'occupied':'')+'"></i>').join('');
+  const reset=agent.quota.resetsAt&&agent.quota.state!=='unknown'?' · reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(agent.quota.resetsAt)):'';
+  // ocre-devenv-v1 contains no authentication field. Do not fabricate login state.
+  const auth='Autenticación: no evaluada';
+  const quotaPercent=agent.quota.remainingPercent;
+  const bar=quotaPercent!==null&&agent.quota.state!=='unknown'?'<span class="quota-bar" aria-hidden="true"><i style="width:'+quotaPercent+'%"></i></span>':'';
+  return '<article class="agent-compact-row" data-agent="'+escapeHtml(name)+'"><div class="agent-compact-main"><strong>'+escapeHtml(D.NAMES[name])+'</strong>'
+   +'<span class="agent-activity" data-state="'+escapeHtml(activity||'unknown')+'">'+escapeHtml(activityLabel)+'</span>'
+   +'<span class="agent-capacity" role="img" aria-label="'+escapeHtml(capacity)+' tareas ocupadas"><span class="capacity-dots">'+bars+'</span>'+escapeHtml(capacity)+'</span>'
+   +'<span class="agent-quota" data-tone="'+escapeHtml(quota.tone)+'">'+escapeHtml(quota.text)+bar+'</span></div>'
+   +'<div class="agent-compact-meta"><span>Turno: '+escapeHtml(D.duration(agent.turnSeconds))+'</span><span>'+auth+'</span><span class="agent-reset">'+escapeHtml(reset.replace(/^ · /,''))+'</span></div></article>';
  }
+
  const dots={healthy:'#48e5a8',failed:'#ff5f6d',stale:'#b78cff'};
  function renderActivity(state){
   const list=document.getElementById('activityList'),count=document.getElementById('activityCount');
@@ -25,17 +32,18 @@
  }
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:D.normalize();
-  const next=(state.valid?state.observedAt:'none')+'|'+(last!==null);
+  const next=(state.valid?state.observedAt:'none')+'|'+(last!==null)+'|'+JSON.stringify(agentLive?.states||{});
   if(next===signature)return;
   signature=next;
   const grid=document.getElementById('loadGrid');
-  const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>gauge(n,state.agents[n])).join('');
+  const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>agentRow(n,state.agents[n],agentLive)).join('');
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
   document.getElementById('loadTime').textContent=state.valid?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt)):'Sin muestra reciente';
   renderActivity(state);
   window.dispatchEvent(new CustomEvent('ocre:devenv',{detail:{state,checked:last!==null}}));
  }
  async function check(){const cycle=monitor.cycle+1;const state=await monitor.check(url);if(cycle===monitor.cycle){last=state;render();}}
+ window.addEventListener('ocre:agents',(event)=>{agentLive=event.detail?.stale?null:event.detail?.state||null;signature=null;render();});
  render();check();
  const refresh=setInterval(check,10000);const expiry=setInterval(render,1000);
  document.getElementById('refreshButton').addEventListener('click',check);

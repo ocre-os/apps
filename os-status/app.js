@@ -43,11 +43,23 @@
     service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.'};
   function formatTime(iso){if(!iso)return '—';return new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(iso))}
   function renderChecks(state){
+    const observed=Object.values(state.checks||{});
+    const configured=observed.filter(v=>v!=='not_configured');
+    const healthy=configured.filter(v=>v==='healthy').length;
+    $('platformSummary').textContent=state.stale?'Muestra obsoleta':configured.length?healthy+'/'+configured.length+' operativos':'Sin señal';
+    const hiddenCount=Math.max(0,Object.keys(checkMeta).length-4);
+    if(!$('showServices').getAttribute('aria-expanded')||$('showServices').getAttribute('aria-expanded')==='false') $('showServices').textContent=hiddenCount?'+'+hiddenCount+' servicios · Ver todos':'Ver servicios';
     $('checksGrid').innerHTML = Object.entries(checkMeta).map(([key,[name,desc]])=>{
       const view=V.checkView(state,key);
-      return '<article class="row check" data-status="'+view.status+'"><h3>'+name+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+(view.text||desc)+'</p></article>';
+      return '<article class="row check" data-status="'+escapeHtml(view.status)+'"><h3>'+escapeHtml(name)+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+escapeHtml(view.text||desc)+'</p></article>';
     }).join('');
   }
+  $('showServices').addEventListener('click',()=>{
+    const grid=$('checksGrid'),expanded=grid.classList.toggle('services-expanded');
+    grid.classList.toggle('services-preview',!expanded);
+    $('showServices').setAttribute('aria-expanded',String(expanded));
+    $('showServices').textContent=expanded?'Mostrar menos':'Ver todos los servicios';
+  });
   let agentsInfo=null,xpressInfo=null,devenvInfo=null;
   const toneWord={healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',stale:'OBSOLETO',unknown:'SIN SEÑAL',neutral:'NO CONFIGURADO'};
   function setDomain(id,view,text){
@@ -74,7 +86,8 @@
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));
     $('attentionCount').textContent=state?String(items.length):'';
-    $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+i.tone+'"><span class="att-domain">'+i.domain+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
+    document.querySelector('.attention').dataset.empty=state&&items.length===0?'true':'false';
+    $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+escapeHtml(i.tone)+'"><span class="att-domain">'+escapeHtml(i.domain)+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
     if(state&&state.overall==='healthy')$('heroMessage').textContent=V.verdictText(items,state);
   }
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
