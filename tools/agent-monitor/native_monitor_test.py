@@ -195,6 +195,20 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
         self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
 
+
+    def test_slow_wsl_collector_does_not_age_new_reservation_snapshot(self):
+        clock=[1000.0]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        def collect(with_quota):
+            clock[0]+=35
+            return dict(self.DATA)
+        source.wsl=collect
+        source.runtime_observation=lambda:None
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            sample=source.sample()
+        self.assertIsNotNone(sample)
+        self.assertEqual(sample["observed_at"],"1970-01-01T00:17:15Z")
+
     def test_failed_quota_refresh_clears_old_available_state(self):
         clock=[1000.0]
         source=DevenvSource(None,"c.py",lambda:clock[0])
