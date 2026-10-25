@@ -8,11 +8,12 @@
  function occupancy(agent){
   if(!agent||!Number.isInteger(agent.slotsUsed)||!Number.isInteger(agent.capacity)||agent.capacity<1||agent.slotsUsed<0||agent.slotsUsed>agent.capacity)
    return {text:'Sin señal',segments:'',valid:false};
-  const marks=Array.from({length:Math.min(agent.capacity,3)},(_,i)=>'<i class="'+(i<agent.slotsUsed?'filled':'')+'"></i>').join('');
+  // Never represent 3/8 as fully occupied: omit segments above three slots.
+  const marks=agent.capacity<=3?Array.from({length:agent.capacity},(_,i)=>'<i class="'+(i<agent.slotsUsed?'filled':'')+'"></i>').join(''):'';
   return {text:agent.slotsUsed+'/'+agent.capacity,segments:marks,valid:true};
  }
  function quota(q){
-  if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent))
+  if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0))
    return {text:'Sin medición',tone:'unknown',percent:null};
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
@@ -26,6 +27,12 @@
   const states=info&&!info.stale&&info.state&&info.state.states;
   return Object.fromEntries(['claude','codex'].map(name=>[name,
    states&&allowed.has(states[name])?states[name]:'unknown']));
+ }
+ function freshExecution(states,observedAt,now=Date.now()){
+  if(!Number.isFinite(observedAt)||observedAt<=0||now-observedAt< -5000||now-observedAt>30000)
+   return {claude:'unknown',codex:'unknown'};
+  const allowed=new Set(['working','waiting','available','unknown']);
+  return Object.fromEntries(['claude','codex'].map(name=>[name,allowed.has(states?.[name])?states[name]:'unknown']));
  }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
@@ -42,5 +49,5 @@
    +'<span>Cuota</span><strong>'+q.text+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,card};
+ return {occupancy,quota,currentTelemetry,liveStates,freshExecution,card};
 });

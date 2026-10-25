@@ -3,12 +3,13 @@
  const url='https://staging.ocre.mx/api/devenv';
  const D=window.OcreDevenv;
  let last=null,signature=null;
- const tones={healthy:'#48e5a8',degraded:'#ffc857',failed:'#ff5f6d',neutral:'#9fb0b7'};
  let agentStates={claude:'unknown',codex:'unknown'};
+ let agentsObservedAt=0;
  window.addEventListener('ocre:agents',(event)=>{
   const info=event.detail;
-  // Never advertise a stale or missing execution sample as live.
+  // A state is live only while the source continues reporting fresh evidence.
   agentStates=window.OcreCompact.liveStates(info);
+  agentsObservedAt=info&&!info.stale&&info.state&&Number.isFinite(Date.parse(info.state.observedAt))?Date.parse(info.state.observedAt):0;
   signature=null;render();
  });
  const dots={healthy:'#48e5a8',failed:'#ff5f6d',stale:'#b78cff'};
@@ -20,14 +21,21 @@
  }
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:D.normalize();
-  const next=(state.valid?state.observedAt:'none')+'|'+(last!==null);
+  const live=window.OcreCompact.freshExecution(agentStates,agentsObservedAt);
+  const next=(state.valid?state.observedAt:'none')+'|'+(last!==null)+'|'+live.claude+'|'+live.codex;
   if(next===signature)return;
   signature=next;
   const grid=document.getElementById('loadGrid');
+  // Preserve expanded panels and focus as telemetry refreshes every 10 seconds.
+  const expanded=new Set(Array.from(grid.querySelectorAll('details.agent-compact[open]')).map(el=>el.dataset.agent));
+  const focusName=document.activeElement?.closest?.('details.agent-compact')?.dataset.agent;
+  const focusOnSummary=focusName&&document.activeElement?.tagName==='SUMMARY';
   // Only current, schema-valid telemetry may show occupancy or quota.
   const current=window.OcreCompact.currentTelemetry(state);
-  const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],agentStates[n])).join(''):'';
+  const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],live[n])).join(''):'';
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
+  for(const el of grid.querySelectorAll('details.agent-compact'))if(expanded.has(el.dataset.agent))el.open=true;
+  if(focusOnSummary){const target=Array.from(grid.querySelectorAll('details.agent-compact')).find(el=>el.dataset.agent===focusName);target?.querySelector('summary')?.focus();}
   document.getElementById('loadTime').textContent=state.valid?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt)):'Sin muestra reciente';
   renderActivity(state);
   window.dispatchEvent(new CustomEvent('ocre:devenv',{detail:{state,checked:last!==null}}));
