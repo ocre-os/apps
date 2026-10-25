@@ -168,3 +168,24 @@ test('runtime telemetry validates freshness and rejects unexpected states',()=>{
  assert.equal(result.unexpected,undefined);
  assert.deepEqual(D.normalizeRuntimes(raw,observed,now+31000),{});
 });
+
+test('published runtime evidence reaches compact details without implying quota',()=>{
+ const U=require('./compact-ui.js');
+ const now=Date.parse('2026-10-25T04:00:00Z');
+ const observed=new Date(now).toISOString();
+ const payload={
+  contract:'ocre-devenv-v1',observed_at:observed,capacity:2,
+  agents:{claude:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}},
+          codex:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}}},
+  runtimes:{claude_windows:{state:'authenticated',observed_at:observed,quota_state:'unknown'}}
+ };
+ const result=D.normalize(payload,now);
+ assert.equal(result.valid,true);
+ assert.equal(result.runtimes.claude_windows.state,'authenticated');
+ const html=U.card('claude',result.agents.claude,'unknown',result.runtimes);
+ assert.match(html,/Claude Windows · Autenticación<\/span><strong>Autenticado/);
+ assert.match(html,/Claude Windows · Cuota<\/span><strong>Sin medición/);
+ const old=D.normalize(payload,now+31000);
+ assert.equal(old.valid,false);
+ assert.deepEqual(old.runtimes,{});
+});
