@@ -5,8 +5,21 @@ const {
   normalizeContract,
   StatusMonitor,
   applyStaleness,
+  freshnessBadge,
   STALE_AFTER_MS,
 } = require('./status.js');
+
+test('freshness badge is current only for valid recent samples and expires without another fetch', () => {
+ const now=Date.parse('2026-10-25T02:30:00Z');
+ const sample={contractValid:true,receivedAt:now,stale:false};
+ assert.equal(freshnessBadge(sample,now),'current');
+ assert.equal(freshnessBadge(sample,now+29999),'current');
+ assert.equal(freshnessBadge(sample,now+30001),'stale');
+ assert.equal(freshnessBadge({...sample,stale:true},now),'stale');
+ assert.equal(freshnessBadge({...sample,receivedAt:null},now),'unknown');
+ assert.equal(freshnessBadge({...sample,contractValid:false},now),'unknown');
+ assert.equal(freshnessBadge(sample,now-5001),'unknown');
+});
 
 test('critical failure makes overall failed', () => {
   assert.equal(aggregateStatus({web:'healthy',api:'healthy',database:'failed',schema:'healthy'}), 'failed');

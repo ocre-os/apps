@@ -43,23 +43,11 @@
     service_worker_unavailable:'No hay service worker.',web_unreachable:'No se alcanza el portal.'};
   function formatTime(iso){if(!iso)return '—';return new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(iso))}
   function renderChecks(state){
-    const observed=Object.values(state.checks||{});
-    const configured=observed.filter(v=>v!=='not_configured');
-    const healthy=configured.filter(v=>v==='healthy').length;
-    $('platformSummary').textContent=state.stale?'Muestra obsoleta':configured.length?healthy+'/'+configured.length+' operativos':'Sin señal';
-    const hiddenCount=Object.entries(checkMeta).filter(([key],i)=>i>=4&&V.checkView(state,key).status==='healthy').length;
-    if(!$('showServices').getAttribute('aria-expanded')||$('showServices').getAttribute('aria-expanded')==='false') $('showServices').textContent=hiddenCount?'+'+hiddenCount+' operativos · Ver todos':'Todos los servicios visibles';
     $('checksGrid').innerHTML = Object.entries(checkMeta).map(([key,[name,desc]])=>{
       const view=V.checkView(state,key);
       return '<article class="row check" data-status="'+escapeHtml(view.status)+'"><h3>'+escapeHtml(name)+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+escapeHtml(view.text||desc)+'</p></article>';
     }).join('');
   }
-  $('showServices').addEventListener('click',()=>{
-    const grid=$('checksGrid'),expanded=grid.classList.toggle('services-expanded');
-    grid.classList.toggle('services-preview',!expanded);
-    $('showServices').setAttribute('aria-expanded',String(expanded));
-    $('showServices').textContent=expanded?'Mostrar menos':'Ver todos los servicios';
-  });
   let agentsInfo=null,xpressInfo=null,devenvInfo=null;
   const toneWord={healthy:'OPERATIVO',degraded:'DEGRADADO',failed:'FALLA',stale:'OBSOLETO',unknown:'SIN SEÑAL',neutral:'NO CONFIGURADO'};
   function setDomain(id,view,text){
@@ -82,7 +70,9 @@
       const queue=window.OcreDevenv.supervisorView(devenvInfo&&devenvInfo.state),qcard=$('supervisor-card');
       qcard.dataset.state=queue.tone;qcard.querySelector('.agent-state').textContent=queue.label;qcard.querySelector('.agent-detail').textContent=queue.text;
     }
-    setDomain('platform',V.platformView(state));
+    const platform=V.platformView(state);
+    const counts=(platform.text||'').match(/^([0-9]+) de ([0-9]+) puntos/);
+    setDomain('platform',{...platform,label:counts?counts[1]+'/'+counts[2]+' · '+platform.label:platform.label});
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));
     $('attentionCount').textContent=state?String(items.length):'';
@@ -90,6 +80,16 @@
     $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+escapeHtml(i.tone)+'"><span class="att-domain">'+escapeHtml(i.domain)+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
     if(state&&state.overall==='healthy')$('heroMessage').textContent=V.verdictText(items,state);
   }
+  $('platformMore').addEventListener('click',()=>{
+    const expanded=$('checksGrid').classList.toggle('expanded');
+    $('platformMore').setAttribute('aria-expanded',String(expanded));
+    $('platformMore').textContent=expanded?'Mostrar menos servicios':'Mostrar todos los servicios';
+  });
+  $('platformDescriptions').addEventListener('click',()=>{
+    const visible=$('checksGrid').classList.toggle('show-descriptions');
+    $('platformDescriptions').setAttribute('aria-pressed',String(visible));
+    $('platformDescriptions').textContent='Descripciones';
+  });
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:xpress',(e)=>{xpressInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:devenv',(e)=>{devenvInfo=e.detail;renderDomains();});
@@ -121,9 +121,23 @@
     };
     orbCycleTimer=setTimeout(advance,1000);
   }
+  function renderLiveBadge(state){
+    const badge=$('livePulse');
+    const status=window.OcreStatus.freshnessBadge(state);
+    if(badge.dataset.state!==status){
+      badge.dataset.state=status;
+      badge.querySelector('.live-text').textContent=status==='current'?'Sondeo 10 s':status==='stale'?'Obsoleto':'Sin señal';
+    }
+  }
+  function renderFreshness(state){
+    renderLiveBadge(state);
+    const signal=$('livePulse').dataset.state;
+    $('age').textContent=signal==='stale'?'muestra obsoleta':signal==='current'?'muestra actual':'sin señal válida';
+  }
   function render(state){
     rawState=state;
     state=applyStaleness(state);
+    renderFreshness(state);
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
@@ -132,7 +146,6 @@
     renderOrb(state);
     $('latency').textContent=state.latencyMs==null?'—':state.latencyMs+' ms';
     $('checkedAt').textContent=formatTime(state.checkedAt);
-    $('age').textContent='muestra actual';
     $('contractState').textContent=state.contractValid?'VÁLIDO':'NO DISPONIBLE';
     $('version').textContent=state.deployment?.version||'—';
     $('commit').textContent=state.deployment?.commit?'commit '+state.deployment.commit:'commit no informado';
@@ -143,6 +156,8 @@
   }
   function loadingDots(){return '<span class="loading-dots" aria-label="Comprobando"><i></i><i></i><i></i></span>'}
   function renderChecking(){
+    $('livePulse').dataset.state='checking';
+    $('livePulse').querySelector('.live-text').textContent='Comprobando';
     $('environmentName').textContent=targets[selected].label;
     $('overallLabel').innerHTML=loadingDots();
     $('heroMessage').innerHTML=loadingDots();
@@ -160,7 +175,8 @@
     renderDomains();
   }
   async function check(){
-    checking=true;$('refreshButton').classList.add('loading');renderChecking();
+    checking=true;$('refreshButton').classList.add('loading');
+    if(!lastState)renderChecking();
     const envAtStart=selected;
     const state=await monitor.check(targets[envAtStart].url);
     if(state.cycleId===monitor.latestCycle){checking=false;$('refreshButton').classList.remove('loading')}
@@ -181,6 +197,12 @@
   check();
   timer=setInterval(check,10000);
   // Si el sondeo se detiene, la muestra envejece sola y pasa a OBSOLETO sin intervención.
-  const expiry=setInterval(()=>{if(rawState&&!checking){const next=applyStaleness(rawState);if(next.stale&&!(lastState&&lastState.stale))render(rawState);}},1000);
+  const expiry=setInterval(()=>{
+    if(!rawState)return;
+    const next=applyStaleness(rawState);
+    // Update freshness even during a slow in-flight check.
+    renderFreshness(next);
+    if(!checking&&next.stale&&!(lastState&&lastState.stale))render(rawState);
+  },1000);
   window.addEventListener('beforeunload',()=>{clearInterval(timer);clearInterval(expiry);clearTimeout(orbCycleTimer)});
 })();

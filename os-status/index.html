@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#070b0d">
   <title>OCRE OS Status</title>
-  <link rel="stylesheet" href="styles.css?v=20261024-ocrecompactv2">
+  <link rel="stylesheet" href="styles.css?v=20261024-statusv2-density">
+  <link rel="stylesheet" href="compact.css?v=20261024-statusv2-density">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -24,10 +25,10 @@
     <section class="environment-bar" aria-label="Entorno">
       <button class="env active" data-env="core" type="button">CORE</button>
       <button class="env" data-env="staging" type="button">STAGING</button>
-      <span id="livePulse" class="live-pill"><i></i> LIVE</span>
+      <span id="livePulse" class="live-pill" role="status" aria-live="polite" data-state="checking" aria-describedby="livePulseHelp"><i></i><span class="live-text">Comprobando</span></span><span id="livePulseHelp" class="sr-only">Sondeo periódico cada 10 segundos; no es conexión en tiempo real mediante push.</span>
     </section>
 
-    <section class="verdict" aria-live="polite">
+    <section id="status-overview" class="verdict" aria-live="polite">
       <div class="orb-wrap" aria-hidden="true">
         <div id="statusOrb" class="status-orb checking"><span></span></div>
       </div>
@@ -38,7 +39,7 @@
       </div>
     </section>
 
-    <section class="domains" aria-label="Resumen del entorno">
+    <section class="domains" aria-label="Resumen de dominios">
       <button class="domain" data-domain="platform" data-tone="unknown" type="button"><span class="domain-name">PLATAFORMA</span><strong class="domain-state" id="domPlatformState">—</strong><span class="domain-text" id="domPlatformText"></span></button>
       <button class="domain" data-domain="agents" data-tone="unknown" type="button"><span class="domain-name">AGENTES</span><strong class="domain-state" id="domAgentsState">—</strong><span class="domain-text" id="domAgentsText"></span></button>
       <button class="domain" data-domain="dev" data-tone="unknown" type="button"><span class="domain-name">DESARROLLO</span><strong class="domain-state" id="domDevState">—</strong><span class="domain-text" id="domDevText"></span></button>
@@ -50,18 +51,19 @@
     </section>
 
     <section class="load" aria-labelledby="loadHeading">
-      <div class="load-head"><h2 id="loadHeading">Agentes</h2><small id="loadTime" class="cycle-state">Sin muestra reciente</small></div>
+      <div class="load-head"><h2 id="loadHeading">Agentes <small class="section-hint">ocupación · cuota · turno</small></h2><small id="loadTime" class="cycle-state">Sin muestra reciente</small></div>
       <div id="loadGrid" class="load-grid"><p class="load-empty">Sin medición reciente de la carga.</p></div>
-      <p class="agents-note">Ocupación, actividad y cuota son señales independientes. Autenticación: sin dato hasta que Status publique un contrato válido.</p>
+      <p class="agents-note">Ocupación = tareas reservadas, no progreso. Actividad, cuota y autenticación son señales distintas.</p>
     </section>
 
     <section class="details" aria-label="Detalle">
       <details id="det-platform" class="detail" open>
-        <summary><span>Plataforma</span><small id="platformSummary" class="cycle-state">Sin señal</small><span id="cycleState" class="visually-hidden">Preparando ciclo</span></summary>
-        <div id="checksGrid" class="rows services-preview"></div><button id="showServices" class="expand-services" type="button" aria-controls="checksGrid" aria-expanded="false">Ver todos los servicios</button>
+        <summary><span>Plataforma</span><small id="cycleState" class="cycle-state">Preparando ciclo</small></summary>
+        <div id="checksGrid" class="rows"></div>
+        <div class="platform-actions"><button id="platformMore" class="platform-more" type="button" aria-controls="checksGrid" aria-expanded="false">Mostrar todos los servicios</button><button id="platformDescriptions" class="platform-more" type="button" aria-controls="checksGrid" aria-pressed="false">Descripciones</button></div>
       </details>
       <details id="det-agents" class="detail agents-panel">
-        <summary><span>Sesiones</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>
+        <summary><span>Estado de ejecución</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>
         <div class="rows">
           <article id="agent-claude" class="row agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
           <article id="agent-codex" class="row agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
@@ -79,20 +81,28 @@
           <article id="supervisor-card" class="row agent-card" data-state="unknown"><h3>Cola autónoma</h3><p class="agent-state" aria-live="polite">Sin señal</p><p class="agent-detail">Sin resumen reciente del supervisor.</p></article>
           <article id="xpress-card" class="row agent-card" data-state="unknown"><h3>Bandeja Xpress</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p><p id="xpress-counts" class="agent-detail"></p></article>
         </div>
-        <p class="agents-note">Solo contadores de Xpress; no muestra mensajes ni identificadores. Validaciones, respaldos y cuota de agentes llegan en fases posteriores.</p>
+        <p class="agents-note">Datos de Xpress agregados y sanitizados. Sin mensajes ni identificadores; las señales ausentes no se interpretan como estado correcto.</p>
       </details>
-      <details id="det-activity" class="detail">
+      <details id="det-activity" class="detail" open>
         <summary><span>Actividad reciente</span><small id="activityCount" class="cycle-state">Sin eventos</small></summary>
         <ul id="activityList" class="activity-list"><li class="activity-empty">Sin eventos recientes.</li></ul>
         <p class="agents-note">Despliegues de staging y cambios del monitor. Sin textos ni rutas.</p>
       </details>
     </section>
 
+    <nav class="status-mobile-nav" aria-label="Secciones de Status">
+      <a href="#status-overview" data-panel="status-overview" aria-current="location"><span aria-hidden="true">●</span>Estado</a>
+      <a href="#det-platform" data-panel="det-platform"><span aria-hidden="true">▤</span>Servicios</a>
+      <a href="#loadHeading" data-panel="loadHeading"><span aria-hidden="true">◉</span>Agentes</a>
+      <a href="#det-dev" data-panel="det-dev"><span aria-hidden="true">⌘</span>Desarrollo</a>
+      <a href="#det-activity" data-panel="det-activity"><span aria-hidden="true">≡</span>Actividad</a>
+    </nav>
+
     <footer>
-      <details class="legend-details"><summary>Leyenda de estados</summary><div class="legend">
+      <div class="legend">
         <span><i class="dot healthy"></i> Operativo</span><span><i class="dot degraded"></i> Degradado</span><span><i class="dot failed"></i> Falla</span><span><i class="dot stale"></i> Obsoleto</span><span><i class="dot unknown"></i> Sin señal</span><span><i class="dot neutral"></i> No configurado</span>
       </div>
-      </details><span>OCRE Tecnologías · diagnóstico público sanitizado · sin información de clientes</span>
+      OCRE Tecnologías · diagnóstico público sanitizado · sin información de clientes
     </footer>
   </main>
 
@@ -106,12 +116,14 @@
   <script src="status.js?v=20261021-ocre067label"></script>
   <script src="view.js?v=20261021-ocre067label"></script>
   <script src="matrix.js?v=20261021-ocre067label"></script>
-  <script src="app.js?v=20261024-ocrecompactv2"></script>
+  <script src="app.js?v=20261024-statusv2-density"></script>
   <script src="agents.js?v=20261021-ocre067label"></script>
   <script src="agents-ui.js?v=20261021-ocre067label"></script>
   <script src="xpress.js?v=20261021-ocre067label"></script>
   <script src="xpress-ui.js?v=20261021-ocre067label"></script>
   <script src="devenv.js?v=20261021-ocre067label"></script>
-  <script src="devenv-ui.js?v=20261024-ocrecompactv2"></script>
+  <script src="compact-ui.js?v=20261024-statusv2-density"></script>
+  <script src="mobile-nav.js?v=20261024-statusv2-density"></script>
+  <script src="devenv-ui.js?v=20261024-statusv2-density"></script>
 </body>
 </html>

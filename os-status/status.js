@@ -136,5 +136,14 @@
     }
   }
 
-  return { aggregateStatus, normalizeContract, sampleIsStale, applyStaleness, StatusMonitor, CRITICAL, DEGRADABLE, STALE_AFTER_MS };
+  function freshnessBadge(state, now=Date.now()) {
+    if(!state?.contractValid)return 'unknown';
+    if(state.stale)return 'stale';
+    const received=state.receivedAt;
+    if(!Number.isFinite(received))return 'unknown';
+    const age=now-received;
+    return age>STALE_AFTER_MS?'stale':age>=-5000?'current':'unknown';
+  }
+
+  return { aggregateStatus, normalizeContract, sampleIsStale, applyStaleness, freshnessBadge, StatusMonitor, CRITICAL, DEGRADABLE, STALE_AFTER_MS };
 });
