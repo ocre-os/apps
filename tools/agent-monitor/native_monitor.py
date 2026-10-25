@@ -208,8 +208,14 @@ class DevenvSource:
         now=self.clock()
         refresh=now-self.quota_at>=QUOTA_REFRESH_SECONDS
         data=self.wsl(refresh)
-        if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
-            self.quota,self.quota_at=data["codex_quota"],now
+        if refresh:
+            if isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
+                self.quota,self.quota_at=data["codex_quota"],now
+            else:
+                # A failed refresh must not preserve a previously available quota.
+                self.quota,self.quota_at=None,0.0
+        if self.quota is not None and now-self.quota_at>=QUOTA_REFRESH_SECONDS:
+            self.quota,self.quota_at=None,0.0
         runtime=self.runtime_observation()
         sampled_at=self.clock()
         # The reservation snapshot precedes the runtime probe. Never give an old
