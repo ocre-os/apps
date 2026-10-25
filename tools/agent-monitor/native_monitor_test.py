@@ -280,6 +280,18 @@ class RuntimePublisherTests(unittest.TestCase):
         self.assertNotIn("secret@example.test",json.dumps(sample))
 
 
+
+    def test_slow_runtime_probe_does_not_retimestamp_stale_reservations(self):
+        from native_monitor import DevenvSource
+        tick=[1000.0]
+        source=DevenvSource(None,"collector.py",clock=lambda:tick[0])
+        source.wsl=lambda with_quota: {"slots":{"claude":0,"codex":0}}
+        def slow():
+            tick[0]+=31
+            return None
+        source.runtime_observation=slow
+        self.assertIsNone(source.sample())
+
     def test_per_runtime_expiry_and_future_observation_fail_closed(self):
         old="2026-10-25T03:59:20Z"
         future="2026-10-25T04:00:03Z"
