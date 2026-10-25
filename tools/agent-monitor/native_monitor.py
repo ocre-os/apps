@@ -241,7 +241,41 @@ def clean_supervisor(raw):
         return None
     return dict(raw)
 
-def build_devenv_sample(data, codex_turn, codex_quota, now):
+def sanitize_runtime_inventory(raw, observed_at, now):
+    """Translate Core's advisory runtime inventory to the public allowlist.
+
+    Only explicitly observed authentication is published; a CLI login never proves quota.
+    No timestamps are synthesized for cached runtime observations.
+    """
+    if not isinstance(raw,dict) or not isinstance(observed_at,str):
+        return {}
+    try:
+        at=dt.datetime.fromisoformat(observed_at.replace("Z","+00:00"))
+        if at.tzinfo is None or not 0 <= now-at.timestamp() <= 30:
+            return {}
+    except (ValueError,TypeError,OverflowError):
+        return {}
+    out={}
+    for name in ("codex_wsl","claude_wsl","claude_windows"):
+        item=raw.get(name)
+        if not isinstance(item,dict):
+            continue
+        auth=item.get("authentication")
+        executable=item.get("executable")
+        if executable=="unavailable":
+            state="unavailable"
+        elif auth in ("authenticated","unauthenticated") and item.get("reason")=="explicit_loggedIn":
+            state=auth
+        else:
+            state="unknown"
+        quota=item.get("quota")
+        # Core's inventory may explicitly report verified Codex availability.
+        # Claude quota is unknown even when authentication succeeds.
+        quota_state=quota if name=="codex_wsl" and quota in ("available","low","exhausted") else "unknown"
+        out[name]={"state":state,"quota_state":quota_state,"observed_at":observed_at}
+    return out
+
+def build_devenv_sample(data, codex_turn, codex_quota, now, runtime_inventory=None, runtime_observed_at=None):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
     if not isinstance(slots,dict) or not all(isinstance(slots.get(k),int) for k in ("claude","codex")):
@@ -249,10 +283,11 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     unknown={"state":"unknown","remaining_percent":None,"resets_at":None}
     events=[e for e in (data.get("events") or []) if isinstance(e,dict)][:5]
     stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
+    runtimes=sanitize_runtime_inventory(runtime_inventory,runtime_observed_at,now)
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
-        "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor"))}
+        "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor")),"runtimes":runtimes or None}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""
