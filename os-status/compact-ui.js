@@ -12,11 +12,29 @@
   const marks=agent.capacity<=3?Array.from({length:agent.capacity},(_,i)=>'<i class="'+(i<agent.slotsUsed?'filled':'')+'"></i>').join(''):'';
   return {text:agent.slotsUsed+'/'+agent.capacity,segments:marks,valid:true};
  }
- function quota(q){
+ function quota(q,now=Date.now()){
+  // A window whose reset time has already passed cannot justify a current
+  // percentage, even while the HTTP measurement is inside its 30s TTL.
+  if(q?.resetsAt&&(!Number.isFinite(Date.parse(q.resetsAt))||Date.parse(q.resetsAt)<=now))
+   return {text:'Esperando nueva cuota',tone:'unknown',percent:null};
   if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0))
    return {text:'Sin medición',tone:'unknown',percent:null};
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
+ }
+ // Sanitize expired quota windows for ALL downstream consumers, including
+ // attention and domain summaries. Keep reset time as historical evidence.
+ function expireQuotaWindows(state,now=Date.now()){
+  if(!state?.valid||!state.agents)return state;
+  let changed=false;const agents={...state.agents};
+  for(const name of ['claude','codex']){
+   const agent=agents[name],reset=Date.parse(agent?.quota?.resetsAt);
+   if(agent?.quota?.resetsAt&&(!Number.isFinite(reset)||reset<=now)){
+    agents[name]={...agent,quota:{...agent.quota,state:'unknown',remainingPercent:null}};
+    changed=true;
+   }
+  }
+  return changed?{...state,agents}:state;
  }
  function currentTelemetry(state,now=Date.now()){
   const observed=Date.parse(state?.observedAt);
@@ -34,20 +52,33 @@
   const allowed=new Set(['working','waiting','available','unknown']);
   return Object.fromEntries(['claude','codex'].map(name=>[name,allowed.has(states?.[name])?states[name]:'unknown']));
  }
+ function resetText(iso){
+  if(typeof iso!=='string'||!Number.isFinite(Date.parse(iso)))return 'Sin fecha confirmada';
+  return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(iso));
+ }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
   const validTurn=Number.isFinite(turn)&&turn>=0;
   const states={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin señal'};
   const st=states[state]||states.unknown;
   const width=q.percent===null?'': '<span class="mini-progress"><i style="width:'+q.percent+'%"></i></span>';
-  return '<details class="agent-compact" data-agent="'+name+'">'
+  const telemetry=agent?'Reciente':'Sin telemetría reciente';
+  const resetAt=Date.parse(agent?.quota?.resetsAt);
+  const reset=Number.isFinite(resetAt)
+   ?resetText(agent.quota.resetsAt)+(resetAt<=Date.now()?' · vencido':'')
+   :'Sin fecha confirmada';
+  return '<details class="agent-compact" data-agent="'+name+'" data-telemetry="'+(agent?'fresh':'stale')+'">'
    +'<summary><span class="agent-identity"><strong>'+NAMES[name]+'</strong><small data-execution="'+clean(state)+'">'+clean(st)+'</small></span>'
    +'<span class="agent-occupancy"><span class="sr-only">Ocupación: </span><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
    +'<span class="agent-quota" data-tone="'+q.tone+'"><b>'+q.text+'</b>'+width+'</span><span class="agent-expand" aria-hidden="true">⌄</span></summary>'
-   +'<div class="agent-extra"><span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':turn<60?turn+' s':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
+   +'<div class="agent-extra"><span>Telemetría</span><strong>'+telemetry+'</strong>'
+   +'<span>Estado de ejecución</span><strong>'+clean(st)+'</strong>'
+   +'<span>Ocupación</span><strong>'+(o.valid?o.text+' tareas reservadas':'Sin medición de reservas')+'</strong>'
+   +'<span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':turn<60?turn+' s':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
-   +'<span>Cuota</span><strong>'+q.text+'</strong>'
+   +'<span>Cuota restante</span><strong>'+q.text+'</strong>'
+   +'<span>Restablecimiento</span><strong>'+reset+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,freshExecution,card};
+ return {occupancy,quota,expireQuotaWindows,currentTelemetry,liveStates,freshExecution,resetText,card};
 });
