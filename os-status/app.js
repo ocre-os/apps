@@ -45,7 +45,7 @@
   function renderChecks(state){
     $('checksGrid').innerHTML = Object.entries(checkMeta).map(([key,[name,desc]])=>{
       const view=V.checkView(state,key);
-      return '<article class="row check" data-status="'+view.status+'"><h3>'+name+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+(view.text||desc)+'</p></article>';
+      return '<article class="row check" data-status="'+escapeHtml(view.status)+'"><h3>'+escapeHtml(name)+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+escapeHtml(view.text||desc)+'</p></article>';
     }).join('');
   }
   let agentsInfo=null,xpressInfo=null,devenvInfo=null;
@@ -76,7 +76,8 @@
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));
     $('attentionCount').textContent=state?String(items.length):'';
-    $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+i.tone+'"><span class="att-domain">'+i.domain+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
+    document.querySelector('.attention').dataset.empty=state&&items.length===0?'true':'false';
+    $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+escapeHtml(i.tone)+'"><span class="att-domain">'+escapeHtml(i.domain)+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
     if(state&&state.overall==='healthy')$('heroMessage').textContent=V.verdictText(items,state);
   }
   $('platformMore').addEventListener('click',()=>{
