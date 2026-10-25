@@ -47,7 +47,21 @@
   if(seconds<3600)return Math.floor(seconds/60)+' min';
   return Math.floor(seconds/3600)+' h '+String(Math.floor(seconds%3600/60)).padStart(2,'0')+' min';
  }
- function card(name,agent,state='unknown'){
+ function runtimeDetails(name,runtimes={}){
+  const ids=name==='claude'?['claude_wsl','claude_windows']:['codex_wsl'];
+  const labels={claude_wsl:'Claude WSL',claude_windows:'Claude Windows',codex_wsl:'Codex WSL'};
+  const states={authenticated:'Autenticado',unauthenticated:'Requiere iniciar sesión',unknown:'Sin dato',unavailable:'No disponible'};
+  const quotas={available:'Disponible',low:'Baja',exhausted:'Agotada',unknown:'Sin medición'};
+  return ids.map(id=>{
+   const item=runtimes?.[id];
+   const state=item&&states[item.state]||'Sin dato';
+   const quota=item&&quotas[item.quotaState]||'Sin medición';
+   return '<span>'+labels[id]+' · Autenticación</span><strong>'+state+'</strong>'
+    +'<span>'+labels[id]+' · Cuota</span><strong>'+quota+'</strong>'
+    +'<span>'+labels[id]+' · Observado</span><strong>'+(item&&Number.isFinite(Date.parse(item.observedAt))?clean(item.observedAt):'Sin dato')+'</strong>';
+  }).join('');
+ }
+ function card(name,agent,state='unknown',runtimes={}){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
   const reset=q.percent===null?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
   const states={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin señal'};
@@ -58,9 +72,9 @@
    +'<span class="agent-occupancy"><span class="sr-only">Ocupación: </span><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
    +'<span class="agent-quota" data-tone="'+q.tone+'"><b>'+q.text+'</b>'+width+'</span><span class="agent-expand" aria-hidden="true">⌄</span></summary>'
    +'<div class="agent-extra"><span>Turno actual</span><strong>'+turnLabel(turn)+'</strong>'
-   +'<span>Autenticación</span><strong>Sin señal pública</strong>'
+   +runtimeDetails(name,runtimes)
    +'<span>Cuota</span><strong>'+q.text+'</strong>'+'<span>Restablecimiento</span><strong>'+reset+'</strong>'
-   +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
+   +'<p>Ocupación, ejecución, autenticación y cuota son mediciones independientes. Autenticación no acredita cuota disponible.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,card};
+ return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,runtimeDetails,card};
 });

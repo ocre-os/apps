@@ -37,7 +37,7 @@
   const focusName=document.activeElement?.closest?.('details.agent-compact')?.dataset.agent;
   const focusOnSummary=focusName&&document.activeElement?.tagName==='SUMMARY';
   // Only current, schema-valid telemetry may show occupancy or quota.
-  const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],live[n])).join(''):'';
+  const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],live[n],state.runtimes)).join(''):'';
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
   for(const el of grid.querySelectorAll('details.agent-compact'))if(expanded.has(el.dataset.agent))el.open=true;
   if(focusOnSummary){const target=Array.from(grid.querySelectorAll('details.agent-compact')).find(el=>el.dataset.agent===focusName);target?.querySelector('summary')?.focus();}

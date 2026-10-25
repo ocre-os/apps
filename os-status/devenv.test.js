@@ -150,3 +150,63 @@ test('the queue view says it only observes, shows counts, and never reports heal
  assert.equal(view(sup(),at+16*60000+1).label,'Sin señal');
  assert.equal(D.supervisorView(D.normalize(),at).label,'Sin señal');
 });
+
+test('runtime telemetry validates freshness and rejects unexpected states',()=>{
+ const now=Date.parse('2026-10-25T04:00:00Z');
+ const observed=new Date(now).toISOString();
+ const raw={
+  claude_wsl:{state:'unauthenticated',observed_at:observed,quota_state:'unknown'},
+  claude_windows:{state:'authenticated',observed_at:observed,quota_state:'unknown'},
+  codex_wsl:{state:'authenticated',observed_at:new Date(now-40000).toISOString(),quota_state:'available'},
+  unexpected:{state:'authenticated',observed_at:observed}
+ };
+ const result=D.normalizeRuntimes(raw,observed,now);
+ assert.equal(result.claude_windows.state,'authenticated');
+ assert.equal(result.claude_windows.quotaState,'unknown');
+ assert.equal(result.claude_wsl.state,'unauthenticated');
+ assert.equal(result.codex_wsl,undefined);
+ assert.equal(result.unexpected,undefined);
+ assert.deepEqual(D.normalizeRuntimes(raw,observed,now+31000),{});
+});
+
+test('published runtime evidence reaches compact details without implying quota',()=>{
+ const U=require('./compact-ui.js');
+ const now=Date.parse('2026-10-25T04:00:00Z');
+ const observed=new Date(now).toISOString();
+ const payload={
+  contract:'ocre-devenv-v1',observed_at:observed,capacity:2,
+  agents:{claude:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}},
+          codex:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}}},
+  runtimes:{claude_windows:{state:'authenticated',observed_at:observed,quota_state:'unknown'}}
+ };
+ const result=D.normalize(payload,now);
+ assert.equal(result.valid,true);
+ assert.equal(result.runtimes.claude_windows.state,'authenticated');
+ const html=U.card('claude',result.agents.claude,'unknown',result.runtimes);
+ assert.ok(html.includes('Claude Windows · Autenticación</span><strong>Autenticado'));
+ const old=D.normalize(payload,now+31000);
+ assert.equal(old.valid,false);
+ assert.deepEqual(old.runtimes,{});
+});
+
+
+test('runtime details degrade safely for null, expired and absent Core observations',()=>{
+ const U=require('./compact-ui.js');
+ const now=Date.parse('2026-10-25T04:00:00Z');
+ const observed=new Date(now).toISOString();
+ const payload={contract:'ocre-devenv-v1',observed_at:observed,capacity:2,
+  agents:{claude:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}},
+          codex:{slots_used:0,turn_seconds:null,quota:{state:'unknown'}}},
+  runtimes:null};
+ const fresh=D.normalize(payload,now);
+ assert.equal(fresh.valid,true);
+ assert.deepEqual(fresh.runtimes,{});
+ const html=U.card('claude',fresh.agents.claude,'unknown',fresh.runtimes);
+ assert.ok(html.includes('Claude Windows · Autenticación</span><strong>Sin dato'));
+ assert.doesNotMatch(html,/Autenticado/);
+ const expired=D.normalize({...payload,runtimes:{claude_windows:{
+  state:'authenticated',quota_state:'unknown',observed_at:new Date(now-31000).toISOString()
+ }}},now);
+ assert.deepEqual(expired.runtimes,{});
+ assert.equal(D.normalize(payload,now+31000).valid,false);
+});
