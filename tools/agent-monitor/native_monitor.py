@@ -212,6 +212,10 @@ class DevenvSource:
             self.quota,self.quota_at=data["codex_quota"],now
         runtime=self.runtime_observation()
         sampled_at=self.clock()
+        # The reservation snapshot precedes the runtime probe. Never give an old
+        # reservation count a fresh timestamp after a slow CLI invocation.
+        if sampled_at-now>30:
+            return None
         return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,sampled_at,
                                    runtime_inventory=runtime,runtime_observed_at=dt.datetime.fromtimestamp(sampled_at,dt.timezone.utc).isoformat().replace("+00:00","Z"))
 
