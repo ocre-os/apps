@@ -150,3 +150,21 @@ test('the queue view says it only observes, shows counts, and never reports heal
  assert.equal(view(sup(),at+16*60000+1).label,'Sin señal');
  assert.equal(D.supervisorView(D.normalize(),at).label,'Sin señal');
 });
+
+test('runtime telemetry validates freshness and rejects unexpected states',()=>{
+ const now=Date.parse('2026-10-25T04:00:00Z');
+ const observed=new Date(now).toISOString();
+ const raw={
+  claude_wsl:{state:'unauthenticated',observed_at:observed,quota_state:'unknown'},
+  claude_windows:{state:'authenticated',observed_at:observed,quota_state:'unknown'},
+  codex_wsl:{state:'authenticated',observed_at:new Date(now-40000).toISOString(),quota_state:'available'},
+  unexpected:{state:'authenticated',observed_at:observed}
+ };
+ const result=D.normalizeRuntimes(raw,observed,now);
+ assert.equal(result.claude_windows.state,'authenticated');
+ assert.equal(result.claude_windows.quotaState,'unknown');
+ assert.equal(result.claude_wsl.state,'unauthenticated');
+ assert.equal(result.codex_wsl,undefined);
+ assert.equal(result.unexpected,undefined);
+ assert.deepEqual(D.normalizeRuntimes(raw,observed,now+31000),{});
+});
