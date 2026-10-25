@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#070b0d">
   <title>OCRE OS Status</title>
-  <link rel="stylesheet" href="styles.css?v=20261021-ocre067label">
+  <link rel="stylesheet" href="styles.css?v=20261024-statusv2">
+  <link rel="stylesheet" href="compact.css?v=20261024-statusv2">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -38,7 +39,7 @@
       </div>
     </section>
 
-    <section class="domains" aria-label="Dominios">
+    <section class="domains" aria-label="Resumen de dominios">
       <button class="domain" data-domain="platform" data-tone="unknown" type="button"><span class="domain-name">PLATAFORMA</span><strong class="domain-state" id="domPlatformState">—</strong><span class="domain-text" id="domPlatformText"></span></button>
       <button class="domain" data-domain="agents" data-tone="unknown" type="button"><span class="domain-name">AGENTES</span><strong class="domain-state" id="domAgentsState">—</strong><span class="domain-text" id="domAgentsText"></span></button>
       <button class="domain" data-domain="dev" data-tone="unknown" type="button"><span class="domain-name">DESARROLLO</span><strong class="domain-state" id="domDevState">—</strong><span class="domain-text" id="domDevText"></span></button>
@@ -50,25 +51,26 @@
     </section>
 
     <section class="load" aria-labelledby="loadHeading">
-      <div class="load-head"><h2 id="loadHeading">Carga de los agentes</h2><small id="loadTime" class="cycle-state">Sin muestra reciente</small></div>
+      <div class="load-head"><h2 id="loadHeading">Agentes <small class="section-hint">ocupación · cuota · turno</small></h2><small id="loadTime" class="cycle-state">Sin muestra reciente</small></div>
       <div id="loadGrid" class="load-grid"><p class="load-empty">Sin medición reciente de la carga.</p></div>
-      <p class="agents-note">Carga = tareas activas ÷ capacidad de 2 tareas reservadas. Es trabajo asignado, no porcentaje de avance.</p>
+      <p class="agents-note">Ocupación = tareas reservadas, no progreso. Actividad, cuota y autenticación son señales distintas.</p>
     </section>
 
     <section class="details" aria-label="Detalle">
-      <details id="det-platform" class="detail">
+      <details id="det-platform" class="detail" open>
         <summary><span>Plataforma</span><small id="cycleState" class="cycle-state">Preparando ciclo</small></summary>
         <div id="checksGrid" class="rows"></div>
+        <button id="platformMore" class="platform-more" type="button" aria-expanded="false">Mostrar todos los servicios</button>
       </details>
       <details id="det-agents" class="detail agents-panel">
-        <summary><span>Agentes</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>
+        <summary><span>Estado de ejecución</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>
         <div class="rows">
           <article id="agent-claude" class="row agent-card" data-state="unknown"><h3>Claude</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
           <article id="agent-codex" class="row agent-card" data-state="unknown"><h3>Codex</h3><p class="agent-state" aria-live="polite">Sin información</p><p class="agent-detail">Sin una señal reciente confirmada</p></article>
         </div>
         <p class="agents-note">Estado de ejecución, no porcentaje de avance. Una sesión abierta puede estar en espera.</p>
       </details>
-      <details id="det-dev" class="detail">
+      <details id="det-dev" class="detail" open>
         <summary><span>Desarrollo</span><small class="cycle-state">Versión, validación, cola y Xpress</small></summary>
         <div class="rows">
           <article class="row meta"><h3>Versión</h3><p><strong id="version">—</strong> <small id="commit">commit no informado</small></p></article>
@@ -81,7 +83,7 @@
         </div>
         <p class="agents-note">Solo contadores de Xpress; no muestra mensajes ni identificadores. Validaciones, respaldos y cuota de agentes llegan en fases posteriores.</p>
       </details>
-      <details id="det-activity" class="detail">
+      <details id="det-activity" class="detail" open>
         <summary><span>Actividad reciente</span><small id="activityCount" class="cycle-state">Sin eventos</small></summary>
         <ul id="activityList" class="activity-list"><li class="activity-empty">Sin eventos recientes.</li></ul>
         <p class="agents-note">Despliegues de staging y cambios del monitor. Sin textos ni rutas.</p>
@@ -112,6 +114,7 @@
   <script src="xpress.js?v=20261021-ocre067label"></script>
   <script src="xpress-ui.js?v=20261021-ocre067label"></script>
   <script src="devenv.js?v=20261021-ocre067label"></script>
-  <script src="devenv-ui.js?v=20261021-ocre067label"></script>
+  <script src="compact-ui.js?v=20261024-statusv2"></script>
+  <script src="devenv-ui.js?v=20261024-statusv2"></script>
 </body>
 </html>

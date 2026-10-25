@@ -70,13 +70,20 @@
       const queue=window.OcreDevenv.supervisorView(devenvInfo&&devenvInfo.state),qcard=$('supervisor-card');
       qcard.dataset.state=queue.tone;qcard.querySelector('.agent-state').textContent=queue.label;qcard.querySelector('.agent-detail').textContent=queue.text;
     }
-    setDomain('platform',V.platformView(state));
+    const platform=V.platformView(state);
+    const counts=platform.text.match(/^([0-9]+) de ([0-9]+) puntos/);
+    setDomain('platform',{...platform,label:counts?counts[1]+'/'+counts[2]+' · '+platform.label:platform.label});
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));
     $('attentionCount').textContent=state?String(items.length):'';
     $('attentionList').innerHTML=state?(items.length?items.map((i)=>'<li data-tone="'+i.tone+'"><span class="att-domain">'+i.domain+'</span><strong>'+escapeHtml(i.name)+'</strong><span>'+escapeHtml(i.text)+'</span></li>').join(''):'<li class="att-empty">Nada pendiente.</li>'):'';
     if(state&&state.overall==='healthy')$('heroMessage').textContent=V.verdictText(items,state);
   }
+  $('platformMore').addEventListener('click',()=>{
+    const expanded=$('checksGrid').classList.toggle('expanded');
+    $('platformMore').setAttribute('aria-expanded',String(expanded));
+    $('platformMore').textContent=expanded?'Mostrar menos servicios':'Mostrar todos los servicios';
+  });
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:xpress',(e)=>{xpressInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:devenv',(e)=>{devenvInfo=e.detail;renderDomains();});

@@ -1,0 +1,58 @@
+/* OCRE Status V2 — dense, accessible mobile-first monitoring.
+   Keeps existing contracts: no false authentication or inferred quota. */
+:root{--compact-gap:8px}
+.shell{width:min(840px,calc(100% - 24px));padding:10px 0 22px}
+.topbar{min-height:46px;padding-bottom:8px;gap:8px}
+.brand{gap:9px}.brand-mark{width:31px;height:31px}.brand strong{font-size:12px;letter-spacing:.04em}.brand small{font-size:8px}
+.top-actions{gap:5px}.top-actions button{min-height:40px;padding:7px 9px}.matrix-trigger{font-size:10px;letter-spacing:.04em}
+.environment-bar{padding:8px 0 5px}.env{min-height:39px;padding:7px 13px}
+.verdict{gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:linear-gradient(110deg,#0c1c22,#0b1318);margin:7px 0 0}
+.verdict .eyebrow{font-size:8px;letter-spacing:.1em;margin-bottom:3px}
+.verdict h1{font-size:clamp(20px,5vw,29px);line-height:1.15}
+.verdict .hero-message{font-size:11px;line-height:1.3;margin:4px 0 0}
+.verdict .orb-wrap{width:34px}.verdict .status-orb{height:26px;width:26px;box-shadow:0 0 14px color-mix(in srgb,var(--orb-color) 28%,transparent)}
+.domains{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px 0 4px}
+.domain{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:57px;padding:8px 9px;border-radius:9px;border:1px solid var(--line);border-bottom:2px solid var(--tone)}
+.domain-name{font-size:9px;letter-spacing:.07em}
+.domain-state{font-size:12px;line-height:1.15;justify-self:start;text-align:left}
+.domain-text{display:none}
+.attention{padding:7px 0 1px}
+.attention h2{font-size:12px;margin-bottom:5px}
+.count{font-size:10px;padding:1px 5px}
+.attention-list{gap:4px}.attention-list li{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 9px;font-size:11px;line-height:1.35}
+.attention-list li strong{font-size:11px}.attention-list .att-empty{padding:6px 9px}
+.att-domain{font-size:9px}
+.load{padding:12px 0 3px}.load-head{align-items:center;margin-bottom:7px}.load h2{font-size:16px}.section-hint{color:var(--muted);font-size:10px;font-weight:400}
+.load-grid{display:grid;grid-template-columns:1fr;gap:6px}
+.agent-compact{border:1px solid var(--line);background:var(--panel);border-radius:10px;min-width:0;overflow:hidden}
+.agent-compact>summary{min-height:60px;display:grid;grid-template-columns:minmax(75px,1fr) 57px minmax(95px,1fr) 12px;gap:7px;align-items:center;padding:9px 10px;list-style:none;cursor:pointer}
+.agent-compact>summary::-webkit-details-marker{display:none}
+.agent-identity{display:flex;flex-direction:column;gap:4px;min-width:0}.agent-identity strong{font-size:14px}.agent-identity small{font-size:10px;color:var(--muted);white-space:nowrap}
+.agent-identity small[data-execution=working]{color:var(--healthy)}.agent-identity small[data-execution=waiting]{color:var(--degraded)}
+.agent-occupancy{display:flex;flex-direction:column;gap:5px;align-items:center;font-variant-numeric:tabular-nums}
+.agent-occupancy b,.agent-quota b{font-size:11px;font-weight:700;white-space:nowrap}
+.occupancy-marks{display:flex;gap:3px}.occupancy-marks i{height:5px;width:12px;border-radius:8px;background:#33434a}.occupancy-marks i.filled{background:var(--healthy)}
+.agent-quota{min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;text-align:right}.agent-quota b{font-size:10px;color:#a4bac2}.agent-quota[data-tone=available] b{color:var(--healthy)}.agent-quota[data-tone=low] b{color:var(--degraded)}.agent-quota[data-tone=exhausted] b{color:var(--failed)}
+.mini-progress{display:block;height:4px;width:68px;border-radius:5px;background:#2b3a40;overflow:hidden}.mini-progress i{display:block;height:100%;background:var(--healthy)}
+.agent-expand{color:#8da3ad;font-size:15px;transition:transform .2s}.agent-compact[open] .agent-expand{transform:rotate(180deg)}
+.agent-extra{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:8px 15px;padding:10px 12px;font-size:11px}
+.agent-extra>span{color:var(--muted)}.agent-extra strong{font-weight:600}.agent-extra p{grid-column:1/-1;margin:3px 0 0;color:var(--muted);line-height:1.4}
+.load>.agents-note{font-size:10px;margin:6px 1px;color:#778c95}
+.details{padding-top:9px;gap:7px}
+.detail{border-radius:10px}.detail>summary{min-height:43px;padding:10px 11px;font-size:14px}
+.detail>summary small{font-size:10px}.row{padding:8px 11px;gap:0 8px;min-height:37px;align-items:center}
+.row h3,.row.agent-card h3{font-size:12px}.row .check-status,.row .agent-state{font-size:10px}
+.row .check-detail{display:none}.row[data-status=failed] .check-detail,.row[data-status=degraded] .check-detail,.row[data-status=stale] .check-detail,.row[data-status=unknown] .check-detail{display:block;grid-column:1/-1;margin:3px 0}
+.row.meta p{font-size:11px}.row.meta strong{font-size:12px}.row.meta small{display:inline;font-size:10px;margin-left:6px}
+.detail .agents-note{font-size:10px;padding:7px 10px}.activity-list{margin:0}
+.activity-list li{padding:7px 10px!important;font-size:11px}
+footer{margin-top:12px;padding-top:9px}.legend{gap:5px 9px}.legend span{font-size:9px}
+@media(max-width:400px){.shell{width:calc(100% - 18px)}.domain{padding:7px 6px}.domain-state{font-size:11px}.agent-compact>summary{grid-template-columns:minmax(65px,1fr) 48px minmax(85px,1fr) 10px;gap:4px;padding:8px}.agent-identity strong{font-size:12px}.agent-quota b{font-size:9px}.verdict h1{font-size:21px}}
+@media(min-width:760px){.load-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.domain{min-height:65px}.domain-text{display:block;grid-area:auto;line-height:1.2;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.agent-expand{transition:none}}
+
+/* Default shows core healthy services plus every non-healthy row, never hides incidents. */
+#checksGrid:not(.expanded) .row:nth-child(n+5)[data-status=healthy],
+#checksGrid:not(.expanded) .row:nth-child(n+5)[data-status=not_configured]{display:none}
+.platform-more{display:block;border:0;border-top:1px solid var(--line);border-radius:0;background:#101c21;color:#81d6e9;cursor:pointer;padding:9px 11px;font-size:11px;text-align:left;min-height:42px;width:100%;font-weight:650}
+.platform-more:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
