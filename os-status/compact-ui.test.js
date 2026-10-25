@@ -1,6 +1,16 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const U=require('./compact-ui.js');
+test('compact platform never hides unconfigured or unhealthy checks',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
+ const selectors=css.match(/#checksGrid:not\(\.expanded\)[^{}]*\{display:none\}/g)||[];
+ assert.equal(selectors.length,1);
+ assert.match(selectors[0],/data-status=healthy/);
+ assert.doesNotMatch(selectors[0],/not_configured|failed|degraded|stale|unknown/);
+});
+
 test('stale occupation and quota samples are never current telemetry',()=>{
  const now=Date.parse('2026-10-24T23:00:00Z');
  const sample={valid:true,observedAt:new Date(now-20000).toISOString(),agents:{claude:{slotsUsed:2,capacity:2,quota:{state:'available',remainingPercent:90}}}};
