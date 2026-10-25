@@ -2,7 +2,7 @@ import unittest
 import unittest.mock
 import json
 import sqlite3
-from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
+from native_monitor import sanitize_runtime_inventory, runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
 from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
@@ -175,7 +175,7 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(sample["contract"],"ocre-devenv-v1")
         self.assertEqual(sample["agents"]["claude"],{"slots_used":1,"turn_seconds":720,"quota":{"state":"unknown","remaining_percent":None,"resets_at":None}})
         self.assertEqual(sample["agents"]["codex"],{"slots_used":0,"turn_seconds":45,"quota":self.QUOTA})
-        self.assertEqual(set(sample),{"contract","observed_at","agents","events","validations","supervisor"})
+        self.assertEqual(set(sample),{"contract","observed_at","agents","events","validations","supervisor","runtimes"})
     def test_unreadable_reservations_publish_nothing(self):
         for data in (None,{},{"slots":None},{"slots":{"claude":1}},{"slots":{"claude":"1","codex":0}}):
             self.assertIsNone(build_devenv_sample(data,None,None,1_800_000_000))
