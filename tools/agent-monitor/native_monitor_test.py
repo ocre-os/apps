@@ -279,6 +279,19 @@ class RuntimePublisherTests(unittest.TestCase):
         self.assertEqual(sample["runtimes"]["claude_windows"]["quota_state"],"unknown")
         self.assertNotIn("secret@example.test",json.dumps(sample))
 
+
+    def test_per_runtime_expiry_and_future_observation_fail_closed(self):
+        old="2026-10-25T03:59:20Z"
+        future="2026-10-25T04:00:03Z"
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "observed_at":old},
+             "claude_wsl":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                           "observed_at":future}}
+        self.assertEqual(sanitize_runtime_inventory(raw,self.STAMP,self.NOW),{})
+        self.assertEqual(sanitize_runtime_inventory(
+            {"claude_wsl":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                           "observed_at":self.STAMP}},self.STAMP,self.NOW)["claude_wsl"]["state"],"authenticated")
+
     def test_runtime_probe_error_fails_closed(self):
         from native_monitor import DevenvSource
         source=DevenvSource(None,"collector.py")
