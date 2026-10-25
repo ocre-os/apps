@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070b0d">
   <title>OCRE OS Status</title>
   <link rel="stylesheet" href="styles.css?v=20261024-statusv2">
-  <link rel="stylesheet" href="compact.css?v=20261024-statusv2">
+  <link rel="stylesheet" href="compact.css?v=20261024-statusv2-nav">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -28,7 +28,7 @@
       <span id="livePulse" class="live-pill"><i></i> LIVE</span>
     </section>
 
-    <section class="verdict" aria-live="polite">
+    <section id="status-overview" class="verdict" aria-live="polite">
       <div class="orb-wrap" aria-hidden="true">
         <div id="statusOrb" class="status-orb checking"><span></span></div>
       </div>
@@ -90,6 +90,14 @@
       </details>
     </section>
 
+    <nav class="status-mobile-nav" aria-label="Secciones de Status">
+      <a href="#status-overview" data-panel="status-overview" aria-current="location"><span aria-hidden="true">●</span>Estado</a>
+      <a href="#det-platform" data-panel="det-platform"><span aria-hidden="true">▤</span>Servicios</a>
+      <a href="#loadHeading" data-panel="loadHeading"><span aria-hidden="true">◉</span>Agentes</a>
+      <a href="#det-dev" data-panel="det-dev"><span aria-hidden="true">⌘</span>Desarrollo</a>
+      <a href="#det-activity" data-panel="det-activity"><span aria-hidden="true">≡</span>Actividad</a>
+    </nav>
+
     <footer>
       <div class="legend">
         <span><i class="dot healthy"></i> Operativo</span><span><i class="dot degraded"></i> Degradado</span><span><i class="dot failed"></i> Falla</span><span><i class="dot stale"></i> Obsoleto</span><span><i class="dot unknown"></i> Sin señal</span><span><i class="dot neutral"></i> No configurado</span>
@@ -115,6 +123,7 @@
   <script src="xpress-ui.js?v=20261021-ocre067label"></script>
   <script src="devenv.js?v=20261021-ocre067label"></script>
   <script src="compact-ui.js?v=20261024-statusv2"></script>
+  <script src="mobile-nav.js?v=20261024-statusv2-nav"></script>
   <script src="devenv-ui.js?v=20261024-statusv2"></script>
 </body>
 </html>
