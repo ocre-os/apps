@@ -205,9 +205,10 @@ class DevenvSource:
             return None
 
     def sample(self):
-        now=self.clock()
-        refresh=now-self.quota_at>=QUOTA_REFRESH_SECONDS
+        started_at=self.clock()
+        refresh=started_at-self.quota_at>=QUOTA_REFRESH_SECONDS
         data=self.wsl(refresh)
+        now=self.clock()
         if refresh:
             if isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
                 self.quota,self.quota_at=data["codex_quota"],now
