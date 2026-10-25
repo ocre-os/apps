@@ -84,12 +84,25 @@ test('quota is represented as remaining percent only with verified number',()=>{
  assert.equal(U.quota({state:'available',remainingPercent:90}).text,'90% restante');
  assert.equal(U.quota({state:'available',remainingPercent:null}).text,'Sin medición');
  assert.equal(U.quota({state:'unknown',remainingPercent:90}).text,'Sin medición');
- assert.equal(U.quota({state:'exhausted',remainingPercent:40}).text,'Sin medición');
  assert.equal(U.quota({state:'exhausted',remainingPercent:0}).text,'0% restante');
+ assert.equal(U.quota({state:'exhausted',remainingPercent:null}).text,'Agotada');
+ assert.equal(U.quota({state:'exhausted',remainingPercent:40}).text,'Sin medición');
 });
 test('rendered state cannot inject HTML',()=>{
  const result=U.card('codex',{slotsUsed:0,capacity:2,quota:{}},'<img src=x>');
  assert.doesNotMatch(result,/<img/);
+});
+
+test('visible origin of agent quotas and Xpress cannot be confused with CORE',()=>{
+ const fs=require('node:fs'), path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ assert.match(html,/telemetry-source[^>]*>Plataforma: entorno seleccionado · Agentes, cuotas y Xpress: <strong>STAGING<\/strong>/);
+});
+test('exhausted quota remains visible even without a percentage',()=>{
+ const html=U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'exhausted',remainingPercent:null,resetsAt:new Date(Date.now()+86400000).toISOString()}},'available');
+ assert.match(html,/Agotada/);
+ assert.match(html,/Reinicia /);
+ assert.doesNotMatch(html,/Sin medición/);
 });
 
 test('background status polling keeps the previous reading visible',()=>{

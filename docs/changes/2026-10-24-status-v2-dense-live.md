@@ -5,13 +5,15 @@
 ## Principios implementados
 - Sin medidores semicirculares. Ocupación = ranuras usadas / capacidad; cuota = porcentaje restante verificado, nunca progreso de tareas.
 - El panel compacto mantiene acceso a la **totalidad** de las comprobaciones de plataforma, incluyendo fallas, degradaciones, sin señal y no configurado. Los detalles técnicos pueden expandirse sin perder la posición.
+- El suavizado del monitor queda **aislado por URL del entorno**: cambiar CORE/STAGING reinicia historial y bloquea la contaminación por respuestas viejas, aunque ignoren AbortSignal. Dos pruebas de regresión reproducen ambos casos.
+- Una cuota explícitamente agotada se muestra como **Agotada** incluso sin porcentaje; si existe hora de restablecimiento se conserva. La procedencia del monitor de agentes, cuotas y Xpress se indica expresamente como STAGING.
 - Los agentes muestran actividad separada de ocupación, cuota, turno y restablecimiento. La autenticación queda como "Sin señal pública" hasta tener un contrato específico: ni estar trabajando ni disponer de cuota prueban autenticación.
 - La pantalla mantiene información visible durante sondeos en segundo plano. Solo una carga inicial o cambio entre CORE/STAGING muestra placeholders; los datos tienen TTL y no se muestran vigentes si han caducado.
 - "Sondeo 10 s" significa **polling** cada 10 segundos, no eventos push. La insignia indica comprobando, obsoleto o sin señal cuando corresponda.
 - Navegación inferior y expandibles accesibles mediante teclado; controles con rótulo estable y aria-pressed. Respeto por `prefers-reduced-motion` y protecciones contra desbordes móviles.
 
 ## QA local
-- `node --test os-status/*.test.js`: 105 pruebas aprobadas.
+- `node --test os-status/*.test.js`: 109 pruebas aprobadas.
 - `git diff --check`: sin problemas.
 - Edge headless con datos sintéticos: comprobados estados, ocupación, alertas no configuradas, desarrollo y navegación; la captura de escritorio no sustituye pruebas en teléfono real.
 - El HTML de QA usaba datos sintéticos en una ruta temporal eliminada del repositorio; no representa el estado real.

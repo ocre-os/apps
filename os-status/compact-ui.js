@@ -13,6 +13,10 @@
   return {text:agent.slotsUsed+'/'+agent.capacity,segments:marks,valid:true};
  }
  function quota(q){
+  // An explicit exhaustion signal can be valid without a numerical percentage.
+  // Do not contradict the 'sin cuota' alert by calling it 'sin medición'.
+  if(q?.state==='exhausted'&&q.remainingPercent===null)
+   return {text:'Agotada',tone:'exhausted',percent:null};
   if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0))
    return {text:'Sin medición',tone:'unknown',percent:null};
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
@@ -50,7 +54,7 @@
  }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
-  const reset=q.percent===null?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
+  const reset=q.percent===null&&q.tone!=='exhausted'?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
   const states={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin señal'};
   const st=states[state]||states.unknown;
   const width=q.percent===null?'': '<span class="mini-progress"><i style="width:'+q.percent+'%"></i></span>';
