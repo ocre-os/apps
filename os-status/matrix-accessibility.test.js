@@ -6,7 +6,7 @@ const vm = require('node:vm');
 function setup(reduced = false) {
   const frames = new Map(), events = {}, drawn = [];
   let serial = 0;
-  const ctx = {setTransform(){}, clearRect(){drawn.length=0}, fillRect(){drawn.length=0}, fillText(text){drawn.push(text)}};
+  const ctx = {setTransform(){}, clearRect(){drawn.length=0}, fillRect(x,y){if(x===0&&y===0)drawn.length=0}, fillText(text){drawn.push(text)}};
   const nodes = {
     matrixCanvas: {style:{}, getContext:()=>ctx},
     matrixMode: {hidden:true},
