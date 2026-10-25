@@ -211,8 +211,9 @@ class DevenvSource:
         if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
             self.quota,self.quota_at=data["codex_quota"],now
         runtime=self.runtime_observation()
-        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now,
-                                   runtime_inventory=runtime,runtime_observed_at=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z"))
+        sampled_at=self.clock()
+        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,sampled_at,
+                                   runtime_inventory=runtime,runtime_observed_at=dt.datetime.fromtimestamp(sampled_at,dt.timezone.utc).isoformat().replace("+00:00","Z"))
 
     def runtime_observation(self):
         cmd=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",
