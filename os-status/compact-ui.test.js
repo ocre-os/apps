@@ -40,7 +40,7 @@ test('expanded agent keeps reset time and long turn without falsely claiming aut
  assert.match(card,/Restablecimiento/);
  assert.match(card,/Reinicia /);
  assert.match(card,/Autenticación/);
- assert.match(card,/Sin señal pública/);
+ assert.match(card,/Sin dato/);
  assert.match(U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'unknown',resetsAt:'2099-01-01T00:00:00Z'}},'available'),/Sin reinicio confirmado/);
 });
 test('stale occupation and quota samples are never current telemetry',()=>{
@@ -89,7 +89,7 @@ test('occupation segments reflect slots and cannot become progress gauge',()=>{
 });
 test('unknown quota and auth never imply authenticated',()=>{
  const card=U.card('claude',{slotsUsed:0,capacity:2,turnSeconds:null,quota:{state:'unknown'}},'working');
- assert.match(card,/Sin medición/);assert.match(card,/Sin señal pública/);
+ assert.match(card,/Sin medición/);assert.match(card,/Sin dato/);
  assert.doesNotMatch(card,/Autenticado|speedometer|<svg|90%/);
  assert.match(card,/Trabajando/);assert.match(card,/0\/2/);
 });
@@ -112,4 +112,19 @@ test('small turns show seconds and large capacity visual is bounded',()=>{
  const s=U.card('codex',{slotsUsed:3,capacity:8,turnSeconds:45,quota:{}},'working');
  assert.match(s,/45 s/);
  assert.equal((s.match(/class="filled"/g)||[]).length,0);
+});
+
+test('runtime authentication and quota remain independent and escaped',()=>{
+ const runtimes={
+  claude_wsl:{state:'unauthenticated',quotaState:'unknown',observedAt:'2026-10-25T04:00:00Z'},
+  claude_windows:{state:'authenticated',quotaState:'unknown',observedAt:'2026-10-25T04:00:00Z'}
+ };
+ const card=U.card('claude',{slotsUsed:0,capacity:2,quota:{}},'unknown',runtimes);
+ assert.match(card,/Claude WSL · Autenticación/);
+ assert.match(card,/Requiere iniciar sesión/);
+ assert.match(card,/Claude Windows · Autenticación/);
+ assert.match(card,/Autenticado/);
+ assert.match(card,/Sin medición/);
+ assert.doesNotMatch(card,/Cuota disponible por autenticación/);
+ assert.match(U.card('codex',{slotsUsed:0,capacity:2,quota:{}},'unknown',{}),/Sin dato/);
 });
