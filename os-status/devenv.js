@@ -6,6 +6,8 @@
  // OCRE-058 F3: medidor de carga por agente. Solo números y estados fijos validados; nada más del payload se conserva.
  const QUOTA_STATES=new Set(['available','low','exhausted','unknown']);
  const MAX_AGE_MS=30000;
+ const RUNTIME_STATES=new Set(['authenticated','unauthenticated','unknown','unavailable']);
+ const RUNTIME_NAMES=['codex_wsl','claude_wsl','claude_windows'];
  const EVENT_KINDS=new Set(['deploy_ok','deploy_failed','monitor_stale','monitor_recovered']);
  const REF=/^[0-9a-f]{7,40}$/;
  const MAX_EVENTS=5;
@@ -52,8 +54,21 @@
   if(valid===null||rejected===null||launched===null)return null;
   return {at:raw.at,phase:raw.phase,mode:raw.mode,stopped:raw.stopped,valid,rejected,launched};
  }
+ function normalizeRuntimes(raw,observedAt,now=Date.now()){
+  const out={};
+  for(const name of RUNTIME_NAMES){
+   const item=raw?.[name];
+   const stamp=Date.parse(item?.observed_at);
+   if(!item||!Number.isFinite(stamp)||stamp>now+5000||now-stamp>MAX_AGE_MS||
+      stamp>Date.parse(observedAt)||Date.parse(observedAt)-stamp>MAX_AGE_MS||
+      !RUNTIME_STATES.has(item.state))continue;
+   out[name]={state:item.state,observedAt:item.observed_at,
+    quotaState:QUOTA_STATES.has(item.quota_state)?item.quota_state:'unknown'};
+  }
+  return out;
+ }
  function normalize(payload={},now=Date.now()){
-  const empty={valid:false,observedAt:null,agents:{},events:[],validations:[],supervisor:null};
+  const empty={valid:false,observedAt:null,agents:{},events:[],validations:[],supervisor:null,runtimes:{}};
   const time=Date.parse(payload?.observed_at);
   if(payload?.contract!=='ocre-devenv-v1'||!Number.isFinite(time)||now-time>MAX_AGE_MS||now-time< -5000)return empty;
   const capacity=int(payload.capacity,1,8)??2;
@@ -62,7 +77,7 @@
    const agent=normalizeAgent(payload.agents?.[name],capacity);
    if(agent)agents[name]=agent;
   }
-  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events),validations:normalizeValidations(payload.validations),supervisor:normalizeSupervisor(payload.supervisor)}:empty;
+  return Object.keys(agents).length?{valid:true,observedAt:payload.observed_at,agents,events:normalizeEvents(payload.events),validations:normalizeValidations(payload.validations),supervisor:normalizeSupervisor(payload.supervisor),runtimes:normalizeRuntimes(payload.runtimes,payload.observed_at,now)}:empty;
  }
  // Arco de medio círculo (izquierda → derecha) para una fracción 0..1 y la posición de la aguja.
  function geometry(used,capacity){
@@ -164,5 +179,5 @@
    return state;
   }
  }
- return {normalize,normalizeEvents,normalizeSupervisor,supervisorView,normalizeValidations,validationView,validationIssues,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
+ return {normalize,normalizeRuntimes,normalizeEvents,normalizeSupervisor,supervisorView,normalizeValidations,validationView,validationIssues,eventView,ago,geometry,loadTone,loadLabel,duration,quotaText,issues,DevenvMonitor,NAMES};
 });
