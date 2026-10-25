@@ -195,3 +195,38 @@ test('un entorno que aún no informa media queda neutral y no degrada ni queda s
   assert.equal(state.reasons.media, 'not_reported');
   assert.equal(state.overall, 'healthy');
 });
+
+test('CORE healthy never masks the first degraded STAGING sample', async () => {
+  const sample=(worker,commit)=>({
+    contract:'ocre-status-v1',observed_at:new Date().toISOString(),
+    deployment:{commit},
+    checks:Object.fromEntries(['api','database','schema','worker','media','storage','notifications','pwa']
+      .map(k=>[k,{status:k==='worker'?worker:'healthy'}])),
+  });
+  const monitor=new StatusMonitor({fetcher:async url=>({ok:true,json:async()=>url==='core'?sample('healthy','aaaaaaa'):sample('failed','bbbbbbb')})});
+  assert.equal((await monitor.check('core')).overall,'healthy');
+  const staging=await monitor.check('staging');
+  assert.equal(staging.overall,'degraded');
+  assert.equal(staging.checks.worker,'failed');
+  assert.equal(staging.deployment.commit,'bbbbbbb');
+  assert.notEqual(staging.held,true);
+});
+test('a late CORE response cannot corrupt STAGING smoothing or sample history', async () => {
+  let finishCore;
+  const response=(commit)=>({ok:true,json:async()=>({
+    contract:'ocre-status-v1',observed_at:new Date().toISOString(),
+    deployment:{commit},
+    checks:Object.fromEntries(['api','database','schema','worker','media','storage','notifications','pwa']
+      .map(k=>[k,{status:'healthy'}])),
+  })});
+  const monitor=new StatusMonitor({fetcher:url=>url==='core'?
+    new Promise(resolve=>{finishCore=resolve}):Promise.resolve(response('staging'))});
+  const old=monitor.check('core');
+  const current=await monitor.check('staging');
+  finishCore(response('core'));
+  await old;
+  assert.equal(current.deployment.commit,'staging');
+  assert.equal(monitor.state.deployment.commit,'staging');
+  assert.equal(monitor.seen.url,'staging');
+  assert.equal(monitor.stable.deployment.commit,'staging');
+});

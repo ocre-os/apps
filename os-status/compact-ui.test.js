@@ -11,6 +11,25 @@ test('compact platform never hides unconfigured or unhealthy checks',()=>{
  assert.doesNotMatch(selectors[0],/not_configured|failed|degraded|stale|unknown/);
 });
 
+test('compact view offers recoverable full service descriptions without concealing warnings',()=>{
+ const fs=require('node:fs');const path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ const js=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
+ assert.match(html,/id="platformDescriptions"[^>]*aria-pressed="false"/);
+ assert.match(js,/classList.toggle\('show-descriptions'\)/);
+ assert.match(css,/#checksGrid\.show-descriptions \.row\.check \.check-detail/);
+ assert.match(html,/id="platformMore"/);
+});
+test('expanded agent keeps reset time and long turn without falsely claiming authentication',()=>{
+ const card=U.card('codex',{slotsUsed:1,capacity:2,turnSeconds:3661,quota:{state:'available',remainingPercent:70,resetsAt:new Date(Date.now()+86400000).toISOString()}},'working');
+ assert.match(card,/1 h 01 min/);
+ assert.match(card,/Restablecimiento/);
+ assert.match(card,/Reinicia /);
+ assert.match(card,/Autenticación/);
+ assert.match(card,/Sin señal pública/);
+ assert.match(U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'unknown',resetsAt:'2099-01-01T00:00:00Z'}},'available'),/Sin reinicio confirmado/);
+});
 test('stale occupation and quota samples are never current telemetry',()=>{
  const now=Date.parse('2026-10-24T23:00:00Z');
  const sample={valid:true,observedAt:new Date(now-20000).toISOString(),agents:{claude:{slotsUsed:2,capacity:2,quota:{state:'available',remainingPercent:90}}}};
@@ -65,12 +84,44 @@ test('quota is represented as remaining percent only with verified number',()=>{
  assert.equal(U.quota({state:'available',remainingPercent:90}).text,'90% restante');
  assert.equal(U.quota({state:'available',remainingPercent:null}).text,'Sin medición');
  assert.equal(U.quota({state:'unknown',remainingPercent:90}).text,'Sin medición');
- assert.equal(U.quota({state:'exhausted',remainingPercent:40}).text,'Sin medición');
  assert.equal(U.quota({state:'exhausted',remainingPercent:0}).text,'0% restante');
+ assert.equal(U.quota({state:'exhausted',remainingPercent:null}).text,'Agotada');
+ assert.equal(U.quota({state:'exhausted',remainingPercent:40}).text,'Sin medición');
 });
 test('rendered state cannot inject HTML',()=>{
  const result=U.card('codex',{slotsUsed:0,capacity:2,quota:{}},'<img src=x>');
  assert.doesNotMatch(result,/<img/);
+});
+
+test('visible origin of agent quotas and Xpress cannot be confused with CORE',()=>{
+ const fs=require('node:fs'), path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ assert.match(html,/telemetry-source[^>]*>Plataforma: entorno seleccionado · Agentes, cuotas y Xpress: <strong>STAGING<\/strong>/);
+});
+test('exhausted quota remains visible even without a percentage',()=>{
+ const html=U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'exhausted',remainingPercent:null,resetsAt:new Date(Date.now()+86400000).toISOString()}},'available');
+ assert.match(html,/Agotada/);
+ assert.match(html,/Reinicia /);
+ assert.doesNotMatch(html,/Sin medición/);
+});
+
+test('background status polling keeps the previous reading visible',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const app=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
+ assert.match(app,/if\(!lastState\)renderChecking\(\)/);
+ assert.match(app,/badge|livePulse/);
+ assert.doesNotMatch(app,/checking=true;[^\n]*renderChecking\(\)/);
+});
+test('mobile layout keeps long labels bounded and all data expandable',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ assert.match(css,/domain-state\{max-width:100%;overflow-wrap:anywhere\}/);
+ assert.match(html,/id="platformDescriptions"/);
+ assert.match(html,/id="platformMore"/);
+ assert.match(html,/status-mobile-nav/);
 });
 
 test('small turns show seconds and large capacity visual is bounded',()=>{

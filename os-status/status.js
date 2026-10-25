@@ -80,6 +80,7 @@
       this.seen = null;
       this.stable = null;
       this.degradedStreak = 0;
+      this.activeUrl = null;
     }
 
     // Suavizado (OCRE-058 F2): pasar de operativo a degradado exige dos muestras consecutivas; una falla crítica, un estado
@@ -99,6 +100,13 @@
 
     async check(url) {
       const cycleId = ++this.latestCycle;
+      // Previous endpoint is a different system. Never smooth CORE into STAGING.
+      if(this.activeUrl!==url){
+        this.activeUrl=url;
+        this.stable=null;
+        this.seen=null;
+        this.degradedStreak=0;
+      }
       if (this.controller) this.controller.abort();
       const controller = new AbortController();
       this.controller = controller;
@@ -113,14 +121,18 @@
         } else {
           state = normalizeContract(await response.json());
           state.receivedAt = Date.now();
-          const seen = this.seen;
-          if (seen && seen.url === url && seen.observedAt === state.observedAt) {
-            state.frozen = state.receivedAt - seen.firstSeenAt > FROZEN_AFTER_MS;
-          } else {
-            this.seen = { url, observedAt: state.observedAt, firstSeenAt: state.receivedAt };
+          // An aborted/late request may return despite AbortSignal. It cannot
+          // overwrite smoothing or frozen-sample tracking for the new endpoint.
+          if(cycleId===this.latestCycle && this.activeUrl===url){
+            const seen = this.seen;
+            if (seen && seen.url === url && seen.observedAt === state.observedAt) {
+              state.frozen = state.receivedAt - seen.firstSeenAt > FROZEN_AFTER_MS;
+            } else {
+              this.seen = { url, observedAt: state.observedAt, firstSeenAt: state.receivedAt };
+            }
+            state = applyStaleness(state);
+            if (state.contractValid) state = this.smooth(state);
           }
-          state = applyStaleness(state);
-          if (state.contractValid) state = this.smooth(state);
         }
         state.latencyMs = Date.now() - started;
       } catch (_error) {
