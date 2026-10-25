@@ -25,7 +25,7 @@
     <section class="environment-bar" aria-label="Entorno">
       <button class="env active" data-env="core" type="button">CORE</button>
       <button class="env" data-env="staging" type="button">STAGING</button>
-      <span id="livePulse" class="live-pill" role="status" aria-live="off" data-state="checking" title="Sondeo cada 10 segundos, no conexión push"><i></i><span class="live-text">Comprobando</span></span>
+      <span id="livePulse" class="live-pill" role="status" aria-live="polite" data-state="checking" aria-describedby="livePulseHelp"><i></i><span class="live-text">Comprobando</span></span><span id="livePulseHelp" class="sr-only">Sondeo periódico cada 10 segundos; no es conexión en tiempo real mediante push.</span>
     </section>
 
     <section id="status-overview" class="verdict" aria-live="polite">
@@ -60,7 +60,7 @@
       <details id="det-platform" class="detail" open>
         <summary><span>Plataforma</span><small id="cycleState" class="cycle-state">Preparando ciclo</small></summary>
         <div id="checksGrid" class="rows"></div>
-        <div class="platform-actions"><button id="platformMore" class="platform-more" type="button" aria-controls="checksGrid" aria-expanded="false">Mostrar todos los servicios</button><button id="platformDescriptions" class="platform-more" type="button" aria-controls="checksGrid" aria-pressed="false">Ver descripciones</button></div>
+        <div class="platform-actions"><button id="platformMore" class="platform-more" type="button" aria-controls="checksGrid" aria-expanded="false">Mostrar todos los servicios</button><button id="platformDescriptions" class="platform-more" type="button" aria-controls="checksGrid" aria-pressed="false">Descripciones</button></div>
       </details>
       <details id="det-agents" class="detail agents-panel">
         <summary><span>Estado de ejecución</span><small id="agents-time" class="cycle-state">Sin muestra reciente</small></summary>

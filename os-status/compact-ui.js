@@ -13,7 +13,7 @@
   return {text:agent.slotsUsed+'/'+agent.capacity,segments:marks,valid:true};
  }
  function quota(q){
-  if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0))
+  if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0)||(q.resetsAt&&Number.isFinite(Date.parse(q.resetsAt))&&Date.parse(q.resetsAt)<=Date.now()))
    return {text:'Sin medición',tone:'unknown',percent:null};
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
@@ -40,7 +40,8 @@
   return 'Reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(at));
  }
  function turnLabel(seconds){
-  if(!Number.isInteger(seconds)||seconds<0)return 'Sin señal';
+  if(!Number.isFinite(seconds)||seconds<0)return 'Sin señal';
+  seconds=Math.floor(seconds);
   if(seconds===0)return 'Sin turno';
   if(seconds<60)return seconds+' s';
   if(seconds<3600)return Math.floor(seconds/60)+' min';

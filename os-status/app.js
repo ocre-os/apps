@@ -88,7 +88,7 @@
   $('platformDescriptions').addEventListener('click',()=>{
     const visible=$('checksGrid').classList.toggle('show-descriptions');
     $('platformDescriptions').setAttribute('aria-pressed',String(visible));
-    $('platformDescriptions').textContent=visible?'Ocultar descripciones':'Ver descripciones';
+    $('platformDescriptions').textContent='Descripciones';
   });
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:xpress',(e)=>{xpressInfo=e.detail;renderDomains();});
@@ -123,15 +123,21 @@
   }
   function renderLiveBadge(state){
     const badge=$('livePulse');
-    const current=Boolean(state?.contractValid&&!state?.stale&&Number.isFinite(state?.receivedAt)
-       &&Date.now()-state.receivedAt<=30000&&Date.now()-state.receivedAt>=-5000);
-    badge.dataset.state=current?'current':state?.stale?'stale':'unknown';
-    badge.querySelector('.live-text').textContent=current?'Sondeo 10 s':state?.stale?'Obsoleto':'Sin señal';
+    const status=window.OcreStatus.freshnessBadge(state);
+    if(badge.dataset.state!==status){
+      badge.dataset.state=status;
+      badge.querySelector('.live-text').textContent=status==='current'?'Sondeo 10 s':status==='stale'?'Obsoleto':'Sin señal';
+    }
+  }
+  function renderFreshness(state){
+    renderLiveBadge(state);
+    const signal=$('livePulse').dataset.state;
+    $('age').textContent=signal==='stale'?'muestra obsoleta':signal==='current'?'muestra actual':'sin señal válida';
   }
   function render(state){
     rawState=state;
     state=applyStaleness(state);
-    renderLiveBadge(state);
+    renderFreshness(state);
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
@@ -140,7 +146,6 @@
     renderOrb(state);
     $('latency').textContent=state.latencyMs==null?'—':state.latencyMs+' ms';
     $('checkedAt').textContent=formatTime(state.checkedAt);
-    $('age').textContent=state.stale?'muestra obsoleta':state.contractValid?'muestra actual':'sin señal válida';
     $('contractState').textContent=state.contractValid?'VÁLIDO':'NO DISPONIBLE';
     $('version').textContent=state.deployment?.version||'—';
     $('commit').textContent=state.deployment?.commit?'commit '+state.deployment.commit:'commit no informado';
@@ -170,7 +175,8 @@
     renderDomains();
   }
   async function check(){
-    checking=true;$('refreshButton').classList.add('loading');renderChecking();
+    checking=true;$('refreshButton').classList.add('loading');
+    if(!lastState)renderChecking();
     const envAtStart=selected;
     const state=await monitor.check(targets[envAtStart].url);
     if(state.cycleId===monitor.latestCycle){checking=false;$('refreshButton').classList.remove('loading')}
@@ -191,6 +197,12 @@
   check();
   timer=setInterval(check,10000);
   // Si el sondeo se detiene, la muestra envejece sola y pasa a OBSOLETO sin intervención.
-  const expiry=setInterval(()=>{if(rawState&&!checking){const next=applyStaleness(rawState);if(next.stale&&!(lastState&&lastState.stale))render(rawState);}},1000);
+  const expiry=setInterval(()=>{
+    if(!rawState)return;
+    const next=applyStaleness(rawState);
+    // Update freshness even during a slow in-flight check.
+    renderFreshness(next);
+    if(!checking&&next.stale&&!(lastState&&lastState.stale))render(rawState);
+  },1000);
   window.addEventListener('beforeunload',()=>{clearInterval(timer);clearInterval(expiry);clearTimeout(orbCycleTimer)});
 })();

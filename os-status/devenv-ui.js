@@ -22,7 +22,13 @@
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:D.normalize();
   const live=window.OcreCompact.freshExecution(agentStates,agentsObservedAt);
-  const next=(state.valid?state.observedAt:'none')+'|'+(last!==null)+'|'+live.claude+'|'+live.codex;
+  const current=window.OcreCompact.currentTelemetry(state);
+  const quotaEpoch=current&&['claude','codex'].some(n=>{
+    const at=Date.parse(state.agents[n]?.quota?.resetsAt);
+    return Number.isFinite(at)&&at<=Date.now();
+  });
+  // Time-based transitions must repaint even without a new HTTP response.
+  const next=(current?state.observedAt:'stale')+'|'+(last!==null)+'|'+live.claude+'|'+live.codex+'|'+quotaEpoch;
   if(next===signature)return;
   signature=next;
   const grid=document.getElementById('loadGrid');
@@ -31,7 +37,6 @@
   const focusName=document.activeElement?.closest?.('details.agent-compact')?.dataset.agent;
   const focusOnSummary=focusName&&document.activeElement?.tagName==='SUMMARY';
   // Only current, schema-valid telemetry may show occupancy or quota.
-  const current=window.OcreCompact.currentTelemetry(state);
   const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],live[n])).join(''):'';
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
   for(const el of grid.querySelectorAll('details.agent-compact'))if(expanded.has(el.dataset.agent))el.open=true;

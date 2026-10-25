@@ -16,9 +16,10 @@ test('live indicator is a 10-second poll and degrades for stale/invalid samples'
  const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
  const js=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
  const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
- assert.match(html,/Sondeo cada 10 segundos, no conexión push/);
+ assert.match(html,/Sondeo periódico cada 10 segundos/);
+ assert.match(html,/aria-live="polite" data-state="checking"/);
  assert.match(js,/renderLiveBadge\(state\)/);
- assert.match(js,/state\?\.stale\?'stale':'unknown'/);
+ assert.match(js,/freshnessBadge\(state\)/);
  assert.match(js,/Sondeo 10 s/);
  assert.match(css,/\.live-pill\[data-state=stale\]/);
 });
@@ -33,7 +34,8 @@ test('compact view offers recoverable full service descriptions without conceali
  assert.match(html,/id="platformMore"/);
 });
 test('expanded agent keeps reset time and long turn without falsely claiming authentication',()=>{
- const card=U.card('codex',{slotsUsed:1,capacity:2,turnSeconds:3661,quota:{state:'available',remainingPercent:70,resetsAt:'2026-10-31T02:00:00Z'}},'working');
+ const nextReset=new Date(Date.now()+24*3600*1000).toISOString();
+ const card=U.card('codex',{slotsUsed:1,capacity:2,turnSeconds:3661,quota:{state:'available',remainingPercent:70,resetsAt:nextReset}},'working');
  assert.match(card,/1 h 01 min/);
  assert.match(card,/Restablecimiento/);
  assert.match(card,/Reinicia /);
@@ -97,6 +99,9 @@ test('quota is represented as remaining percent only with verified number',()=>{
  assert.equal(U.quota({state:'unknown',remainingPercent:90}).text,'Sin medición');
  assert.equal(U.quota({state:'exhausted',remainingPercent:40}).text,'Sin medición');
  assert.equal(U.quota({state:'exhausted',remainingPercent:0}).text,'0% restante');
+ assert.equal(U.quota({state:'available',remainingPercent:90,resetsAt:new Date(Date.now()-1000).toISOString()}).text,'Sin medición');
+ assert.equal(U.quota({state:'available',remainingPercent:90,resetsAt:new Date(Date.now()+60000).toISOString()}).text,'90% restante');
+ assert.equal(U.turnLabel(3.9),'3 s');
 });
 test('rendered state cannot inject HTML',()=>{
  const result=U.card('codex',{slotsUsed:0,capacity:2,quota:{}},'<img src=x>');
