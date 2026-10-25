@@ -79,3 +79,11 @@ footer{margin-top:12px;padding-top:9px}.legend{gap:5px 9px}.legend span{font-siz
  .legend{display:none}
 }
 @media(max-width:350px){.status-mobile-nav a{font-size:10px}}
+
+/* Information density must not erase meaning. Descriptions expand on demand,
+   without repeating healthy details in the default compact screen. */
+#checksGrid.expanded .row.check .check-detail{display:block;grid-column:1/-1;margin:3px 0}
+.agent-compact[data-telemetry=stale] summary{opacity:.8}
+.agent-compact[data-telemetry=stale] .agent-quota b{color:var(--muted)}
+.agent-extra strong{max-width:230px;overflow-wrap:anywhere;text-align:right}
+@media(max-width:400px){.agent-extra{gap:7px 9px}}
