@@ -17,6 +17,10 @@
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
  }
+ function currentTelemetry(state,now=Date.now()){
+  const observed=Date.parse(state?.observedAt);
+  return state?.valid===true&&Number.isFinite(observed)&&now-observed>=-5000&&now-observed<=30000;
+ }
  function liveStates(info){
   const allowed=new Set(['working','waiting','available','unknown']);
   const states=info&&!info.stale&&info.state&&info.state.states;
@@ -38,5 +42,5 @@
    +'<span>Cuota</span><strong>'+q.text+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,liveStates,card};
+ return {occupancy,quota,currentTelemetry,liveStates,card};
 });

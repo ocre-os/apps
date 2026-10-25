@@ -24,7 +24,9 @@
   if(next===signature)return;
   signature=next;
   const grid=document.getElementById('loadGrid');
-  const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],agentStates[n])).join('');
+  // Only current, schema-valid telemetry may show occupancy or quota.
+  const current=window.OcreCompact.currentTelemetry(state);
+  const cards=current?['claude','codex'].filter((n)=>state.agents[n]).map((n)=>window.OcreCompact.card(n,state.agents[n],agentStates[n])).join(''):'';
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
   document.getElementById('loadTime').textContent=state.valid?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt)):'Sin muestra reciente';
   renderActivity(state);

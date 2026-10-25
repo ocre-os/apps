@@ -1,6 +1,14 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const U=require('./compact-ui.js');
+test('stale occupation and quota samples are never current telemetry',()=>{
+ const now=Date.parse('2026-10-24T23:00:00Z');
+ const sample={valid:true,observedAt:new Date(now-20000).toISOString(),agents:{claude:{slotsUsed:2,capacity:2,quota:{state:'available',remainingPercent:90}}}};
+ assert.equal(U.currentTelemetry(sample,now),true);
+ assert.equal(U.currentTelemetry({...sample,observedAt:new Date(now-30001).toISOString()},now),false);
+ assert.equal(U.currentTelemetry({...sample,observedAt:'bad-date'},now),false);
+ assert.equal(U.currentTelemetry({...sample,valid:false},now),false);
+});
 test('stale and missing execution cannot appear live in compact agent rows',()=>{
  const live={state:{states:{claude:'working',codex:'available'}},stale:false};
  assert.deepEqual(U.liveStates(live),{claude:'working',codex:'available'});
