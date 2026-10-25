@@ -7,7 +7,8 @@
  let agentStates={claude:'unknown',codex:'unknown'};
  window.addEventListener('ocre:agents',(event)=>{
   const info=event.detail;
-  agentStates=info?.state?.states||{claude:'unknown',codex:'unknown'};
+  // Never advertise a stale or missing execution sample as live.
+  agentStates=window.OcreCompact.liveStates(info);
   signature=null;render();
  });
  const dots={healthy:'#48e5a8',failed:'#ff5f6d',stale:'#b78cff'};

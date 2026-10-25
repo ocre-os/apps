@@ -17,6 +17,12 @@
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
  }
+ function liveStates(info){
+  const allowed=new Set(['working','waiting','available','unknown']);
+  const states=info&&!info.stale&&info.state&&info.state.states;
+  return Object.fromEntries(['claude','codex'].map(name=>[name,
+   states&&allowed.has(states[name])?states[name]:'unknown']));
+ }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
   const validTurn=Number.isFinite(turn)&&turn>=0;
@@ -25,12 +31,12 @@
   const width=q.percent===null?'': '<span class="mini-progress"><i style="width:'+q.percent+'%"></i></span>';
   return '<details class="agent-compact" data-agent="'+name+'">'
    +'<summary><span class="agent-identity"><strong>'+NAMES[name]+'</strong><small data-execution="'+clean(state)+'">'+clean(st)+'</small></span>'
-   +'<span class="agent-occupancy" aria-label="Ocupación '+clean(o.text)+'"><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
+   +'<span class="agent-occupancy"><span class="sr-only">Ocupación: </span><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
    +'<span class="agent-quota" data-tone="'+q.tone+'"><b>'+q.text+'</b>'+width+'</span><span class="agent-expand" aria-hidden="true">⌄</span></summary>'
    +'<div class="agent-extra"><span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':turn<60?turn+' s':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
    +'<span>Cuota</span><strong>'+q.text+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,card};
+ return {occupancy,quota,liveStates,card};
 });

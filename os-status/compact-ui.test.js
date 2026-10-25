@@ -1,6 +1,19 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const U=require('./compact-ui.js');
+test('stale and missing execution cannot appear live in compact agent rows',()=>{
+ const live={state:{states:{claude:'working',codex:'available'}},stale:false};
+ assert.deepEqual(U.liveStates(live),{claude:'working',codex:'available'});
+ assert.deepEqual(U.liveStates({...live,stale:true}),{claude:'unknown',codex:'unknown'});
+ assert.deepEqual(U.liveStates({stale:false}),{claude:'unknown',codex:'unknown'});
+ assert.deepEqual(U.liveStates(null),{claude:'unknown',codex:'unknown'});
+ assert.deepEqual(U.liveStates({state:{states:{claude:'invalid',codex:'waiting'}}}),{claude:'unknown',codex:'waiting'});
+});
+test('agent numbers are labelled for assistive technologies',()=>{
+ const html=U.card('codex',{slotsUsed:1,capacity:2,quota:{state:'available',remainingPercent:90}},'available');
+ assert.match(html,/sr-only[^>]*>Ocupación: /);
+ assert.match(html,/1\/2/);
+});
 test('occupation segments reflect slots and cannot become progress gauge',()=>{
  const o=U.occupancy({slotsUsed:1,capacity:2});
  assert.equal(o.text,'1/2');assert.match(o.segments,/filled/);
