@@ -2,8 +2,8 @@ import unittest
 import unittest.mock
 import json
 import sqlite3
-from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
-from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor
+from native_monitor import sanitize_runtime_inventory, runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
+from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, QUOTA_REFRESH_SECONDS, clean_validations, clean_supervisor
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -175,7 +175,7 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(sample["contract"],"ocre-devenv-v1")
         self.assertEqual(sample["agents"]["claude"],{"slots_used":1,"turn_seconds":720,"quota":{"state":"unknown","remaining_percent":None,"resets_at":None}})
         self.assertEqual(sample["agents"]["codex"],{"slots_used":0,"turn_seconds":45,"quota":self.QUOTA})
-        self.assertEqual(set(sample),{"contract","observed_at","agents","events","validations","supervisor"})
+        self.assertEqual(set(sample),{"contract","observed_at","agents","events","validations","supervisor","runtimes"})
     def test_unreadable_reservations_publish_nothing(self):
         for data in (None,{},{"slots":None},{"slots":{"claude":1}},{"slots":{"claude":"1","codex":0}}):
             self.assertIsNone(build_devenv_sample(data,None,None,1_800_000_000))
@@ -194,6 +194,37 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(asked,[True,False,True])
         self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
         self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
+
+
+    def test_slow_wsl_collector_does_not_age_new_reservation_snapshot(self):
+        clock=[1000.0]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        def collect(with_quota):
+            clock[0]+=35
+            return dict(self.DATA)
+        source.wsl=collect
+        source.runtime_observation=lambda:None
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            sample=source.sample()
+        self.assertIsNotNone(sample)
+        self.assertEqual(sample["observed_at"],"1970-01-01T00:17:15Z")
+
+    def test_failed_quota_refresh_clears_old_available_state(self):
+        clock=[1000.0]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        source.runtime_observation=lambda:None
+        results=[
+            {**self.DATA,"codex_quota":self.QUOTA},
+            dict(self.DATA),
+        ]
+        source.wsl=lambda with_quota: results.pop(0)
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            first=source.sample()
+            clock[0]+=QUOTA_REFRESH_SECONDS
+            second=source.sample()
+        self.assertEqual(first["agents"]["codex"]["quota"],self.QUOTA)
+        self.assertEqual(second["agents"]["codex"]["quota"]["state"],"unknown")
+
     def test_events_ride_in_the_sample_and_are_capped_at_five(self):
         events=[{"at":f"2026-10-18T12:0{i}:00Z","kind":"deploy_ok","ref":"3d84e77"} for i in range(7)]
         sample=build_devenv_sample({**self.DATA,"events":events,},None,None,1_800_000_000)
@@ -232,3 +263,100 @@ class SupervisorSanitizeTests(unittest.TestCase):
 
 
 if __name__=="__main__":unittest.main()
+
+class RuntimePublisherTests(unittest.TestCase):
+    STAMP="2026-10-25T04:00:00Z"
+    NOW=__import__('datetime').datetime.fromisoformat('2026-10-25T04:00:00+00:00').timestamp()
+
+    def test_auth_and_quota_are_separate(self):
+        raw={
+            "claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","quota":"available","executable":"available","observed_at":self.STAMP},
+            "claude_wsl":{"authentication":"unauthenticated","reason":"explicit_loggedIn","quota":"unknown","executable":"available","observed_at":self.STAMP},
+            "codex_wsl":{"authentication":"unknown","reason":"unknown","quota":"low","executable":"available","observed_at":self.STAMP},
+        }
+        output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
+        self.assertEqual(output["claude_windows"]["state"],"authenticated")
+        self.assertEqual(output["claude_windows"]["quota_state"],"unknown")
+        self.assertEqual(output["claude_wsl"]["state"],"unauthenticated")
+        self.assertEqual(output["codex_wsl"]["state"],"unknown")
+        self.assertEqual(output["codex_wsl"]["quota_state"],"low")
+        self.assertNotIn("reason",output["claude_windows"])
+
+    def test_old_and_missing_observations_are_rejected(self):
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","observed_at":self.STAMP}}
+        self.assertEqual(sanitize_runtime_inventory(raw,self.STAMP,self.NOW+31),{})
+        self.assertEqual(sanitize_runtime_inventory(raw,None,self.NOW),{})
+        self.assertEqual(sanitize_runtime_inventory(raw,"bad",self.NOW),{})
+
+
+
+    def test_public_payload_is_compatible_with_core_runtime_contract(self):
+        import datetime as dt
+        now=dt.datetime.now(dt.timezone.utc).timestamp()
+        stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "executable":"available","quota":"unknown","observed_at":stamp}}
+        sample=build_devenv_sample({"slots":{"claude":0,"codex":0}},None,None,now,raw,stamp)
+        self.assertEqual(set(sample["runtimes"]),{"claude_windows"})
+        self.assertEqual(set(sample["runtimes"]["claude_windows"]),{"state","quota_state","observed_at"})
+        self.assertEqual(sample["runtimes"]["claude_windows"]["state"],"authenticated")
+        self.assertEqual(sample["runtimes"]["claude_windows"]["quota_state"],"unknown")
+
+    def test_source_probes_core_and_publishes_sanitized_runtime(self):
+        import datetime as dt
+        now=dt.datetime.fromisoformat(self.STAMP.replace("Z","+00:00")).timestamp()
+        from native_monitor import DevenvSource
+        source=DevenvSource(None,"collector.py",clock=lambda:now)
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "executable":"available","quota":"unknown","observed_at":self.STAMP,
+                               "email":"secret@example.test"}}
+        completed=unittest.mock.Mock(stdout=json.dumps(raw),returncode=0)
+        with unittest.mock.patch("native_monitor.subprocess.run",return_value=completed) as run:
+            observed=source.runtime_observation()
+        command=run.call_args.args[0]
+        self.assertEqual(command[-1],"--public-observation")
+        self.assertIn("provider-runtime-status.py",command[-2])
+        self.assertEqual(run.call_args.kwargs["timeout"],15)
+        sample=build_devenv_sample({"slots":{"claude":0,"codex":0}},None,None,now,
+                                   runtime_inventory=observed,runtime_observed_at=self.STAMP)
+        self.assertEqual(sample["runtimes"]["claude_windows"]["state"],"authenticated")
+        self.assertEqual(sample["runtimes"]["claude_windows"]["quota_state"],"unknown")
+        self.assertNotIn("secret@example.test",json.dumps(sample))
+
+
+
+    def test_slow_runtime_probe_does_not_retimestamp_stale_reservations(self):
+        from native_monitor import DevenvSource
+        tick=[1000.0]
+        source=DevenvSource(None,"collector.py",clock=lambda:tick[0])
+        source.wsl=lambda with_quota: {"slots":{"claude":0,"codex":0}}
+        def slow():
+            tick[0]+=31
+            return None
+        source.runtime_observation=slow
+        self.assertIsNone(source.sample())
+
+    def test_per_runtime_expiry_and_future_observation_fail_closed(self):
+        old="2026-10-25T03:59:20Z"
+        future="2026-10-25T04:00:03Z"
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "observed_at":old},
+             "claude_wsl":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                           "observed_at":future}}
+        self.assertEqual(sanitize_runtime_inventory(raw,self.STAMP,self.NOW),{})
+        self.assertEqual(sanitize_runtime_inventory(
+            {"claude_wsl":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                           "observed_at":self.STAMP}},self.STAMP,self.NOW)["claude_wsl"]["state"],"authenticated")
+
+    def test_runtime_probe_error_fails_closed(self):
+        from native_monitor import DevenvSource
+        source=DevenvSource(None,"collector.py")
+        with unittest.mock.patch("native_monitor.subprocess.run",side_effect=OSError("offline")):
+            self.assertIsNone(source.runtime_observation())
+
+    def test_unverified_login_and_extra_keys_never_escape(self):
+        raw={"claude_windows":{"authentication":"authenticated","reason":"timeout","email":"private@example.com","token":"secret","observed_at":self.STAMP}}
+        output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
+        self.assertEqual(output["claude_windows"]["state"],"unknown")
+        self.assertNotIn("email",str(output))
+        self.assertNotIn("token",str(output))

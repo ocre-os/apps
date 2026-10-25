@@ -193,6 +193,7 @@ class DevenvSource:
     def __init__(self,home,collector,clock=time.time):
         self.home,self.collector,self.clock=home,collector,clock
         self.quota=None;self.quota_at=0.0
+        self.runtime_script=Path("/home/ocre/src/ocre-os/core/scripts/provider-runtime-status.py")
 
     def wsl(self,with_quota):
         command=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",self.collector,
@@ -204,12 +205,36 @@ class DevenvSource:
             return None
 
     def sample(self):
-        now=self.clock()
-        refresh=now-self.quota_at>=QUOTA_REFRESH_SECONDS
+        started_at=self.clock()
+        refresh=started_at-self.quota_at>=QUOTA_REFRESH_SECONDS
         data=self.wsl(refresh)
-        if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
-            self.quota,self.quota_at=data["codex_quota"],now
-        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now)
+        now=self.clock()
+        if refresh:
+            if isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
+                self.quota,self.quota_at=data["codex_quota"],now
+            else:
+                # A failed refresh must not preserve a previously available quota.
+                self.quota,self.quota_at=None,0.0
+        if self.quota is not None and now-self.quota_at>=QUOTA_REFRESH_SECONDS:
+            self.quota,self.quota_at=None,0.0
+        runtime=self.runtime_observation()
+        sampled_at=self.clock()
+        # The reservation snapshot precedes the runtime probe. Never give an old
+        # reservation count a fresh timestamp after a slow CLI invocation.
+        if sampled_at-now>30:
+            return None
+        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,sampled_at,
+                                   runtime_inventory=runtime,runtime_observed_at=dt.datetime.fromtimestamp(sampled_at,dt.timezone.utc).isoformat().replace("+00:00","Z"))
+
+    def runtime_observation(self):
+        cmd=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",
+             str(self.runtime_script),"--public-observation"]
+        try:
+            response=subprocess.run(cmd,capture_output=True,text=True,timeout=15,check=True)
+            data=json.loads(response.stdout)
+            return data if isinstance(data,dict) else None
+        except (OSError,ValueError,subprocess.SubprocessError):
+            return None
 
 def clean_validations(raw):
     """Revalida los resultados antes de publicarlos: hora UTC, revisión hexadecimal y pass/fail; todo lo demás se descarta."""
@@ -241,7 +266,48 @@ def clean_supervisor(raw):
         return None
     return dict(raw)
 
-def build_devenv_sample(data, codex_turn, codex_quota, now):
+def sanitize_runtime_inventory(raw, observed_at, now):
+    """Translate Core's advisory runtime inventory to the public allowlist.
+
+    Only explicitly observed authentication is published; a CLI login never proves quota.
+    No timestamps are synthesized for cached runtime observations.
+    """
+    if not isinstance(raw,dict) or not isinstance(observed_at,str):
+        return {}
+    try:
+        at=dt.datetime.fromisoformat(observed_at.replace("Z","+00:00"))
+        if at.tzinfo is None or not 0 <= now-at.timestamp() <= 30:
+            return {}
+    except (ValueError,TypeError,OverflowError):
+        return {}
+    out={}
+    for name in ("codex_wsl","claude_wsl","claude_windows"):
+        item=raw.get(name)
+        if not isinstance(item,dict):
+            continue
+        stamp=item.get("observed_at")
+        try:
+            observed=dt.datetime.fromisoformat(stamp.replace("Z","+00:00"))
+            if observed.tzinfo is None or not 0 <= now-observed.timestamp() <= 30 or observed>at:
+                continue
+        except (ValueError,TypeError,AttributeError,OverflowError):
+            continue
+        auth=item.get("authentication")
+        executable=item.get("executable")
+        if executable=="unavailable":
+            state="unavailable"
+        elif auth in ("authenticated","unauthenticated") and item.get("reason")=="explicit_loggedIn":
+            state=auth
+        else:
+            state="unknown"
+        quota=item.get("quota")
+        # Core's inventory may explicitly report verified Codex availability.
+        # Claude quota is unknown even when authentication succeeds.
+        quota_state=quota if name=="codex_wsl" and quota in ("available","low","exhausted") else "unknown"
+        out[name]={"state":state,"quota_state":quota_state,"observed_at":stamp}
+    return out
+
+def build_devenv_sample(data, codex_turn, codex_quota, now, runtime_inventory=None, runtime_observed_at=None):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
     if not isinstance(slots,dict) or not all(isinstance(slots.get(k),int) for k in ("claude","codex")):
@@ -249,10 +315,11 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     unknown={"state":"unknown","remaining_percent":None,"resets_at":None}
     events=[e for e in (data.get("events") or []) if isinstance(e,dict)][:5]
     stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
+    runtimes=sanitize_runtime_inventory(runtime_inventory,runtime_observed_at,now)
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
         "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
-        "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor"))}
+        "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor")),"runtimes":runtimes or None}
 
 def publish_devenv(source,url,token_file,stop):
     """Hilo propio: un fallo o una lentitud aquí nunca retrasa la muestra de agentes."""
