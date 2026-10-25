@@ -235,7 +235,7 @@ if __name__=="__main__":unittest.main()
 
 class RuntimePublisherTests(unittest.TestCase):
     STAMP="2026-10-25T04:00:00Z"
-    NOW=1761364800
+    NOW=__import__('datetime').datetime.fromisoformat('2026-10-25T04:00:00+00:00').timestamp()
 
     def test_auth_and_quota_are_separate(self):
         raw={
