@@ -232,3 +232,34 @@ class SupervisorSanitizeTests(unittest.TestCase):
 
 
 if __name__=="__main__":unittest.main()
+
+class RuntimePublisherTests(unittest.TestCase):
+    STAMP="2026-10-25T04:00:00Z"
+    NOW=1761364800
+
+    def test_auth_and_quota_are_separate(self):
+        raw={
+            "claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","quota":"available","executable":"available"},
+            "claude_wsl":{"authentication":"unauthenticated","reason":"explicit_loggedIn","quota":"unknown","executable":"available"},
+            "codex_wsl":{"authentication":"unknown","reason":"unknown","quota":"low","executable":"available"},
+        }
+        output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
+        self.assertEqual(output["claude_windows"]["state"],"authenticated")
+        self.assertEqual(output["claude_windows"]["quota_state"],"unknown")
+        self.assertEqual(output["claude_wsl"]["state"],"unauthenticated")
+        self.assertEqual(output["codex_wsl"]["state"],"unknown")
+        self.assertEqual(output["codex_wsl"]["quota_state"],"low")
+        self.assertNotIn("reason",output["claude_windows"])
+
+    def test_old_and_missing_observations_are_rejected(self):
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn"}}
+        self.assertEqual(sanitize_runtime_inventory(raw,self.STAMP,self.NOW+31),{})
+        self.assertEqual(sanitize_runtime_inventory(raw,None,self.NOW),{})
+        self.assertEqual(sanitize_runtime_inventory(raw,"bad",self.NOW),{})
+
+    def test_unverified_login_and_extra_keys_never_escape(self):
+        raw={"claude_windows":{"authentication":"authenticated","reason":"timeout","email":"private@example.com","token":"secret"}}
+        output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
+        self.assertEqual(output["claude_windows"]["state"],"unknown")
+        self.assertNotIn("email",str(output))
+        self.assertNotIn("token",str(output))
