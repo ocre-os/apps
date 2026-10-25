@@ -54,6 +54,22 @@ test('dashboard has concise service preview and collapsible legend',()=>{
  assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompactv2/);
 });
 
+test('collapsed services never hide a failing or unmeasured fifth service',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'styles.css'),'utf8');
+ const app=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
+ assert.ok(css.includes('.services-preview .row:nth-child(n+5)[data-status="healthy"]{display:none}'));
+ assert.ok(!css.includes('.services-preview .row:nth-child(n+5){display:none}'));
+ assert.ok(app.includes("V.checkView(state,key).status==='healthy'"));
+});
+
+test('agent activity expires independently and invalid quota time is tolerated',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'devenv-ui.js'),'utf8');
+ assert.ok(source.includes('ACTIVITY_TTL_MS=30000'));
+ assert.ok(source.includes('Date.now()-agentLiveAt>ACTIVITY_TTL_MS'));
+ assert.ok(source.includes('Number.isFinite(resetDate.getTime())'));
+ assert.ok(source.includes('Math.max(0,Math.min(100'));
+});
+
 test('untrusted raw agent values are rejected before rendering; UI escapes serialized labels',()=>{
  const D=require('./devenv.js');
  const at=new Date().toISOString();

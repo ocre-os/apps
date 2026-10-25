@@ -2,7 +2,8 @@
  const monitor=new window.OcreDevenv.DevenvMonitor();
  const url='https://staging.ocre.mx/api/devenv';
  const D=window.OcreDevenv;
- let last=null,signature=null,agentLive=null;
+ let last=null,signature=null,agentLive=null,agentLiveAt=0;
+ const ACTIVITY_TTL_MS=30000;
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
  function agentRow(name,agent,state){
   // Occupancy, live activity, quota and authentication are different signals.
@@ -11,10 +12,11 @@
   const activityLabel=({working:'Trabajando',waiting:'En espera',available:'Sin turno',unknown:'Sin señal'})[activity]||'Sin señal';
   const capacity=agent.slotsUsed+'/'+agent.capacity;
   const bars=Array.from({length:Math.max(0,Math.min(8,agent.capacity))},(_,i)=>'<i class="'+(i<agent.slotsUsed?'occupied':'')+'"></i>').join('');
-  const reset=agent.quota.resetsAt&&agent.quota.state!=='unknown'?' · reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(agent.quota.resetsAt)):'';
+  const resetDate=agent.quota.resetsAt?new Date(agent.quota.resetsAt):null;
+  const reset=resetDate&&Number.isFinite(resetDate.getTime())&&agent.quota.state!=='unknown'?' · reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(resetDate):'';
   // ocre-devenv-v1 contains no authentication field. Do not fabricate login state.
   const auth='Autenticación: no evaluada';
-  const quotaPercent=agent.quota.remainingPercent;
+  const quotaPercent=typeof agent.quota.remainingPercent==='number'&&Number.isFinite(agent.quota.remainingPercent)?Math.max(0,Math.min(100,agent.quota.remainingPercent)):null;
   const bar=quotaPercent!==null&&agent.quota.state!=='unknown'?'<span class="quota-bar" aria-hidden="true"><i style="width:'+quotaPercent+'%"></i></span>':'';
   return '<article class="agent-compact-row" data-agent="'+escapeHtml(name)+'"><div class="agent-compact-main"><strong>'+escapeHtml(D.NAMES[name])+'</strong>'
    +'<span class="agent-activity" data-state="'+escapeHtml(activity||'unknown')+'">'+escapeHtml(activityLabel)+'</span>'
@@ -32,6 +34,7 @@
  }
  function render(){
   const state=last&&Date.now()-Date.parse(last.observedAt)<=30000?last:D.normalize();
+  if(agentLive&&Date.now()-agentLiveAt>ACTIVITY_TTL_MS){agentLive=null;agentLiveAt=0;}
   const next=(state.valid?state.observedAt:'none')+'|'+(last!==null)+'|'+JSON.stringify(agentLive?.states||{});
   if(next===signature)return;
   signature=next;
@@ -43,7 +46,7 @@
   window.dispatchEvent(new CustomEvent('ocre:devenv',{detail:{state,checked:last!==null}}));
  }
  async function check(){const cycle=monitor.cycle+1;const state=await monitor.check(url);if(cycle===monitor.cycle){last=state;render();}}
- window.addEventListener('ocre:agents',(event)=>{agentLive=event.detail?.stale?null:event.detail?.state||null;signature=null;render();});
+ window.addEventListener('ocre:agents',(event)=>{agentLive=event.detail?.stale?null:event.detail?.state||null;agentLiveAt=agentLive?Date.now():0;signature=null;render();});
  render();check();
  const refresh=setInterval(check,10000);const expiry=setInterval(render,1000);
  document.getElementById('refreshButton').addEventListener('click',check);

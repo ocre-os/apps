@@ -47,8 +47,8 @@
     const configured=observed.filter(v=>v!=='not_configured');
     const healthy=configured.filter(v=>v==='healthy').length;
     $('platformSummary').textContent=state.stale?'Muestra obsoleta':configured.length?healthy+'/'+configured.length+' operativos':'Sin señal';
-    const hiddenCount=Math.max(0,Object.keys(checkMeta).length-4);
-    if(!$('showServices').getAttribute('aria-expanded')||$('showServices').getAttribute('aria-expanded')==='false') $('showServices').textContent=hiddenCount?'+'+hiddenCount+' servicios · Ver todos':'Ver servicios';
+    const hiddenCount=Object.entries(checkMeta).filter(([key],i)=>i>=4&&V.checkView(state,key).status==='healthy').length;
+    if(!$('showServices').getAttribute('aria-expanded')||$('showServices').getAttribute('aria-expanded')==='false') $('showServices').textContent=hiddenCount?'+'+hiddenCount+' operativos · Ver todos':'Todos los servicios visibles';
     $('checksGrid').innerHTML = Object.entries(checkMeta).map(([key,[name,desc]])=>{
       const view=V.checkView(state,key);
       return '<article class="row check" data-status="'+escapeHtml(view.status)+'"><h3>'+escapeHtml(name)+'</h3><p class="check-status">'+statusText(view.status)+'</p><p class="check-detail">'+escapeHtml(view.text||desc)+'</p></article>';
