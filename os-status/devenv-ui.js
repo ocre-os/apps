@@ -3,6 +3,7 @@
  const url='https://staging.ocre.mx/api/devenv';
  const D=window.OcreDevenv;
  let last=null,signature=null,agentLive=null,agentLiveAt=0;
+ let expandedAgents=new Set();
  const ACTIVITY_TTL_MS=30000;
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
  function agentRow(name,agent,state,expanded=false){
@@ -15,10 +16,9 @@
   const resetDate=agent.quota.resetsAt?new Date(agent.quota.resetsAt):null;
   const reset=resetDate&&Number.isFinite(resetDate.getTime())&&agent.quota.state!=='unknown'?' · reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(resetDate):'';
   // ocre-devenv-v1 contains no authentication field. Do not fabricate login state.
-  const auth='Autenticación: no evaluada';
+  // Authentication is not provided by ocre-devenv-v1.
   const quotaPercent=typeof agent.quota.remainingPercent==='number'&&Number.isFinite(agent.quota.remainingPercent)?Math.max(0,Math.min(100,agent.quota.remainingPercent)):null;
   const bar=quotaPercent!==null&&agent.quota.state!=='unknown'?'<span class="quota-bar" aria-hidden="true"><i style="width:'+quotaPercent+'%"></i></span>':'';
-  const active=activity==='working'||activity==='waiting'?activityLabel:'Sin turno activo confirmado';
   const resetText=reset?reset.replace(/^ · /,''):'No informado';
   const cells=[['Estado de ejecución',activityLabel],['Capacidad',capacity+' tareas ocupadas'],['Turno',D.duration(agent.turnSeconds)],['Cuota',quota.text],['Reinicio',resetText],['Autenticación','No evaluada por esta fuente']];
   const rows=cells.map(([label,value])=>'<div class="agent-detail-pair"><dt>'+escapeHtml(label)+'</dt><dd>'+escapeHtml(value)+'</dd></div>').join('');
@@ -47,9 +47,14 @@
   if(next===signature)return;
   signature=next;
   const grid=document.getElementById('loadGrid');
-  const expanded=new Set(Array.from(grid.querySelectorAll?.('details.agent-compact-row[open]')||[],element=>element.dataset.agent));
-  const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>agentRow(n,state.agents[n],agentLive,expanded.has(n))).join('');
+  const previous=Array.from(grid.querySelectorAll?.('details.agent-compact-row')||[]);
+  if(previous.length)expandedAgents=new Set(previous.filter(element=>element.open).map(element=>element.dataset.agent));
+  const active=document.activeElement;
+  const focusedAgent=active?.matches?.('summary.agent-compact-summary')
+    ?active.closest('details.agent-compact-row')?.dataset.agent:null;
+  const cards=['claude','codex'].filter((n)=>state.agents[n]).map((n)=>agentRow(n,state.agents[n],agentLive,expandedAgents.has(n))).join('');
   grid.innerHTML=cards||'<p class="load-empty">Sin medición reciente de la carga.</p>';
+  if(focusedAgent){grid.querySelector?.('details[data-agent="'+focusedAgent+'"] > summary')?.focus();}
   document.getElementById('loadTime').textContent=state.valid?'Observado '+new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(state.observedAt)):'Sin muestra reciente';
   renderActivity(state);
   window.dispatchEvent(new CustomEvent('ocre:devenv',{detail:{state,checked:last!==null}}));
