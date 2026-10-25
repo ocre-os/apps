@@ -36,10 +36,40 @@ test('agent summary is compact and never invents auth or Claude quota', async()=
  assert.match(html,/Trabajando/);
  assert.match(html,/Sin dato/);
  assert.match(html,/91 %/);
- assert.match(html,/Autenticación: no evaluada/);
+ assert.match(html,/<dt>Autenticación<\/dt><dd>No evaluada por esta fuente<\/dd>/);
  assert.doesNotMatch(html,/Windows OK|Autenticado/);
  listeners.get('ocre:agents')({detail:{stale:true,state:{states:{claude:'working',codex:'working'}}}});
  assert.doesNotMatch(node('loadGrid').innerHTML,/Trabajando/);
+});
+
+test('refresh retains focus and expanded agent without restoring stale activity',async()=>{
+ const listeners=new Map(),nodes=new Map();
+ let focused=0;
+ const summary={matches:selector=>selector==='summary.agent-compact-summary',
+  closest:()=>({dataset:{agent:'claude'}})};
+ const grid={innerHTML:'',querySelectorAll:()=>[{dataset:{agent:'claude'},open:true}],
+  querySelector:selector=>selector.includes('claude')?{focus(){focused++}}:null};
+ const node=id=>id==='loadGrid'?grid:(nodes.get(id)||(
+  nodes.set(id,{innerHTML:'',textContent:'',addEventListener(){}}),nodes.get(id)));
+ const now=new Date().toISOString();
+ const raw={contract:'ocre-devenv-v1',observed_at:now,capacity:2,agents:{
+  claude:{slots_used:1,turn_seconds:22,quota:{state:'unknown',remaining_percent:null,resets_at:null}},
+  codex:{slots_used:0,turn_seconds:null,quota:{state:'available',remaining_percent:80,resets_at:null}},
+ }};
+ const ctx={window:{OcreDevenv:{...D,DevenvMonitor:class{constructor(){this.cycle=0}async check(){this.cycle++;return D.normalize(raw)}}},
+  addEventListener(type,handler){listeners.set(type,handler)},dispatchEvent(){}},
+  document:{activeElement:summary,getElementById:node,addEventListener(){}},
+  CustomEvent:class{constructor(type,options){this.detail=options.detail}},
+  setInterval(){return 1},clearInterval(){},Date,Intl};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'devenv-ui.js'),'utf8'),ctx);
+ await new Promise(resolve=>setImmediate(resolve));
+ listeners.get('ocre:agents')({detail:{state:{states:{claude:'working',codex:'available'}}}});
+ assert.match(grid.innerHTML,/data-agent="claude" open/);
+ assert.match(grid.innerHTML,/Trabajando/);
+ assert.ok(focused>0);
+ listeners.get('ocre:agents')({detail:{stale:true,state:{states:{claude:'working'}}}});
+ assert.doesNotMatch(grid.innerHTML,/Trabajando/);
+ assert.match(grid.innerHTML,/data-agent="claude" open/);
 });
 
 test('dashboard has concise service preview and collapsible legend',()=>{
@@ -51,7 +81,7 @@ test('dashboard has concise service preview and collapsible legend',()=>{
  assert.match(html,/class="rows services-preview"/);
  assert.match(html,/class="legend-details"/);
  assert.match(css,/services-preview \.row:nth-child\(n\+5\)/);
- assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompactv2/);
+ assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompact-detail-v1/);
 });
 
 test('collapsed services never hide a failing or unmeasured fifth service',()=>{
@@ -81,4 +111,18 @@ test('untrusted raw agent values are rejected before rendering; UI escapes seria
  assert.equal(parsed.agents.claude,undefined);
  assert.equal(parsed.agents.codex.slotsUsed,0);
  assert.equal(parsed.agents.codex.quota.remainingPercent,90);
+});
+
+test('agent detail uses native accessible disclosure without claiming login',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'devenv-ui.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'styles.css'),'utf8');
+ assert.match(js, /<details class="agent-compact-row"/);
+ assert.match(js, /<summary class="agent-compact-summary"/);
+ assert.match(js, /Autenticación','No evaluada por esta fuente/);
+ assert.match(js, /grid.querySelectorAll\?\./);
+ assert.match(js, /expandedAgents.has\(n\)/);
+ assert.match(css, /agent-compact-summary:focus-visible/);
+ assert.match(css, /min-height:44px/);
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompact-detail-v1/);
 });
