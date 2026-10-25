@@ -289,6 +289,19 @@ class RuntimePublisherTests(unittest.TestCase):
         self.assertEqual(sanitize_runtime_inventory(raw,"bad",self.NOW),{})
 
 
+
+    def test_public_payload_is_compatible_with_core_runtime_contract(self):
+        import datetime as dt
+        now=dt.datetime.now(dt.timezone.utc).timestamp()
+        stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "executable":"available","quota":"unknown","observed_at":stamp}}
+        sample=build_devenv_sample({"slots":{"claude":0,"codex":0}},None,None,now,raw,stamp)
+        self.assertEqual(set(sample["runtimes"]),{"claude_windows"})
+        self.assertEqual(set(sample["runtimes"]["claude_windows"]),{"state","quota_state","observed_at"})
+        self.assertEqual(sample["runtimes"]["claude_windows"]["state"],"authenticated")
+        self.assertEqual(sample["runtimes"]["claude_windows"]["quota_state"],"unknown")
+
     def test_source_probes_core_and_publishes_sanitized_runtime(self):
         import datetime as dt
         now=dt.datetime.fromisoformat(self.STAMP.replace("Z","+00:00")).timestamp()
