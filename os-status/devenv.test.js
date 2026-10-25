@@ -183,7 +183,7 @@ test('published runtime evidence reaches compact details without implying quota'
  assert.equal(result.valid,true);
  assert.equal(result.runtimes.claude_windows.state,'authenticated');
  const html=U.card('claude',result.agents.claude,'unknown',result.runtimes);
- assert.ok(html.includes('Claude Windows · Autenticación</span><strong>Sin dato'));
+ assert.ok(html.includes('Claude Windows · Autenticación</span><strong>Autenticado'));
  assert.ok(html.includes('Claude Windows · Autenticación</span><strong>Sin dato'));
  const old=D.normalize(payload,now+31000);
  assert.equal(old.valid,false);
