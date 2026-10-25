@@ -85,6 +85,11 @@
     $('platformMore').setAttribute('aria-expanded',String(expanded));
     $('platformMore').textContent=expanded?'Mostrar menos servicios':'Mostrar todos los servicios';
   });
+  $('platformDescriptions').addEventListener('click',()=>{
+    const visible=$('checksGrid').classList.toggle('show-descriptions');
+    $('platformDescriptions').setAttribute('aria-pressed',String(visible));
+    $('platformDescriptions').textContent=visible?'Ocultar descripciones':'Ver descripciones';
+  });
   window.addEventListener('ocre:agents',(e)=>{agentsInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:xpress',(e)=>{xpressInfo=e.detail;renderDomains();});
   window.addEventListener('ocre:devenv',(e)=>{devenvInfo=e.detail;renderDomains();});
@@ -116,9 +121,17 @@
     };
     orbCycleTimer=setTimeout(advance,1000);
   }
+  function renderLiveBadge(state){
+    const badge=$('livePulse');
+    const current=Boolean(state?.contractValid&&!state?.stale&&Number.isFinite(state?.receivedAt)
+       &&Date.now()-state.receivedAt<=30000&&Date.now()-state.receivedAt>=-5000);
+    badge.dataset.state=current?'current':state?.stale?'stale':'unknown';
+    badge.querySelector('.live-text').textContent=current?'Sondeo 10 s':state?.stale?'Obsoleto':'Sin señal';
+  }
   function render(state){
     rawState=state;
     state=applyStaleness(state);
+    renderLiveBadge(state);
     lastState=state;
     const target=targets[selected];
     $('environmentName').textContent=target.label;
@@ -127,7 +140,7 @@
     renderOrb(state);
     $('latency').textContent=state.latencyMs==null?'—':state.latencyMs+' ms';
     $('checkedAt').textContent=formatTime(state.checkedAt);
-    $('age').textContent='muestra actual';
+    $('age').textContent=state.stale?'muestra obsoleta':state.contractValid?'muestra actual':'sin señal válida';
     $('contractState').textContent=state.contractValid?'VÁLIDO':'NO DISPONIBLE';
     $('version').textContent=state.deployment?.version||'—';
     $('commit').textContent=state.deployment?.commit?'commit '+state.deployment.commit:'commit no informado';
@@ -138,6 +151,8 @@
   }
   function loadingDots(){return '<span class="loading-dots" aria-label="Comprobando"><i></i><i></i><i></i></span>'}
   function renderChecking(){
+    $('livePulse').dataset.state='checking';
+    $('livePulse').querySelector('.live-text').textContent='Comprobando';
     $('environmentName').textContent=targets[selected].label;
     $('overallLabel').innerHTML=loadingDots();
     $('heroMessage').innerHTML=loadingDots();

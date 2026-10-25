@@ -34,9 +34,21 @@
   const allowed=new Set(['working','waiting','available','unknown']);
   return Object.fromEntries(['claude','codex'].map(name=>[name,allowed.has(states?.[name])?states[name]:'unknown']));
  }
+ function resetLabel(iso,now=Date.now()){
+  const at=Date.parse(iso);
+  if(!Number.isFinite(at)||at<=now)return 'Sin reinicio confirmado';
+  return 'Reinicia '+new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(at));
+ }
+ function turnLabel(seconds){
+  if(!Number.isInteger(seconds)||seconds<0)return 'Sin señal';
+  if(seconds===0)return 'Sin turno';
+  if(seconds<60)return seconds+' s';
+  if(seconds<3600)return Math.floor(seconds/60)+' min';
+  return Math.floor(seconds/3600)+' h '+String(Math.floor(seconds%3600/60)).padStart(2,'0')+' min';
+ }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
-  const validTurn=Number.isFinite(turn)&&turn>=0;
+  const reset=q.percent===null?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
   const states={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin señal'};
   const st=states[state]||states.unknown;
   const width=q.percent===null?'': '<span class="mini-progress"><i style="width:'+q.percent+'%"></i></span>';
@@ -44,10 +56,10 @@
    +'<summary><span class="agent-identity"><strong>'+NAMES[name]+'</strong><small data-execution="'+clean(state)+'">'+clean(st)+'</small></span>'
    +'<span class="agent-occupancy"><span class="sr-only">Ocupación: </span><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
    +'<span class="agent-quota" data-tone="'+q.tone+'"><b>'+q.text+'</b>'+width+'</span><span class="agent-expand" aria-hidden="true">⌄</span></summary>'
-   +'<div class="agent-extra"><span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':turn<60?turn+' s':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
+   +'<div class="agent-extra"><span>Turno actual</span><strong>'+turnLabel(turn)+'</strong>'
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
-   +'<span>Cuota</span><strong>'+q.text+'</strong>'
+   +'<span>Cuota</span><strong>'+q.text+'</strong>'+'<span>Restablecimiento</span><strong>'+reset+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,freshExecution,card};
+ return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,card};
 });

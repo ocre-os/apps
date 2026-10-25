@@ -11,6 +11,36 @@ test('compact platform never hides unconfigured or unhealthy checks',()=>{
  assert.doesNotMatch(selectors[0],/not_configured|failed|degraded|stale|unknown/);
 });
 
+test('live indicator is a 10-second poll and degrades for stale/invalid samples',()=>{
+ const fs=require('node:fs');const path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ const js=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
+ assert.match(html,/Sondeo cada 10 segundos, no conexión push/);
+ assert.match(js,/renderLiveBadge\(state\)/);
+ assert.match(js,/state\?\.stale\?'stale':'unknown'/);
+ assert.match(js,/Sondeo 10 s/);
+ assert.match(css,/\.live-pill\[data-state=stale\]/);
+});
+test('compact view offers recoverable full service descriptions without concealing warnings',()=>{
+ const fs=require('node:fs');const path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ const js=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'compact.css'),'utf8');
+ assert.match(html,/id="platformDescriptions"[^>]*aria-pressed="false"/);
+ assert.match(js,/classList.toggle\('show-descriptions'\)/);
+ assert.match(css,/#checksGrid\.show-descriptions \.row\.check \.check-detail/);
+ assert.match(html,/id="platformMore"/);
+});
+test('expanded agent keeps reset time and long turn without falsely claiming authentication',()=>{
+ const card=U.card('codex',{slotsUsed:1,capacity:2,turnSeconds:3661,quota:{state:'available',remainingPercent:70,resetsAt:'2026-10-31T02:00:00Z'}},'working');
+ assert.match(card,/1 h 01 min/);
+ assert.match(card,/Restablecimiento/);
+ assert.match(card,/Reinicia /);
+ assert.match(card,/Autenticación/);
+ assert.match(card,/Sin señal pública/);
+ assert.match(U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'unknown',resetsAt:'2099-01-01T00:00:00Z'}},'available'),/Sin reinicio confirmado/);
+});
 test('stale occupation and quota samples are never current telemetry',()=>{
  const now=Date.parse('2026-10-24T23:00:00Z');
  const sample={valid:true,observedAt:new Date(now-20000).toISOString(),agents:{claude:{slotsUsed:2,capacity:2,quota:{state:'available',remainingPercent:90}}}};
