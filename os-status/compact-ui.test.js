@@ -36,7 +36,7 @@ test('agent summary is compact and never invents auth or Claude quota', async()=
  assert.match(html,/Trabajando/);
  assert.match(html,/Sin dato/);
  assert.match(html,/91 %/);
- assert.match(html,/Autenticación: no evaluada/);
+ assert.match(html,/<dt>Autenticación<\/dt><dd>No evaluada por esta fuente<\/dd>/);
  assert.doesNotMatch(html,/Windows OK|Autenticado/);
  listeners.get('ocre:agents')({detail:{stale:true,state:{states:{claude:'working',codex:'working'}}}});
  assert.doesNotMatch(node('loadGrid').innerHTML,/Trabajando/);
@@ -51,7 +51,7 @@ test('dashboard has concise service preview and collapsible legend',()=>{
  assert.match(html,/class="rows services-preview"/);
  assert.match(html,/class="legend-details"/);
  assert.match(css,/services-preview \.row:nth-child\(n\+5\)/);
- assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompactv2/);
+ assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompact-detail-v1/);
 });
 
 test('collapsed services never hide a failing or unmeasured fifth service',()=>{
@@ -81,4 +81,18 @@ test('untrusted raw agent values are rejected before rendering; UI escapes seria
  assert.equal(parsed.agents.claude,undefined);
  assert.equal(parsed.agents.codex.slotsUsed,0);
  assert.equal(parsed.agents.codex.quota.remainingPercent,90);
+});
+
+test('agent detail uses native accessible disclosure without claiming login',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'devenv-ui.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'styles.css'),'utf8');
+ assert.match(js, /<details class="agent-compact-row"/);
+ assert.match(js, /<summary class="agent-compact-summary"/);
+ assert.match(js, /Autenticación','No evaluada por esta fuente/);
+ assert.match(js, /grid.querySelectorAll\?\./);
+ assert.match(js, /expanded.has\(n\)/);
+ assert.match(css, /agent-compact-summary:focus-visible/);
+ assert.match(css, /min-height:44px/);
+ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ assert.match(html,/devenv-ui\.js\?v=20261024-ocrecompact-detail-v1/);
 });
