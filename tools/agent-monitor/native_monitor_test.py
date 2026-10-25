@@ -257,6 +257,34 @@ class RuntimePublisherTests(unittest.TestCase):
         self.assertEqual(sanitize_runtime_inventory(raw,None,self.NOW),{})
         self.assertEqual(sanitize_runtime_inventory(raw,"bad",self.NOW),{})
 
+
+    def test_source_probes_core_and_publishes_sanitized_runtime(self):
+        import datetime as dt
+        now=dt.datetime.fromisoformat(self.STAMP.replace("Z","+00:00")).timestamp()
+        from native_monitor import DevenvSource
+        source=DevenvSource(None,"collector.py",clock=lambda:now)
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn",
+                               "executable":"available","quota":"unknown","observed_at":self.STAMP,
+                               "email":"secret@example.test"}}
+        completed=unittest.mock.Mock(stdout=json.dumps(raw),returncode=0)
+        with unittest.mock.patch("native_monitor.subprocess.run",return_value=completed) as run:
+            observed=source.runtime_observation()
+        command=run.call_args.args[0]
+        self.assertEqual(command[-1],"--public-observation")
+        self.assertIn("provider-runtime-status.py",command[-2])
+        self.assertEqual(run.call_args.kwargs["timeout"],15)
+        sample=build_devenv_sample({"slots":{"claude":0,"codex":0}},None,None,now,
+                                   runtime_inventory=observed,runtime_observed_at=self.STAMP)
+        self.assertEqual(sample["runtimes"]["claude_windows"]["state"],"authenticated")
+        self.assertEqual(sample["runtimes"]["claude_windows"]["quota_state"],"unknown")
+        self.assertNotIn("secret@example.test",json.dumps(sample))
+
+    def test_runtime_probe_error_fails_closed(self):
+        from native_monitor import DevenvSource
+        source=DevenvSource(None,"collector.py")
+        with unittest.mock.patch("native_monitor.subprocess.run",side_effect=OSError("offline")):
+            self.assertIsNone(source.runtime_observation())
+
     def test_unverified_login_and_extra_keys_never_escape(self):
         raw={"claude_windows":{"authentication":"authenticated","reason":"timeout","email":"private@example.com","token":"secret","observed_at":self.STAMP}}
         output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
