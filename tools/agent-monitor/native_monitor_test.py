@@ -239,9 +239,9 @@ class RuntimePublisherTests(unittest.TestCase):
 
     def test_auth_and_quota_are_separate(self):
         raw={
-            "claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","quota":"available","executable":"available"},
-            "claude_wsl":{"authentication":"unauthenticated","reason":"explicit_loggedIn","quota":"unknown","executable":"available"},
-            "codex_wsl":{"authentication":"unknown","reason":"unknown","quota":"low","executable":"available"},
+            "claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","quota":"available","executable":"available","observed_at":self.STAMP},
+            "claude_wsl":{"authentication":"unauthenticated","reason":"explicit_loggedIn","quota":"unknown","executable":"available","observed_at":self.STAMP},
+            "codex_wsl":{"authentication":"unknown","reason":"unknown","quota":"low","executable":"available","observed_at":self.STAMP},
         }
         output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
         self.assertEqual(output["claude_windows"]["state"],"authenticated")
@@ -252,13 +252,13 @@ class RuntimePublisherTests(unittest.TestCase):
         self.assertNotIn("reason",output["claude_windows"])
 
     def test_old_and_missing_observations_are_rejected(self):
-        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn"}}
+        raw={"claude_windows":{"authentication":"authenticated","reason":"explicit_loggedIn","observed_at":self.STAMP}}
         self.assertEqual(sanitize_runtime_inventory(raw,self.STAMP,self.NOW+31),{})
         self.assertEqual(sanitize_runtime_inventory(raw,None,self.NOW),{})
         self.assertEqual(sanitize_runtime_inventory(raw,"bad",self.NOW),{})
 
     def test_unverified_login_and_extra_keys_never_escape(self):
-        raw={"claude_windows":{"authentication":"authenticated","reason":"timeout","email":"private@example.com","token":"secret"}}
+        raw={"claude_windows":{"authentication":"authenticated","reason":"timeout","email":"private@example.com","token":"secret","observed_at":self.STAMP}}
         output=sanitize_runtime_inventory(raw,self.STAMP,self.NOW)
         self.assertEqual(output["claude_windows"]["state"],"unknown")
         self.assertNotIn("email",str(output))
