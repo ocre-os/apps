@@ -22,6 +22,13 @@ test('five mobile anchors have matching source IDs and remain accessible',()=>{
  assert.match(css,/:focus-visible/);
  assert.match(css,/aria-current=location/);
 });
+test('compact services never hide unavailable, uncertain or unconfigured items',()=>{
+ const hiding=css.match(/#checksGrid:not\(\.expanded\)[^\{]+\{display:none\}/g)||[];
+ assert.equal(hiding.length,1);
+ assert.match(hiding[0],/data-status=healthy/);
+ for(const status of ['not_configured','failed','degraded','stale','unknown'])
+  assert.doesNotMatch(hiding[0],new RegExp('data-status='+status));
+});
 test('native fragment links work without scripting',()=>{
  for(const id of ['det-platform','det-dev','det-activity'])
   assert.match(html,new RegExp('href="#'+id+'"'));
