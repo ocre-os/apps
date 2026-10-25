@@ -3,7 +3,7 @@ import unittest.mock
 import json
 import sqlite3
 from native_monitor import sanitize_runtime_inventory, runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
-from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor
+from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, QUOTA_REFRESH_SECONDS, clean_validations, clean_supervisor
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -194,6 +194,23 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(asked,[True,False,True])
         self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
         self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
+
+    def test_failed_quota_refresh_clears_old_available_state(self):
+        clock=[1000.0]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        source.runtime_observation=lambda:None
+        results=[
+            {**self.DATA,"codex_quota":self.QUOTA},
+            dict(self.DATA),
+        ]
+        source.wsl=lambda with_quota: results.pop(0)
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            first=source.sample()
+            clock[0]+=QUOTA_REFRESH_SECONDS
+            second=source.sample()
+        self.assertEqual(first["agents"]["codex"]["quota"],self.QUOTA)
+        self.assertEqual(second["agents"]["codex"]["quota"]["state"],"unknown")
+
     def test_events_ride_in_the_sample_and_are_capped_at_five(self):
         events=[{"at":f"2026-10-18T12:0{i}:00Z","kind":"deploy_ok","ref":"3d84e77"} for i in range(7)]
         sample=build_devenv_sample({**self.DATA,"events":events,},None,None,1_800_000_000)
