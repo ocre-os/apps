@@ -90,3 +90,77 @@ footer{margin-top:22px;padding-top:14px}.legend{gap:8px 14px;margin:0 0 10px}.le
 /* OCRE-058 F4: actividad reciente */
 .activity-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.activity-list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #131d22;font-size:13px}.activity-list li:last-child{border-bottom:0}.activity-list i{width:8px;height:8px;border-radius:50%;background:var(--unknown)}.activity-list small{color:#6f858e;font-size:11px}.activity-empty{display:block!important;color:#6f858e}
 .agent-card[data-state=healthy] .agent-state::before{background:#4ade80}.agent-card[data-state=failed] .agent-state::before{background:#fb7185}.agent-card[data-state=neutral] .agent-state::before{background:#94a3b8}
+
+
+/* OCRE Status compact V2: data density without changing payload contracts */
+.shell{width:min(920px,calc(100% - 24px));padding:8px 0 24px}
+.topbar{padding-bottom:7px;min-height:42px}
+.environment-bar{padding:8px 0 2px}
+.verdict{gap:10px;padding:10px 0 12px}
+.verdict .orb-wrap{width:34px}
+.verdict .status-orb{width:30px;height:30px;box-shadow:0 0 14px color-mix(in srgb,var(--orb-color) 30%,transparent)}
+.verdict h1{font-size:clamp(22px,6vw,32px);line-height:1.1}
+.verdict .eyebrow{font-size:9px;margin-bottom:4px}
+.verdict .hero-message{font-size:11px;margin:5px 0 0}
+.domains{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:9px 0 2px}
+.domain{grid-template-columns:1fr;grid-template-areas:"name" "state";gap:4px;min-width:0;padding:9px 7px;min-height:62px;border-radius:8px}
+.domain-name{font-size:10px;letter-spacing:.04em;overflow-wrap:anywhere}
+.domain-state{justify-self:start;font-size:12px;line-height:1.2;overflow-wrap:anywhere}
+.domain-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.attention{padding:9px 0 2px}
+.attention h2{font-size:13px;margin-bottom:5px}
+.attention[data-empty=true]{display:flex;align-items:center;gap:9px}
+.attention[data-empty=true] h2{margin:0}
+.attention[data-empty=true] .attention-list li{border:0;background:transparent;padding:2px 0;font-size:11px}
+.attention-list li{padding:8px 10px;gap:1px}
+.load{padding:12px 0 0}
+.load-head{margin-bottom:6px}
+.load h2{font-size:15px}
+.load-grid{gap:5px;grid-template-columns:1fr}
+.agent-compact-row{min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:9px 11px}
+.agent-compact-main{display:grid;grid-template-columns:minmax(60px,.9fr) minmax(78px,1fr) auto minmax(68px,1fr);align-items:center;gap:5px;font-size:11px}
+.agent-compact-main strong{font-size:13px}
+.agent-activity{font-size:11px;color:var(--neutral)}
+.agent-activity:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--unknown);margin-right:4px}
+.agent-activity[data-state=working]{color:var(--healthy)}.agent-activity[data-state=working]:before{background:var(--healthy)}
+.agent-activity[data-state=waiting]{color:var(--degraded)}.agent-activity[data-state=waiting]:before{background:var(--degraded)}
+.agent-activity[data-state=available]:before{background:var(--neutral)}
+.agent-capacity{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:11px;font-variant-numeric:tabular-nums}
+.capacity-dots{display:inline-flex;gap:3px}.capacity-dots i{width:7px;height:7px;border:1px solid #59717a;border-radius:2px}
+.capacity-dots i.occupied{background:var(--healthy);border-color:var(--healthy)}
+.agent-quota{min-width:0;font-size:11px;white-space:normal;text-align:right}
+.agent-quota[data-tone=healthy]{color:var(--healthy)}.agent-quota[data-tone=degraded]{color:var(--degraded)}.agent-quota[data-tone=failed]{color:var(--failed)}.agent-quota[data-tone=neutral]{color:var(--muted)}
+.quota-bar{display:block;height:3px;background:#25383d;border-radius:4px;margin-top:4px;overflow:hidden}
+.quota-bar i{display:block;height:100%;background:var(--healthy)}
+.agent-compact-meta{display:flex;flex-wrap:wrap;gap:4px 11px;color:#a1b4bb;font-size:11px;margin-top:5px}
+.agent-reset:empty{display:none}
+.load .agents-note{font-size:10px;line-height:1.3;margin-top:5px}
+.details{padding-top:10px;gap:6px}
+.detail{border-radius:9px}
+.detail>summary{padding:8px 10px;min-height:44px;font-size:13px}
+.detail>summary small{font-size:10px}
+.row{padding:7px 11px;gap:0 9px}
+.row h3,.row.agent-card h3{font-size:12px}
+.row .check-detail{display:none}
+.row.check[data-status=failed] .check-detail,.row.check[data-status=degraded] .check-detail,.row.check[data-status=stale] .check-detail{display:block}
+.row.agent-card{padding:8px 11px}
+.row.meta strong{font-size:12px}.row.meta small{font-size:10px}
+.agent-state,.row .agent-state{font-size:11px}
+.activity-list li{padding:7px 10px;font-size:12px}
+footer{margin-top:13px;padding-top:8px}
+.legend-details{margin-bottom:8px}
+.legend-details summary{cursor:pointer;font-size:12px;color:#a1b4bb;min-height:44px;display:flex;align-items:center}
+.legend-details .legend{margin:4px 0 8px}
+@media(min-width:760px){.domains{grid-template-columns:repeat(3,minmax(0,1fr))}.domain{grid-template-columns:1fr;grid-template-areas:"name" "state";padding:12px}.domain-state{font-size:16px}.load-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.shell{width:calc(100% - 16px)}.domain-state{font-size:11px}.agent-compact-row{padding:8px}.agent-compact-main{grid-template-columns:54px minmax(60px,1fr) auto minmax(60px,1fr);gap:4px;font-size:11px}.agent-activity,.agent-quota,.agent-capacity{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.status-orb{animation:none}}
+
+/* A four-row service preview keeps critical details nearby without a long scroll. */
+.services-preview .row:nth-child(n+5)[data-status="healthy"]{display:none}
+.expand-services{display:block;width:100%;padding:9px 10px;border:0;border-top:1px solid var(--line);background:#101b1f;text-align:left;color:#a6e7dd;cursor:pointer;font-size:11px;min-height:44px}
+.expand-services:hover,.expand-services:focus-visible{background:#16282d;outline:2px solid #468e82;outline-offset:-2px}
+
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Compact view must never conceal unhealthy, unknown, or unconfigured services. */
+.domains .domain[data-tone]:not([data-tone="healthy"]) .domain-text{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;margin:0;grid-column:1/-1;color:#c2d1d8;font-size:12px}
