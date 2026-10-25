@@ -71,7 +71,7 @@
       qcard.dataset.state=queue.tone;qcard.querySelector('.agent-state').textContent=queue.label;qcard.querySelector('.agent-detail').textContent=queue.text;
     }
     const platform=V.platformView(state);
-    const counts=platform.text.match(/^([0-9]+) de ([0-9]+) puntos/);
+    const counts=(platform.text||'').match(/^([0-9]+) de ([0-9]+) puntos/);
     setDomain('platform',{...platform,label:counts?counts[1]+'/'+counts[2]+' · '+platform.label:platform.label});
     setDomain('agents',V.agentsView(agentsInfo&&agentsInfo.state,!!(agentsInfo&&agentsInfo.stale),devenvIssues));
     setDomain('dev',V.devView(state,xpressInfo&&xpressInfo.state,validationIssues));

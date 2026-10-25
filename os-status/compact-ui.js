@@ -8,7 +8,7 @@
  function occupancy(agent){
   if(!agent||!Number.isInteger(agent.slotsUsed)||!Number.isInteger(agent.capacity)||agent.capacity<1||agent.slotsUsed<0||agent.slotsUsed>agent.capacity)
    return {text:'Sin señal',segments:'',valid:false};
-  const marks=Array.from({length:Math.min(agent.capacity,6)},(_,i)=>'<i class="'+(i<agent.slotsUsed?'filled':'')+'"></i>').join('');
+  const marks=Array.from({length:Math.min(agent.capacity,3)},(_,i)=>'<i class="'+(i<agent.slotsUsed?'filled':'')+'"></i>').join('');
   return {text:agent.slotsUsed+'/'+agent.capacity,segments:marks,valid:true};
  }
  function quota(q){
@@ -27,7 +27,7 @@
    +'<summary><span class="agent-identity"><strong>'+NAMES[name]+'</strong><small data-execution="'+clean(state)+'">'+clean(st)+'</small></span>'
    +'<span class="agent-occupancy" aria-label="Ocupación '+clean(o.text)+'"><b>'+o.text+'</b><span class="occupancy-marks" aria-hidden="true">'+o.segments+'</span></span>'
    +'<span class="agent-quota" data-tone="'+q.tone+'"><b>'+q.text+'</b>'+width+'</span><span class="agent-expand" aria-hidden="true">⌄</span></summary>'
-   +'<div class="agent-extra"><span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
+   +'<div class="agent-extra"><span>Turno actual</span><strong>'+(validTurn?(turn===0?'Sin turno':turn<60?turn+' s':Math.floor(turn/60)+' min'):'Sin señal')+'</strong>'
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
    +'<span>Cuota</span><strong>'+q.text+'</strong>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';

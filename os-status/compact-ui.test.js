@@ -21,3 +21,9 @@ test('rendered state cannot inject HTML',()=>{
  const result=U.card('codex',{slotsUsed:0,capacity:2,quota:{}},'<img src=x>');
  assert.doesNotMatch(result,/<img/);
 });
+
+test('small turns show seconds and large capacity visual is bounded',()=>{
+ const s=U.card('codex',{slotsUsed:3,capacity:8,turnSeconds:45,quota:{}},'working');
+ assert.match(s,/45 s/);
+ assert.equal((s.match(/class="filled"/g)||[]).length,3);
+});
