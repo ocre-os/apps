@@ -150,3 +150,11 @@ test('the queue view says it only observes, shows counts, and never reports heal
  assert.equal(view(sup(),at+16*60000+1).label,'Sin señal');
  assert.equal(D.supervisorView(D.normalize(),at).label,'Sin señal');
 });
+
+test('OCRE-075: ventana semanal opcional y validada', () => {
+ const ok=D.normalize(sample({quota:quota({state:'available',remaining_percent:40,resets_at:'2099-01-01T00:00:00Z',weekly:{remaining_percent:40,resets_at:'2099-01-03T14:00:00Z'}})}),at);
+ assert.deepEqual(ok.agents.claude.quota.weekly,{remainingPercent:40,resetsAt:'2099-01-03T14:00:00Z'});
+ for(const weekly of [{remaining_percent:101,resets_at:'2099-01-03T14:00:00Z'},{remaining_percent:4},{resets_at:'2099-01-03T14:00:00Z'},null]){
+  assert.equal(D.normalize(sample({quota:quota({weekly})}),at).agents.claude.quota.weekly,undefined);
+ }
+});

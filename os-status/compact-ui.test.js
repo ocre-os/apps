@@ -113,3 +113,11 @@ test('small turns show seconds and large capacity visual is bounded',()=>{
  assert.match(s,/45 s/);
  assert.equal((s.match(/class="filled"/g)||[]).length,0);
 });
+
+test('OCRE-075: la tarjeta muestra la ventana semanal sólo con reinicio futuro', () => {
+ const html=U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'available',remainingPercent:40,resetsAt:'2099-01-01T00:00:00Z',weekly:{remainingPercent:40,resetsAt:'2099-01-03T14:00:00Z'}}},'available');
+ assert.match(html,/Semanal<\/span><strong>40% restante/);
+ assert.match(html,/Reinicio semanal/);
+ assert.doesNotMatch(U.card('claude',{slotsUsed:0,capacity:2,quota:{state:'unknown'}},'available'),/Semanal/);
+ assert.equal(U.weeklyRows({remainingPercent:40,resetsAt:'2000-01-01T00:00:00Z'}),'');
+});
