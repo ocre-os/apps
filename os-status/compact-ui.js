@@ -47,6 +47,14 @@
   if(seconds<3600)return Math.floor(seconds/60)+' min';
   return Math.floor(seconds/3600)+' h '+String(Math.floor(seconds%3600/60)).padStart(2,'0')+' min';
  }
+ // OCRE-075: ventana semanal medida, sólo si existe y su reinicio es futuro.
+ function weeklyRows(w,now=Date.now()){
+  if(!w||!Number.isInteger(w.remainingPercent)||w.remainingPercent<0||w.remainingPercent>100)return '';
+  const at=Date.parse(w.resetsAt);
+  if(!Number.isFinite(at)||at<=now)return '';
+  return '<span>Semanal</span><strong>'+w.remainingPercent+'% restante</strong>'
+   +'<span>Reinicio semanal</span><strong>'+clean(resetLabel(w.resetsAt,now))+'</strong>';
+ }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
   const reset=q.percent===null?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
@@ -60,7 +68,8 @@
    +'<div class="agent-extra"><span>Turno actual</span><strong>'+turnLabel(turn)+'</strong>'
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
    +'<span>Cuota</span><strong>'+q.text+'</strong>'+'<span>Restablecimiento</span><strong>'+reset+'</strong>'
+   +weeklyRows(agent?.quota?.weekly)
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,card};
+ return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,weeklyRows,card};
 });

@@ -2,8 +2,10 @@
 import argparse
 import datetime as dt
 import json
+import math
 import re
 import os
+import stat
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -185,7 +187,85 @@ def snapshot(home,collector):
       "codex":{"state":codex,"observed_at":stamp}}}
 
 QUOTA_REFRESH_SECONDS=300
+CLAUDE_STATUSLINE_TTL=900
 DEVENV_REFRESH_SECONDS=15
+
+
+def read_claude_quota(path, now=None):
+    """Project a *fresh* local Claude statusLine cache into devenv-v1, no secrets."""
+    unknown = {"state": "unknown", "remaining_percent": None, "resets_at": None}
+    current = time.time() if now is None else now
+    try:
+        file = Path(path)
+        # Reject symlinks and Windows junctions/reparse points in every ancestor.
+        # Actual bytes are read from one descriptor and are bounded to 4097 B.
+        for component in (file, *file.parents):
+            if component.is_symlink() or (hasattr(component, 'is_junction') and component.is_junction()):
+                return unknown
+        fd = os.open(str(file), os.O_RDONLY | getattr(os, 'O_BINARY', 0))
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_size > 4096:
+                return unknown
+            raw = os.read(fd, 4097)
+            if len(raw) > 4096:
+                return unknown
+            data = json.loads(raw.decode('utf-8'))
+        finally:
+            os.close(fd)
+    except (OSError, ValueError, UnicodeError, RuntimeError, TypeError):
+        return unknown
+    if (not isinstance(data, dict) or data.get("schema") != "ocre-claude-usage-v1"
+        or data.get("runtime") != "windows_interop" or data.get("source") != "claude_code_statusline"):
+        return unknown
+    observed = data.get("observed_at")
+    if (type(observed) not in (int, float) or not 0 <= current - observed <= CLAUDE_STATUSLINE_TTL):
+        return unknown
+    windows = data.get("windows")
+    if not isinstance(windows, dict) or set(windows) != {"five_hour", "seven_day"}:
+        return unknown
+    checked = []
+    for name in ("five_hour", "seven_day"):
+        record = windows[name]
+        if not isinstance(record, dict):
+            return unknown
+        used, reset = record.get("used_percentage"), record.get("resets_at")
+        if (type(used) not in (int, float) or type(reset) not in (int, float)
+            or not math.isfinite(used) or not math.isfinite(reset)
+            or not 0 <= used <= 100 or not current < reset <= current + 1209600):
+            return unknown
+        checked.append((100 - used, reset))
+    tight = min(checked, key=lambda item: item[0])
+    precise = max(0.0, min(100.0, tight[0]))
+    # Status UI contract requires an integer percent. Never classify a fractional
+    # 0.5% as exhausted merely because int(0.5)==0.
+    remain = 0 if precise == 0 else max(1, int(precise))
+    reset = dt.datetime.fromtimestamp(tight[1], dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    # OCRE-075: la ventana semanal se publica aparte, con el mismo redondeo seguro.
+    week = max(0.0, min(100.0, checked[1][0]))
+    weekly = {"remaining_percent": 0 if week == 0 else max(1, int(week)),
+              "resets_at": dt.datetime.fromtimestamp(checked[1][1], dt.timezone.utc).isoformat().replace("+00:00", "Z")}
+    return {"state": "exhausted" if precise == 0 else "low" if precise <= 15 else "available",
+            "remaining_percent": remain, "resets_at": reset, "weekly": weekly}
+
+def claude_windows_authenticated(binary):
+    """Only explicit loggedIn=true with success authorizes displaying fresh quota."""
+    if binary is None:
+        return None
+    try:
+        p = subprocess.run([str(binary), "auth", "status"], capture_output=True,
+                           text=True, timeout=5, check=False)
+        data = json.loads(p.stdout)
+        logged = data.get("loggedIn") if isinstance(data, dict) else None
+        if type(logged) is not bool:
+            return None
+        if logged is False:
+            return False
+        return True if p.returncode == 0 else None
+    except (OSError, ValueError, UnicodeError, subprocess.SubprocessError, RuntimeError):
+        return None
+
+
 APPROVED_URLS=("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv")
 
 class DevenvSource:
@@ -193,6 +273,7 @@ class DevenvSource:
     def __init__(self,home,collector,clock=time.time):
         self.home,self.collector,self.clock=home,collector,clock
         self.quota=None;self.quota_at=0.0
+        self.claude_auth=None;self.claude_auth_at=0.0
 
     def wsl(self,with_quota):
         command=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",self.collector,
@@ -209,7 +290,17 @@ class DevenvSource:
         data=self.wsl(refresh)
         if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
             self.quota,self.quota_at=data["codex_quota"],now
-        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now)
+        claude_quota=None
+        if self.home is not None:
+            user_home=Path(self.home).parent
+            if now-self.claude_auth_at>=QUOTA_REFRESH_SECONDS:
+                executable=user_home/".local"/"bin"/"claude.exe"
+                self.claude_auth=claude_windows_authenticated(executable)
+                self.claude_auth_at=now
+            if self.claude_auth is True:
+                cache=user_home/".ocre-os"/"agent-monitor"/"claude-usage.json"
+                claude_quota=read_claude_quota(cache,now)
+        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now,claude_quota)
 
 def clean_validations(raw):
     """Revalida los resultados antes de publicarlos: hora UTC, revisión hexadecimal y pass/fail; todo lo demás se descarta."""
@@ -241,7 +332,7 @@ def clean_supervisor(raw):
         return None
     return dict(raw)
 
-def build_devenv_sample(data, codex_turn, codex_quota, now):
+def build_devenv_sample(data, codex_turn, codex_quota, now, claude_quota=None):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
     if not isinstance(slots,dict) or not all(isinstance(slots.get(k),int) for k in ("claude","codex")):
@@ -250,7 +341,7 @@ def build_devenv_sample(data, codex_turn, codex_quota, now):
     events=[e for e in (data.get("events") or []) if isinstance(e,dict)][:5]
     stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
-        "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":unknown},
+        "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":claude_quota or unknown},
         "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
         "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor"))}
 

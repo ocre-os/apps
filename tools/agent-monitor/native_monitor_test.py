@@ -2,6 +2,9 @@ import unittest
 import unittest.mock
 import json
 import sqlite3
+import tempfile
+from pathlib import Path
+from native_monitor import read_claude_quota, claude_windows_authenticated
 from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
 from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor
 class NativeStateTests(unittest.TestCase):
@@ -201,6 +204,77 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(build_devenv_sample(self.DATA,None,None,1_800_000_000)["events"],[])
         junk=build_devenv_sample({**self.DATA,"events":["x",3,None,{"at":"a","kind":"deploy_ok","ref":None}]},None,None,1_800_000_000)
         self.assertEqual(len(junk["events"]),1)
+    def test_claude_statusline_requires_fresh_complete_windows(self):
+        now=1_800_000_000
+        with tempfile.TemporaryDirectory() as temp:
+            cache=Path(temp)/"claude-usage.json"
+            data={"schema":"ocre-claude-usage-v1","runtime":"windows_interop",
+                  "source":"claude_code_statusline","observed_at":now-30,
+                  "windows":{"five_hour":{"used_percentage":42,"resets_at":now+1800},
+                             "seven_day":{"used_percentage":88,"resets_at":now+400000}},
+                  "session_id":"private-hidden"}
+            cache.write_text(json.dumps(data))
+            result=read_claude_quota(cache,now)
+            self.assertEqual(result["state"],"low")
+            self.assertEqual(result["remaining_percent"],12)
+            self.assertEqual(result["weekly"],{"remaining_percent":12,"resets_at":"2027-01-19T23:06:40Z"})
+            self.assertNotIn("session_id",json.dumps(result))
+            self.assertEqual(read_claude_quota(cache,now+901)["state"],"unknown")
+            data["windows"].pop("seven_day")
+            cache.write_text(json.dumps(data))
+            self.assertEqual(read_claude_quota(cache,now)["state"],"unknown")
+
+    def test_symlinked_ancestor_and_fractional_quota_are_handled(self):
+        now=1_800_000_000
+        with tempfile.TemporaryDirectory() as temp:
+            real=Path(temp)/'real'
+            real.mkdir()
+            cache=real/'claude-usage.json'
+            data={'schema':'ocre-claude-usage-v1','runtime':'windows_interop',
+                  'source':'claude_code_statusline','observed_at':now,
+                  'windows':{'five_hour':{'used_percentage':99.5,'resets_at':now+1800},
+                             'seven_day':{'used_percentage':84.5,'resets_at':now+20000}}}
+            cache.write_text(json.dumps(data))
+            value=read_claude_quota(cache,now)
+            self.assertEqual(value['state'],'low')
+            self.assertEqual(value['remaining_percent'],1)
+            linked=Path(temp)/'linked'
+            linked.symlink_to(real, target_is_directory=True)
+            self.assertEqual(read_claude_quota(linked/'claude-usage.json',now)['state'],'unknown')
+            cache.write_text('x'*4097)
+            self.assertEqual(read_claude_quota(cache,now)['state'],'unknown')
+
+    def test_claude_quota_is_masked_without_explicit_windows_auth(self):
+        now=1_800_000_000
+        with tempfile.TemporaryDirectory() as temp:
+            home=Path(temp)
+            cache=home/".ocre-os"/"agent-monitor"/"claude-usage.json"
+            cache.parent.mkdir(parents=True)
+            cache.write_text(json.dumps({"schema":"ocre-claude-usage-v1",
+                "runtime":"windows_interop","source":"claude_code_statusline","observed_at":now,
+                "windows":{"five_hour":{"used_percentage":4,"resets_at":now+1800},
+                           "seven_day":{"used_percentage":10,"resets_at":now+20000}}}))
+            source=DevenvSource(home/".codex","unused",lambda:now)
+            source.wsl=lambda with_quota: self.DATA
+            with (unittest.mock.patch("native_monitor.claude_windows_authenticated",return_value=False),
+                  unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None)):
+                no_auth=source.sample()
+            self.assertEqual(no_auth["agents"]["claude"]["quota"]["state"],"unknown")
+            source.claude_auth_at=0
+            with (unittest.mock.patch("native_monitor.claude_windows_authenticated",return_value=True),
+                  unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None)):
+                authenticated=source.sample()
+            self.assertEqual(authenticated["agents"]["claude"]["quota"]["state"],"available")
+            self.assertEqual(authenticated["agents"]["claude"]["quota"]["weekly"]["remaining_percent"],90)
+
+    def test_claude_auth_requires_explicit_boolean_and_success(self):
+        for output,exit_code,expect in (
+            ('{"loggedIn":true}',0,True),('{"loggedIn":false}',1,False),
+            ('{"loggedIn":true}',1,None),('{"loggedIn":"true"}',0,None),('bad',0,None)):
+            with unittest.mock.patch("native_monitor.subprocess.run",return_value=unittest.mock.Mock(
+                    stdout=output,returncode=exit_code)):
+                self.assertIs(claude_windows_authenticated(Path("C:/fake/claude.exe")),expect)
+
     def test_only_the_two_approved_endpoints_exist(self):
         self.assertEqual(APPROVED_URLS,("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv"))
 

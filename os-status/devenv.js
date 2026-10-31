@@ -20,7 +20,11 @@
   const percent=int(quota.remaining_percent,0,100);
   const resets=Number.isFinite(Date.parse(quota.resets_at))?quota.resets_at:null;
   const turn=raw.turn_seconds===null||raw.turn_seconds===undefined?null:int(raw.turn_seconds,0,7*86400);
-  return {slotsUsed:slots,capacity,turnSeconds:turn,quota:{state,remainingPercent:percent,resetsAt:resets}};
+  const out={slotsUsed:slots,capacity,turnSeconds:turn,quota:{state,remainingPercent:percent,resetsAt:resets}};
+  // OCRE-075: ventana semanal opcional; sólo se conserva si está completa y es válida.
+  const wk=quota.weekly,wp=int(wk?.remaining_percent,0,100);
+  if(wp!==null&&Number.isFinite(Date.parse(wk.resets_at)))out.quota.weekly={remainingPercent:wp,resetsAt:wk.resets_at};
+  return out;
  }
  // Actividad reciente (F4): solo tipo fijo, hora válida y revisión hexadecimal; cualquier otra cosa se descarta.
  function normalizeEvents(raw){
