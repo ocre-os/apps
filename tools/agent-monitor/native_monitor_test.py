@@ -3,10 +3,14 @@ import unittest.mock
 import json
 import sqlite3
 import tempfile
+import threading
+import time
+import io
+import contextlib
 from pathlib import Path
 from native_monitor import read_claude_quota, claude_windows_authenticated
 from native_monitor import runtime_state, inspect_projection, build_request, USER_AGENT, combine_states, parse_start_times
-from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor
+from native_monitor import codex_turn_seconds, build_devenv_sample, DevenvSource, APPROVED_URLS, clean_validations, clean_supervisor, poll_quotas, publish_devenv, FAST_WSL_TIMEOUT_SECONDS, DEVENV_REFRESH_SECONDS
 class NativeStateTests(unittest.TestCase):
     def test_running_turn_is_working(self):
         self.assertEqual(runtime_state(["inProgress"],[],True),"working")
@@ -185,7 +189,7 @@ class DevenvSampleTests(unittest.TestCase):
     def test_missing_quota_is_unknown_not_invented(self):
         sample=build_devenv_sample(self.DATA,None,None,1_800_000_000)
         self.assertEqual(sample["agents"]["codex"]["quota"]["state"],"unknown")
-    def test_quota_is_refreshed_only_every_five_minutes(self):
+    def test_quota_has_independent_five_minute_ttl(self):
         clock=[1000.0];asked=[]
         source=DevenvSource(None,"c.py",lambda:clock[0])
         def fake(with_quota):
@@ -193,10 +197,123 @@ class DevenvSampleTests(unittest.TestCase):
             return {**self.DATA,**({"codex_quota":self.QUOTA} if with_quota else {})}
         source.wsl=fake
         with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
-            first=source.sample();clock[0]+=60;second=source.sample();clock[0]+=300;third=source.sample()
-        self.assertEqual(asked,[True,False,True])
-        self.assertEqual(second["agents"]["codex"]["quota"],self.QUOTA)
-        self.assertEqual(third["agents"]["codex"]["quota"],self.QUOTA)
+            before=source.sample()
+            self.assertEqual(before["agents"]["codex"]["quota"]["state"],"unknown")
+            self.assertTrue(source.refresh_quotas())
+            first=source.sample()
+            clock[0]+=299
+            current=source.sample()
+            clock[0]+=1
+            stale=source.sample()
+            self.assertTrue(source.refresh_quotas())
+            fresh=source.sample()
+        self.assertEqual(asked,[False,True,False,False,False,True,False])
+        self.assertEqual(first["agents"]["codex"]["quota"],self.QUOTA)
+        self.assertEqual(current["agents"]["codex"]["quota"],self.QUOTA)
+        self.assertEqual(stale["agents"]["codex"]["quota"]["state"],"unknown")
+        self.assertEqual(fresh["agents"]["codex"]["quota"],self.QUOTA)
+
+    def test_blocked_quota_probe_does_not_block_fresh_slots(self):
+        clock=[2000.0];entered=threading.Event();release=threading.Event()
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        def fake(with_quota):
+            if with_quota:
+                entered.set()
+                if not release.wait(2):
+                    raise TimeoutError("test quota source timed out")
+                return {**self.DATA,"codex_quota":self.QUOTA}
+            return dict(self.DATA)
+        source.wsl=fake
+        worker=threading.Thread(target=source.refresh_quotas,daemon=True)
+        worker.start()
+        try:
+            self.assertTrue(entered.wait(1))
+            with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+                began=time.monotonic()
+                result=source.sample()
+                elapsed=time.monotonic()-began
+            self.assertLess(elapsed,0.3)
+            self.assertEqual(result["agents"]["claude"]["slots_used"],1)
+            self.assertEqual(result["agents"]["codex"]["quota"]["state"],"unknown")
+        finally:
+            release.set()
+            worker.join(timeout=2)
+        self.assertFalse(worker.is_alive())
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            complete=source.sample()
+        self.assertEqual(complete["agents"]["codex"]["quota"],self.QUOTA)
+
+    def test_failed_quota_cannot_revive_old_percentage(self):
+        clock=[1000.0];responses=[{**self.DATA,"codex_quota":self.QUOTA},None]
+        source=DevenvSource(None,"c.py",lambda:clock[0])
+        source.wsl=lambda with_quota: responses.pop(0) if with_quota else self.DATA
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            self.assertTrue(source.refresh_quotas())
+            self.assertEqual(source.sample()["agents"]["codex"]["quota"],self.QUOTA)
+            self.assertFalse(source.refresh_quotas())
+            self.assertEqual(source.sample()["agents"]["codex"]["quota"]["state"],"unknown")
+            source.quota=self.QUOTA
+            source.quota_at=clock[0]+60
+            self.assertEqual(source.sample()["agents"]["codex"]["quota"]["state"],"unknown")
+            source.wsl=lambda _: None
+            self.assertIsNone(source.sample())
+
+    def test_fast_wsl_and_publication_budget_do_not_outlast_api_ttl(self):
+        source=DevenvSource(None,"fake-collector.py")
+        with unittest.mock.patch("native_monitor.subprocess.run",
+                                 return_value=unittest.mock.Mock(stdout=json.dumps(self.DATA))) as call:
+            self.assertEqual(source.wsl(False),self.DATA)
+            self.assertEqual(call.call_args.kwargs["timeout"],FAST_WSL_TIMEOUT_SECONDS)
+            self.assertNotIn("--quota",call.call_args.args[0])
+            self.assertEqual(source.wsl(True),self.DATA)
+            self.assertEqual(call.call_args.kwargs["timeout"],40)
+            self.assertIn("--quota",call.call_args.args[0])
+        self.assertLess(FAST_WSL_TIMEOUT_SECONDS+3+DEVENV_REFRESH_SECONDS,30)
+
+    def test_unexpected_quota_worker_error_is_caught_without_leaking(self):
+        source=unittest.mock.Mock()
+        source.refresh_quotas.side_effect=[RuntimeError("secret-token-value"), True]
+        class TwoCycles:
+            calls=0
+            waits=[]
+            def is_set(self):
+                self.calls+=1
+                return self.calls>2
+            def wait(self,seconds):
+                self.waits.append(seconds)
+        stop=TwoCycles()
+        output=io.StringIO()
+        with contextlib.redirect_stdout(output):
+            poll_quotas(source,stop)
+        self.assertEqual(source.refresh_quotas.call_count,2)
+        self.assertEqual(stop.waits,[60,300])
+        self.assertNotIn("secret-token-value",output.getvalue())
+
+    def test_devenv_publisher_recovers_from_unexpected_error_without_secrets(self):
+        sample=build_devenv_sample(self.DATA,None,None,1_800_000_000)
+        source=unittest.mock.Mock()
+        source.sample.side_effect=[RuntimeError("private-credential-value"),sample]
+        class TwoCycles:
+            cycles=0
+            waits=[]
+            def is_set(self):
+                self.cycles+=1
+                return self.cycles>2
+            def wait(self,seconds):
+                self.waits.append(seconds)
+        stop=TwoCycles()
+        token_file=unittest.mock.Mock()
+        token_file.read_text.return_value="synthetic-token"
+        output=io.StringIO()
+        with (contextlib.redirect_stdout(output),
+              unittest.mock.patch("native_monitor.urllib.request.urlopen") as request):
+            publish_devenv(source,APPROVED_URLS[1],token_file,stop)
+        self.assertEqual(source.sample.call_count,2)
+        self.assertEqual(request.call_count,1)
+        self.assertEqual(stop.waits,[DEVENV_REFRESH_SECONDS]*2)
+        self.assertNotIn("private-credential-value",output.getvalue())
+        self.assertNotIn("synthetic-token",output.getvalue())
+
     def test_events_ride_in_the_sample_and_are_capped_at_five(self):
         events=[{"at":f"2026-10-18T12:0{i}:00Z","kind":"deploy_ok","ref":"3d84e77"} for i in range(7)]
         sample=build_devenv_sample({**self.DATA,"events":events,},None,None,1_800_000_000)
@@ -255,17 +372,22 @@ class DevenvSampleTests(unittest.TestCase):
                 "windows":{"five_hour":{"used_percentage":4,"resets_at":now+1800},
                            "seven_day":{"used_percentage":10,"resets_at":now+20000}}}))
             source=DevenvSource(home/".codex","unused",lambda:now)
-            source.wsl=lambda with_quota: self.DATA
+            source.wsl=lambda with_quota: {**self.DATA,"codex_quota":self.QUOTA} if with_quota else self.DATA
             with (unittest.mock.patch("native_monitor.claude_windows_authenticated",return_value=False),
                   unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None)):
+                self.assertTrue(source.refresh_quotas())
                 no_auth=source.sample()
             self.assertEqual(no_auth["agents"]["claude"]["quota"]["state"],"unknown")
-            source.claude_auth_at=0
             with (unittest.mock.patch("native_monitor.claude_windows_authenticated",return_value=True),
                   unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None)):
+                self.assertTrue(source.refresh_quotas())
                 authenticated=source.sample()
             self.assertEqual(authenticated["agents"]["claude"]["quota"]["state"],"available")
             self.assertEqual(authenticated["agents"]["claude"]["quota"]["weekly"]["remaining_percent"],90)
+            source.claude_auth_at=now-301
+            with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+                expired_auth=source.sample()
+            self.assertEqual(expired_auth["agents"]["claude"]["quota"]["state"],"unknown")
 
     def test_claude_auth_requires_explicit_boolean_and_success(self):
         for output,exit_code,expect in (
