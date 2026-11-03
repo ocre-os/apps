@@ -36,3 +36,12 @@
 5. Informe descriptivo sobre datos auténticos, sin declarar superioridad con una muestra de tres casos.
 
 **Producto:** PRISMA v0.5 no se modifica ni despliega; evitar nuevas funciones hasta demostrar que aportan valor con datos de campo.
+
+## Actualización de reproducibilidad — 2026-11-03 (v1.2)
+
+- Instrumentos incorporados a esta misma PR bajo `docs/tools/prisma-pilot/`: `evaluar.py`, `test_evaluar.py`, ambas plantillas CSV y `README.md`.
+- Se comprobó igualdad textual entre los dos archivos Python versionados y los archivos del kit local v1.1. Ejecutadas localmente: **17/17 pruebas unitarias**. La plantilla vacía reporta **0 casos, 0 pares y ninguna afirmación de superioridad**.
+- Los archivos están en `docs/**`, excluidos del flujo FTP de Apps; la interfaz pública v0.5 no cambia.
+- Se identificó un candidato **A01 externo, público y resuelto** en conciliación de anticipos/facturas; problema y desenlace se separaron en los paquetes locales v1.2. Sus fuentes quedan reservadas al coordinador/revisor para preservar cegamiento. Sigue **pendiente de admisibilidad** por mezclar operación administrativa y defecto de software.
+- El paquete `M01` sigue sin autorización ni causalidad corroborada; `S01` requiere verificar desconocimiento previo; **0/6 corridas reales**.
+- La PR sigue sin fusionar: requiere revisión independiente del protocolo y privacidad antes de integrarse.
