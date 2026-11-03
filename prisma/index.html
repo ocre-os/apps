@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08121a">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="OCRE PRISMA: laboratorio de razonamiento verificable con observaciones y comprobaciones.">
+<title>OCRE PRISMA · Razonamiento verificable</title>
+<style>
+:root{color-scheme:dark;--bg:#08121a;--panel:#0d1c27;--panel2:#102432;--border:#223744;--text:#eaf4f7;--muted:#8da7b5;--cyan:#58d9d1;--cyan2:#207b7c;--amber:#f3c070;--red:#fc9086;--green:#70d6b6;--radius:16px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 76% -20%,#143d49 0%,transparent 45%),var(--bg);color:var(--text);font-size:14px;min-height:100vh}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:var(--cyan)}.sr{position:absolute;clip:rect(0,0,0,0);height:1px;width:1px;overflow:hidden}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}.side{background:#091823e8;border-right:1px solid var(--border);padding:25px 18px;display:flex;flex-direction:column;gap:22px}.brand{display:flex;gap:12px;align-items:center;padding:0 8px}.logo{background:conic-gradient(from 30deg,#5fe9e0,#2c748b,#f3b76b,#5fe9e0);width:43px;height:43px;border-radius:14px;padding:2px}.logo span{display:grid;place-items:center;background:#0b1b26;border-radius:12px;width:100%;height:100%;font-size:22px;font-weight:800;letter-spacing:-2px}.brand strong{font-size:18px;letter-spacing:.07em}.brand small{display:block;color:var(--muted);letter-spacing:.14em;font-size:9px;margin-top:2px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin:0 0 9px}.analysis-list{display:grid;gap:7px}.analysis{color:var(--text);border:1px solid transparent;background:transparent;text-align:left;border-radius:12px;padding:12px;display:grid;gap:6px;width:100%}.analysis:hover,.analysis.active{background:#142b39;border-color:#2a505b}.analysis .analysis-title{font-size:13px;font-weight:700;overflow-wrap:anywhere}.analysis small{color:var(--muted);font-size:11px}.analysis.active:before{content:"";width:4px;height:27px;border-radius:3px;background:var(--cyan);position:absolute;margin-left:-13px;margin-top:2px}.sidebottom{margin-top:auto;display:grid;gap:8px}.side-note{background:#0e222e;border:1px solid var(--border);padding:12px;border-radius:12px;color:var(--muted);font-size:11px;line-height:1.5}.main{padding:29px clamp(16px,3vw,48px) 52px;max-width:1600px;width:100%;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:29px}.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.crumb{font-size:12px;color:var(--muted)}.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #2e5b60;background:#12343c;border-radius:999px;color:#a7ede5;font-size:10px;font-weight:750;letter-spacing:.08em}.dot{width:6px;height:6px;border-radius:50%;background:var(--cyan)}.btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:10px 14px;background:#1a313f;color:var(--text);border:1px solid #375364;border-radius:10px;font-weight:650;font-size:12px;transition:.15s}.btn:hover{background:#234352;border-color:#4d7585}.btn.primary{background:#60ddd4;border-color:#60ddd4;color:#06232a}.btn.primary:hover{background:#98f2e9}.btn.ghost{background:transparent;border:1px solid var(--border)}.btn.danger{color:var(--red)}.btn.small{font-size:11px;padding:8px 10px}.hero{border:1px solid #2c4859;background:linear-gradient(115deg,#153340,#0e2230 65%,#153039);border-radius:22px;padding:27px clamp(19px,3vw,36px);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-50px;top:-125px;width:340px;height:340px;border:1px solid #42727b55;border-radius:50%;box-shadow:0 0 0 45px #2d687111,0 0 0 100px #2d687110;pointer-events:none}.hero h1{font-size:clamp(22px,2.4vw,35px);letter-spacing:-.045em;line-height:1.13;margin:8px 0 10px;max-width:780px}.hero p{max-width:730px;color:#b3cbd6;line-height:1.6;margin:0}.hero .actions{margin-top:18px;display:flex;gap:9px;flex-wrap:wrap}.hero .eyebrow{color:#8fe5db}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 24px}.metric{background:#0d202c;border:1px solid var(--border);border-radius:15px;padding:17px}.metric strong{font-size:29px;letter-spacing:-.04em;display:block;font-variant-numeric:tabular-nums}.metric span{font-size:11px;color:var(--muted);display:block;margin-top:3px}.metric .mini{margin-top:11px;height:3px;background:#173a47;border-radius:5px;overflow:hidden}.metric .mini i{display:block;background:var(--cyan);height:100%;max-width:100%}.workspace{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(285px,.75fr);gap:18px}.stack{display:grid;gap:18px;align-content:start}.panel{border:1px solid var(--border);background:var(--panel);border-radius:16px;min-width:0;overflow:hidden}.panel-header{padding:20px 20px 12px;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.panel-header h2{font-size:15px;margin:0 0 5px;letter-spacing:-.02em}.panel-header p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}.body{padding:7px 20px 20px}.entry{padding:14px 0;border-top:1px solid var(--border);display:flex;gap:11px;justify-content:space-between;align-items:flex-start}.entry:first-child{border-top:0}.entry h3{font-size:13px;margin:0 0 7px}.entry p{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 10px;white-space:pre-wrap;overflow-wrap:anywhere}.entry .row-meta{display:flex;gap:7px;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:#20313d;color:#a7beca;font-size:10px;font-weight:650}.chip.green{color:var(--green);background:#14332e}.chip.red{color:var(--red);background:#382527}.chip.amber{color:var(--amber);background:#3a3022}.empty{border:1px dashed #34505a;border-radius:12px;padding:19px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}.empty strong{color:var(--text);display:block;margin-bottom:6px}.next-card{background:linear-gradient(135deg,#15343d,#102b33);border:1px solid #2b5f5f;border-radius:12px;padding:16px}.next-card .label{color:var(--cyan);font-size:10px;font-weight:800;letter-spacing:.14em}.next-card h3{margin:9px 0;font-size:15px}.next-card p{margin:0 0 10px;color:#b6cdd3;font-size:12px;line-height:1.6;white-space:pre-wrap}.next-card .aux{font-size:11px;color:var(--muted);line-height:1.55}.empty-analysis{padding:60px 30px;text-align:center;background:#0f2530;border:1px dashed #33505f;border-radius:18px}.empty-analysis h2{font-size:23px}.empty-analysis p{color:var(--muted);line-height:1.6}.footer{padding-top:22px;color:#7794a2;font-size:11px;line-height:1.6}.inline-controls{display:flex;gap:7px;align-items:center}.select{color:var(--text);background:#132c39;border:1px solid var(--border);border-radius:9px;padding:8px 10px;max-width:130px;font-size:11px}.label-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.toast{position:fixed;bottom:20px;right:20px;background:#17363a;color:#d1fff5;border:1px solid #4b817e;border-radius:10px;padding:13px 17px;box-shadow:0 15px 45px #0008;display:none;max-width:330px;z-index:10}.toast.visible{display:block}dialog{border:1px solid #3e5b6a;border-radius:17px;color:var(--text);background:#0e2230;padding:0;max-width:min(95vw,530px);width:100%;box-shadow:0 30px 100px #000a}dialog::backdrop{background:#040b11ca}.modal{padding:24px}.modal h2{font-size:19px;margin:0 0 8px}.modal .hint{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 19px}.fields{display:grid;gap:12px}.field{display:grid;gap:6px}.field label{font-size:11px;font-weight:700;color:#b4cbd5}.field input,.field textarea,.field select{min-height:39px;padding:10px 11px;width:100%;border-radius:9px;outline:0;background:#071923;color:var(--text);border:1px solid #365363}.field textarea{min-height:88px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #39abbd2c}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.muted{color:var(--muted)}.headline-tools{display:flex;gap:6px;flex-wrap:wrap}.icon{width:15px;height:15px;display:inline-block;vertical-align:middle}.linklike{border:0;background:none;color:#9fcbd4;font-size:11px;padding:6px}.linklike:hover{color:white}.divider{margin:10px 0;border:0;border-top:1px solid var(--border)}
+@media(max-width:1000px){.workspace{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.main{padding-top:20px}}@media(max-width:700px){.layout{display:block}.side{border-right:0;border-bottom:1px solid var(--border);padding:12px 16px;gap:10px}.brand .logo{width:34px;height:34px}.brand strong{font-size:15px}.side .eyebrow,.analysis-list,.sidebottom,.side-note{display:none}.side.mobile-open .analysis-list,.side.mobile-open .sidebottom{display:grid}.side.mobile-open .sidebottom{margin-top:0}.brand{justify-content:space-between}.main{padding:15px 12px 38px}.top{margin-bottom:14px}.hero{padding:20px}.hero:after{opacity:.35}.metrics{gap:8px}.metric{padding:12px}.metric strong{font-size:23px}.panel-header{padding:16px 14px 9px}.body{padding:7px 14px 16px}.top-right .pill{display:none}.two{grid-template-columns:1fr}.mobile-menu{display:inline-flex!important}.sidebottom .btn{width:100%}}
+.mobile-menu{display:none!important} @media(max-width:700px){.mobile-menu{display:inline-flex!important}}button:focus-visible,.analysis:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+.matrix-rows{display:grid;gap:9px;margin:8px 0}.matrix-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.42fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)}.matrix-row label{font-size:12px;font-weight:600;line-height:1.45}.matrix-row select{min-width:0;width:100%;color:var(--text);background:#071923;border:1px solid #365363;border-radius:9px;padding:9px}.field-group{padding:12px;border:1px solid var(--border);border-radius:12px}.field-group legend{color:#a7e5e1;font-size:12px;font-weight:700;padding:0 5px}.compare-info{background:#0d2b37;border-left:3px solid #5bdcd4;padding:10px;border-radius:8px;font-size:11px;line-height:1.6;color:#bedbe0}.rank-option{margin:4px 0 8px 0}.rank-option select{width:100%;max-width:none}.note-warn{color:#ffd193}.reasoning-meta{line-height:1.55;font-size:11px;color:var(--muted);margin-top:9px}@media(max-width:530px){.matrix-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="side" id="sidebar">
+  <div class="brand"><div class="brand" style="padding:0;gap:10px"><div class="logo"><span>◈</span></div><div><strong>PRISMA</strong><small>OCRE · LABORATORIO</small></div></div><button class="btn ghost small mobile-menu" id="mobileToggle" aria-controls="analysisList" aria-expanded="false">Análisis ▾</button></div>
+  <div><p class="eyebrow">Análisis</p><div class="analysis-list" id="analysisList"></div></div>
+  <div class="sidebottom"><button class="btn primary" data-open="analysis">＋ Nuevo análisis</button><button class="btn ghost" id="exportBtn">↓ Exportar datos</button><button class="btn ghost" id="importBtn">↑ Importar datos</button><button class="btn ghost" id="resetBtn">↻ Restablecer demostración</button><div class="side-note">🔒 <strong>Modo local.</strong> Los datos permanecen en este navegador. No hay cuenta, sincronización ni IA conectada. Exporta copias de respaldo.</div></div>
+</aside>
+<main class="main">
+<div class="top"><span class="crumb">OCRE Apps <span class="muted">/</span> PRISMA <span class="muted">/</span> Prototipo v0.3</span><div class="top-right"><span class="pill"><span class="dot"></span> LOCAL · SIN IA</span><button class="btn ghost small" id="copySummary">Copiar resumen</button></div></div>
+<div id="app"></div>
+<p class="footer">OCRE PRISMA · Laboratorio de razonamiento verificable. No crea Solicitudes, Sesiones, Servicios ni Casos en OCRE-OS. Las comprobaciones requieren evaluación de riesgos y autorización correspondiente fuera de PRISMA. Los datos locales no están cifrados ni sincronizados; no introduzcas información confidencial en dispositivos compartidos.</p>
+</main></div>
+<dialog id="modal"><form id="modalForm" class="modal"><h2 id="modalTitle"></h2><p id="modalHint" class="hint"></p><div class="fields" id="modalFields"></div><div class="modal-actions"><button class="btn ghost" type="button" id="cancelModal">Cancelar</button><button class="btn primary" type="submit">Guardar</button></div></form></dialog>
+<input type="file" id="jsonInput" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* PRISMA v0.3 — motor determinista de contraste; sin IA ni inferencia estadística. */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.PrismaEngine = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function() {
+  'use strict';
+  const VALUE = new Set(['A', 'B', 'ambos', 'desconocido']);
+  const ALL = new Set(['A', 'B']);
+  const prediction = x => VALUE.has(x) ? x : 'desconocido';
+  const admissible = x => x === 'A' ? new Set(['A']) : x === 'B' ? new Set(['B']) : x === 'ambos' ? ALL : null;
+
+  function score(analysis, check) {
+    const active = (analysis?.hypotheses || []).filter(h => !h.discarded);
+    const potentialPairs = active.length * (active.length - 1) / 2;
+    const hasOutcomes = Boolean(check?.outcomeA?.trim() && check?.outcomeB?.trim() && check.outcomeA.trim() !== check.outcomeB.trim());
+    const preds = check?.predictions && typeof check.predictions === 'object' ? check.predictions : {};
+    let separatedPairs = 0, unknownPairs = 0, compatiblePairs = 0;
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const a = admissible(prediction(preds[active[i].id]));
+        const b = admissible(prediction(preds[active[j].id]));
+        if (!a || !b) unknownPairs++;
+        else if (![...a].some(v => b.has(v))) separatedPairs++;
+        else compatiblePairs++;
+      }
+    }
+    const configured = hasOutcomes && potentialPairs > 0 && unknownPairs === 0;
+    const risk = ['bajo','medio','alto'].includes(check?.risk) ? check.risk : 'medio';
+    const status = check?.state === 'completada' ? 'realizada'
+      : risk === 'alto' ? 'requiere_revision_de_seguridad'
+      : !hasOutcomes || potentialPairs === 0 || unknownPairs > 0 ? 'incompleta'
+      : separatedPairs === 0 ? 'sin_contraste' : 'elegible';
+    return {status, configured, hasOutcomes, potentialPairs, separatedPairs,
+      compatiblePairs, unknownPairs, activeHypotheses: active.length, risk,
+      effort: Number.isFinite(+check?.effort) && +check.effort > 0 ? +check.effort : 30,
+      costMXN: Number.isFinite(check?.costMXN) && check.costMXN >= 0 ? check.costMXN : null};
+  }
+
+  function rank(analysis, mode='contraste') {
+    const ranked = (analysis?.checks || []).map(check => ({check, detail:score(analysis,check)}))
+      .filter(item => item.check.state === 'pendiente' && item.detail.status === 'elegible');
+    const weightRisk = item => item.detail.risk === 'bajo' ? 0 : 1;
+    ranked.sort((x,y) => {
+      const a=x.detail,b=y.detail;
+      if(mode === 'eficiencia') {
+        const cmp=a.effort / a.separatedPairs - b.effort / b.separatedPairs;
+        if (cmp) return cmp;
+      } else if (a.separatedPairs !== b.separatedPairs) return b.separatedPairs - a.separatedPairs;
+      if (weightRisk(x)!==weightRisk(y)) return weightRisk(x)-weightRisk(y);
+      if (mode === 'eficiencia' && a.separatedPairs !== b.separatedPairs) return b.separatedPairs - a.separatedPairs;
+      if (a.effort !== b.effort) return a.effort-b.effort;
+      if (a.costMXN !== null && b.costMXN !== null && a.costMXN !== b.costMXN) return a.costMXN-b.costMXN;
+      return String(x.check.id).localeCompare(String(y.check.id));
+    });
+    return ranked;
+  }
+
+  function conflicts(analysis, check) {
+    if(!['A','B'].includes(check?.measuredOutcome)) return [];
+    return (analysis.hypotheses || []).filter(h => !h.discarded).filter(h => {
+      const v=prediction(check?.predictions?.[h.id]);
+      return v !== 'desconocido' && v !== 'ambos' && v !== check.measuredOutcome;
+    }).map(h => ({id:h.id,title:h.title}));
+  }
+  return {score, rank, conflicts};
+});
+
+</script>
+<script>
+(() => {
+  'use strict';
+  const STORE = 'ocre_prisma_v03';
+  const LEGACY_STORE = 'ocre_prisma_v01';
+  const PRIOR_STORE = 'ocre_prisma_v02';
+  const E = globalThis.PrismaEngine;
+  if (!E) throw Error('No se cargó el motor de contraste PRISMA.');
+  let rankingMode = 'contraste';
+  const now = () => new Date().toISOString();
+  const uid = () => (globalThis.crypto?.randomUUID?.() || (Math.random().toString(36).slice(2) + Date.now().toString(36)));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const trunc = (s, n=160) => String(s || '').length > n ? String(s).slice(0,n) + '…' : String(s || '');
+  const fmtDate = s => { const d = new Date(s); return Number.isNaN(d.getTime()) ? 'Fecha no disponible' : new Intl.DateTimeFormat('es-MX', {day:'numeric',month:'short',year:'numeric'}).format(d); };
+  const str = (x, max=10000) => String(x ?? '').slice(0,max);
+  const stance = x => ['apoya','refuta','neutral'].includes(x) ? x : 'neutral';
+  const risk = x => ['bajo','medio','alto'].includes(x) ? x : 'medio';
+  const isObject = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const capped = (arr,max) => Array.isArray(arr) ? arr.slice(0,max) : [];
+  const outcomePrediction=x=>['A','B','ambos','desconocido'].includes(x)?x:'desconocido';
+  const amount=x => x===null || x===undefined || x==='' ? null : (Number.isFinite(Number(x)) && Number(x)>=0 && Number(x)<=1e9 ? Number(x) : null);
+  const costText=x => x===null?'Costo no estimado':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:2}).format(x);
+  function predictionsFromForm(d,a) { return Object.fromEntries(a.hypotheses.filter(h=>!h.discarded).map((h,i)=>[h.id,outcomePrediction(d['pred_'+i])])); }
+  function normalizeChecks(checks) { return checks.map(c=>({
+    ...c, outcomeA:str(c.outcomeA,600), outcomeB:str(c.outcomeB,600),
+    predictions:isObject(c.predictions)?Object.fromEntries(Object.entries(c.predictions).slice(0,500).map(([key,val])=>[str(key,100),outcomePrediction(val)])):{},
+    costMXN:amount(c.costMXN), measuredOutcome:['A','B','otro','inconcluyente'].includes(c.measuredOutcome)?c.measuredOutcome:null
+  })); }
+
+
+  function migrateV1(raw) {
+    if (!isObject(raw) || !Array.isArray(raw.cases)) throw Error('El respaldo v0.1 no tiene la estructura esperada.');
+    return {
+      version:3, active:raw.active ?? null,
+      analyses:raw.cases.map(c => ({
+        id:c.id, title:c.title, statement:c.problem, domain:c.domain, created:c.created,
+        hypotheses:(c.hypotheses || []).map(h => ({...h, discarded:false})),
+        observations:(c.evidence || []).map(e => ({
+          id:e.id, detail:e.detail, source:e.source, created:e.created, author:'', checkId:null,
+          interpretations:e.hypothesisId ? [{hypothesisId:e.hypothesisId, stance:stance(e.stance)}] : []
+        })),
+        checks:(c.tests || []).map(t => ({
+          id:t.id, hypothesisId:t.hypothesisId, title:t.title, method:t.method,
+          criteria:'', legacyCombinedMethod:true, author:'', effort:t.effort, risk:t.risk,
+          state:t.state, result:t.result, created:t.created,
+          completed:null
+        }))
+      }))
+    };
+  }
+
+  function normalize(input) {
+    const raw = isObject(input) && (input.version === 2 || input.version === 3) ? input :
+      isObject(input) && Array.isArray(input.cases) && (input.version === 1 || input.version === undefined) ? migrateV1(input) : null;
+    if (!raw || !Array.isArray(raw.analyses)) throw Error('Versión o estructura JSON no compatible (PRISMA v0.1, v0.2 o v0.3).');
+    if (raw.analyses.length > 250) throw Error('El respaldo supera los 250 análisis permitidos.');
+    const analyses = raw.analyses.map(a => ({
+      id:str(a.id || uid(),100), title:str(a.title || 'Sin título',250),
+      statement:str(a.statement,10000), domain:str(a.domain || 'General',100), created:str(a.created || now(),60),
+      hypotheses:capped(a.hypotheses,500).map(h => ({id:str(h.id || uid(),100), title:str(h.title,500), note:str(h.note,6000), created:str(h.created || now(),60), discarded:Boolean(h.discarded)})),
+      observations:capped(a.observations,3000).map(o => ({
+        id:str(o.id || uid(),100), detail:str(o.detail,9000), source:str(o.source,1000), author:str(o.author,200),
+        created:str(o.created || now(),60), checkId:o.checkId ? str(o.checkId,100) : null,
+        interpretations:capped(o.interpretations,200).map(i => ({hypothesisId:str(i.hypothesisId,100), stance:stance(i.stance)}))
+      })),
+      checks:normalizeChecks(capped(a.checks,2000).map(c => ({
+        id:str(c.id || uid(),100), hypothesisId:str(c.hypothesisId,100), title:str(c.title,500),
+        method:str(c.method,9000), criteria:str(c.criteria,5000), legacyCombinedMethod:Boolean(c.legacyCombinedMethod),
+        author:str(c.author,200), effort:Math.max(1,Math.min(1440,Number(c.effort)||30)),risk:risk(c.risk),
+        state:c.state === 'completada' ? 'completada' : 'pendiente', result:str(c.result,9000),
+        created:str(c.created || now(),60), completed:c.completed ? str(c.completed,60) : null,
+        outcomeA:c.outcomeA, outcomeB:c.outcomeB, predictions:c.predictions, costMXN:c.costMXN, measuredOutcome:c.measuredOutcome
+      })))
+    }));
+    const active = analyses.find(a => a.id === raw.active)?.id || analyses[0]?.id || null;
+    return {version:3, analyses, active};
+  }
+
+  function sample() { const created=now(); return normalize({
+    version:3, active:'demo-router', analyses:[{
+      id:'demo-router', title:'Desviación de escuadra en router CNC', domain:'Mantenimiento industrial', created,
+      statement:'Se reporta una desviación de 2.4 mm sobre 1,000 mm. El dato todavía requiere una medición independiente; se investigarán alternativas antes de intervenir componentes.',
+      hypotheses:[
+        {id:'h1',title:'Descuadre mecánico del pórtico',note:'Contrastar geometría y repetibilidad.',created},
+        {id:'h2',title:'Desviación de movimiento en un eje',note:'Valorar juego o diferencia de desplazamiento real.',created},
+        {id:'h3',title:'Error de referencia, herramienta o proceso',note:'Descartar preparación y sujeción.',created}
+      ],
+      observations:[{id:'o1',detail:'Se informa una desviación de 2.4 mm en 1,000 mm. Es un dato aportado, todavía no verificado de forma independiente.',source:'Reporte inicial del ejemplo',author:'',created,interpretations:[]}],
+      checks:[
+        {id:'c1',hypothesisId:'h1',title:'Comparar diagonales y repetibilidad',method:'Con el equipo en condiciones seguras y un instrumento adecuado, medir ambas diagonales y repetir la medición.',criteria:'Anotar ambas diagonales, condiciones y tolerancia aplicable; comparar diferencias contra la especificación del equipo.',outcomeA:'Diferencia geométrica repetible',outcomeB:'Mediciones coinciden dentro de tolerancia',predictions:{h1:'A',h2:'ambos',h3:'B'},costMXN:0,risk:'bajo',effort:15,state:'pendiente',result:'',created},
+        {id:'c2',hypothesisId:'h3',title:'Verificar pieza, referencia y sujeción',method:'Comparar referencias y mediciones de la pieza sin intervenir zonas peligrosas.',criteria:'Registrar discrepancias medibles de preparación frente a la referencia conocida.',outcomeA:'Se identifica una discrepancia reproducible de referencia o sujeción',outcomeB:'No se identifica discrepancia de referencia o sujeción',predictions:{h1:'B',h2:'B',h3:'A'},costMXN:0,risk:'bajo',effort:40,state:'pendiente',result:'',created}
+      ]
+    }]
+  }); }
+
+  let migratedLegacy = false;
+  let state;
+  try {
+    const saved = localStorage.getItem(STORE);
+    if (saved) state = normalize(JSON.parse(saved));
+    else {
+      const prior = localStorage.getItem(PRIOR_STORE);
+      const old = prior || localStorage.getItem(LEGACY_STORE);
+      state = old ? normalize(JSON.parse(old)) : sample();
+      if (old) {
+        localStorage.setItem(STORE,JSON.stringify(state));
+        migratedLegacy = true; // Los respaldos v0.1/v0.2 permanecen intactos.
+      }
+    }
+  } catch (err) {
+    state = sample();
+    console.warn('PRISMA: no fue posible restaurar los datos locales; no se eliminó el respaldo anterior.', err);
+  }
+  const getAnalysis = () => state.analyses.find(a => a.id === state.active);
+  function toast(message) { const n=document.getElementById('toast'); n.textContent=message; n.classList.add('visible'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>n.classList.remove('visible'),3600); }
+  function save() { try {localStorage.setItem(STORE,JSON.stringify(state));} catch {toast('No se pudo guardar. Exporta una copia y revisa el almacenamiento.');} render(); }
+  function countInterpretations(a,id) {const x=a.observations.flatMap(o=>o.interpretations.filter(i=>i.hypothesisId===id));return {support:x.filter(i=>i.stance==='apoya').length, refute:x.filter(i=>i.stance==='refuta').length,neutral:x.filter(i=>i.stance==='neutral').length};}
+  function hypothesisMeta(h,a) { if(h.discarded)return '<span class="chip">Descartada por el usuario</span>';const x=countInterpretations(a,h.id);if(x.support&&x.refute)return '<span class="chip amber">Observaciones contrapuestas</span>';if(x.support)return '<span class="chip green">Con observaciones a favor</span>';if(x.refute)return '<span class="chip red">Con observaciones en contra</span>';return '<span class="chip">Sin sustento suficiente</span>';}
+  function nextCheck(a) {return E.rank(a,rankingMode)[0] || null;}
+  const hypothesisName=(a,id)=>a.hypotheses.find(h=>h.id===id)?.title||'Sin hipótesis vinculada';
+
+  function render() {
+    const list=document.getElementById('analysisList');
+    list.innerHTML=state.analyses.map(a=>`<button class="analysis ${a.id===state.active?'active':''}" data-analysis="${esc(a.id)}" aria-current="${a.id===state.active?'true':'false'}"><span class="analysis-title">${esc(a.title)}</span><small>${esc(a.domain)} · ${fmtDate(a.created)}</small></button>`).join('')||'<div class="empty">Todavía no hay análisis.</div>';
+    const a=getAnalysis(),root=document.getElementById('app');
+    if(!a){root.innerHTML='<div class="empty-analysis"><h2>Todo empieza con una pregunta bien definida.</h2><p>Crea un análisis, plantea hipótesis y registra lo que realmente observas.</p><button class="btn primary" data-open="analysis">＋ Crear primer análisis</button></div>';return;}
+    const completed=a.checks.filter(c=>c.state==='completada').length,pending=a.checks.filter(c=>c.state==='pendiente').length,covered=a.hypotheses.filter(h=>a.observations.some(o=>o.interpretations.some(i=>i.hypothesisId===h.id))).length,next=nextCheck(a),ranked=E.rank(a,rankingMode),pendingNotRanked=a.checks.filter(c=>c.state==='pendiente'&&E.score(a,c).status!=='elegible').length;
+    root.innerHTML=`<section class="hero"><p class="eyebrow">ESPACIO DE ANÁLISIS · ${esc(a.domain)}</p><h1>${esc(a.title)}</h1><p>${esc(a.statement)}</p><div class="actions"><button class="btn primary" data-open="observation">＋ Añadir observación</button><button class="btn" data-open="check">＋ Preparar comprobación</button><button class="btn ghost" data-delete-analysis="${esc(a.id)}">Eliminar análisis</button></div></section>
+      <div class="metrics"><div class="metric"><strong>${a.hypotheses.length}</strong><span>Hipótesis planteadas</span><div class="mini"><i style="width:${a.hypotheses.length?Math.min(100,covered/a.hypotheses.length*100):0}%"></i></div></div><div class="metric"><strong>${a.observations.length}</strong><span>Observaciones</span><div class="mini"><i style="width:${Math.min(100,a.observations.length*14)}%"></i></div></div><div class="metric"><strong>${pending}</strong><span>Comprobaciones pendientes</span><div class="mini"><i style="width:${Math.min(100,pending*20)}%"></i></div></div><div class="metric"><strong>${completed}</strong><span>Comprobaciones realizadas</span><div class="mini"><i style="width:${a.checks.length?completed/a.checks.length*100:0}%"></i></div></div></div>
+      <div class="workspace"><div class="stack">
+      <section class="panel"><div class="panel-header"><div><h2>Mapa de hipótesis</h2><p>Explicaciones provisionales, nunca resultados certificados.</p></div><button class="btn small" data-open="hypothesis">＋ Añadir</button></div><div class="body">${a.hypotheses.length?a.hypotheses.map((h,i)=>{const co=countInterpretations(a,h.id);return `<div class="entry"><div><h3><span class="muted">H${i+1} · </span>${esc(h.title)}</h3><p>${esc(h.note)}</p><div class="row-meta">${hypothesisMeta(h,a)}<span class="chip">${co.support} a favor · ${co.refute} en contra · ${co.neutral} neutras</span></div></div><button class="linklike" data-toggle-h="${esc(h.id)}">${h.discarded?'Reactivar':'Descartar'}</button></div>`}).join(''):'<div class="empty"><strong>Sin hipótesis.</strong> Agrega explicaciones que puedan contrastarse.</div>'}</div></section>
+      <section class="panel"><div class="panel-header"><div><h2>Registro de observaciones</h2><p>Los datos se conservan separados de su interpretación.</p></div><button class="btn small" data-open="observation">＋ Añadir</button></div><div class="body">${a.observations.length?[...a.observations].reverse().map(o=>`<div class="entry"><div><div class="row-meta" style="margin-bottom:8px">${o.interpretations.length?o.interpretations.map(i=>`<span class="chip ${i.stance==='apoya'?'green':i.stance==='refuta'?'red':''}">${i.stance==='apoya'?'A favor':i.stance==='refuta'?'En contra':'Neutra'} · ${esc(trunc(hypothesisName(a,i.hypothesisId),45))}</span>`).join(''):'<span class="chip">Sin interpretación asignada</span>'}</div><p style="color:var(--text)">${esc(o.detail)}</p><span class="muted" style="font-size:11px">${esc(o.source||'Procedencia no indicada')} · ${fmtDate(o.created)}${o.author?' · '+esc(o.author):''}</span></div><button class="linklike" data-interpret="${esc(o.id)}">Relacionar</button></div>`).join(''):'<div class="empty"><strong>Sin observaciones.</strong> Registra hechos, mediciones o declaraciones con su procedencia.</div>'}</div></section>
+      </div><div class="stack"><section class="panel"><div class="panel-header"><div><h2>Contraste de comprobaciones</h2><p>Se comparan predicciones declaradas, no probabilidades de certeza.</p></div></div><div class="body">
+      <div class="field rank-option"><label for="rankMode">Orden de comparación</label><select id="rankMode" class="select"><option value="contraste" ${rankingMode==='contraste'?'selected':''}>Mayor contraste posible</option><option value="eficiencia" ${rankingMode==='eficiencia'?'selected':''}>Menos minutos por par distinguible</option></select></div>
+      ${next?`<div class="next-card"><span class="label">ALTERNATIVA PRIORITARIA · RIESGO ${esc(next.detail.risk.toUpperCase())}</span><h3>${esc(next.check.title)}</h3><p>${esc(next.check.method)}</p><div class="compare-info"><strong>${next.detail.separatedPairs} de ${next.detail.potentialPairs} pares de hipótesis distinguibles</strong><br>${next.detail.effort} min · ${esc(costText(next.detail.costMXN))} · Riesgo ${esc(next.detail.risk)}.<br>Estimación basada exclusivamente en resultados posibles declarados. No establece causa ni seguridad.</div><p class="reasoning-meta">${rankingMode==='eficiencia'?'Entre las pruebas comparables, menor tiempo por par distinguible; el riesgo declarado desempata.':'Se prioriza la cantidad de pares de hipótesis separables; en empate se considera riesgo y duración.'} ${next.detail.risk==='medio'?'Requiere valoración y autorización de seguridad externa.':''}</p><button class="btn primary small" data-complete="${esc(next.check.id)}">Registrar resultado</button></div>`:'<div class="empty"><strong>No hay una comprobación comparable y elegible.</strong> Define dos resultados observables distintos y registra la predicción de cada hipótesis. Las pruebas de riesgo alto no son sugeridas automáticamente.</div>'}
+      <p class="reasoning-meta">${pendingNotRanked} comprobación(es) pendiente(s) fuera de la clasificación por falta de contraste, predicciones incompletas o riesgo alto. Ninguna maniobra queda autorizada aquí.</p>
+      ${ranked.length>1?`<div class="compare-info" style="margin-top:10px">Otras alternativas: ${ranked.slice(1,4).map(x=>`${esc(x.check.title)} (${x.detail.separatedPairs}/${x.detail.potentialPairs} pares; ${x.detail.effort} min; ${esc(costText(x.detail.costMXN))})`).join(' · ')}</div>`:''}</div></section>
+      <section class="panel"><div class="panel-header"><div><h2>Plan de comprobaciones</h2><p>Resultados posibles, predicciones por hipótesis y costo estimado.</p></div><button class="btn small" data-open="check">＋ Preparar</button></div><div class="body">${a.checks.length?a.checks.map(c=>{const sc=E.score(a,c),conf= c.state==='completada'?E.conflicts(a,c):[];return `<div class="entry"><div style="min-width:0;flex:1"><h3>${esc(c.title)}</h3><p>${esc(trunc(c.method,170))}</p><p><strong>Criterio previo:</strong> ${esc(c.criteria||'Sin criterio separado; revisar antes de ejecutar')}</p>${sc.hasOutcomes?`<p><strong>A:</strong> ${esc(c.outcomeA)}<br><strong>B:</strong> ${esc(c.outcomeB)}</p>`:'<p class="note-warn">Sin matriz de resultados posibles.</p>'}${c.result?`<p style="color:#d4e6ea"><strong>Resultado:</strong> ${esc(c.result)}${c.measuredOutcome?` · Resultado registrado: ${esc(c.measuredOutcome)}`:''}</p>`:''}${conf.length?`<p class="note-warn">Contradicciones con predicciones declaradas: ${conf.map(h=>esc(h.title)).join(', ')}. Revisar antes de extraer conclusiones.</p>`:''}<div class="row-meta"><span class="chip ${c.state==='completada'?'green':'amber'}">${c.state==='completada'?'Realizada':'Pendiente'}</span><span class="chip ${c.risk==='alto'?'red':''}">Riesgo: ${esc(c.risk)}</span><span class="chip">${c.effort} min</span><span class="chip">${esc(costText(sc.costMXN))}</span><span class="chip ${sc.status==='elegible'?'green':'amber'}">${sc.separatedPairs}/${sc.potentialPairs} pares · ${esc(sc.status.replaceAll('_',' '))}</span>${c.legacyCombinedMethod?'<span class="chip amber">Formato heredado</span>':''}</div></div><div style="display:grid;gap:6px;flex-shrink:0">${c.state==='pendiente'?`<button class="btn small" data-configure="${esc(c.id)}">Revisar matriz</button>`:'<span class="chip">Matriz congelada</span>'}${c.state==='pendiente'?`<button class="btn small" data-complete="${esc(c.id)}">Resultado</button>`:''}</div></div>`}).join(''):'<div class="empty"><strong>Sin comprobaciones.</strong> Diseña una prueba que distinga alternativas.</div>'}</div></section>
+      <section class="panel"><div class="panel-header"><div><h2>Consistencia del análisis</h2><p>Indicadores descriptivos; no son puntuaciones de certeza.</p></div></div><div class="body"><p class="muted" style="line-height:1.65;font-size:12px;margin:0">Hipótesis con interpretación registrada: <strong style="color:var(--text)">${covered} de ${a.hypotheses.length}</strong>.</p><hr class="divider"><p class="muted" style="line-height:1.65;font-size:12px;margin:0">No se genera automáticamente un diagnóstico, un Hallazgo certificado ni una Síntesis. Toda conclusión debe ser revisada por una persona competente.</p></div></section></div></div>`;
+  }
+
+  const hypOptions=(withBlank=true)=>{const a=getAnalysis();return (withBlank?'<option value="">Sin vincular por ahora</option>':'')+(a?.hypotheses.filter(h=>!h.discarded).map(h=>`<option value="${esc(h.id)}">${esc(h.title)}</option>`).join('')||'');};
+  const fields={
+    analysis:()=>`<div class="field"><label for="fTitle">Título del análisis *</label><input id="fTitle" name="title" required maxlength="250" placeholder="Ej. Desviación de repetibilidad"></div><div class="field"><label for="fDomain">Área</label><select id="fDomain" name="domain"><option>Mantenimiento industrial</option><option>Software y sistemas</option><option>Administración y operaciones</option><option>Procesos y calidad</option><option>Otro</option></select></div><div class="field"><label for="fStatement">Planteamiento *</label><textarea id="fStatement" name="statement" required maxlength="10000" placeholder="¿Qué queremos comprender? ¿Qué sabemos y qué falta verificar?"></textarea></div>`,
+    hypothesis:()=>`<div class="field"><label for="fTitle">Hipótesis *</label><input id="fTitle" name="title" required maxlength="500" placeholder="Ej. Desajuste geométrico"></div><div class="field"><label for="fNote">Explicación y límites</label><textarea id="fNote" name="note" maxlength="6000" placeholder="Qué observaciones podrían apoyar o contradecirla"></textarea></div>`,
+    observation:()=>`<div class="field"><label for="fDetail">Observación o medición *</label><textarea id="fDetail" name="detail" required maxlength="9000" placeholder="Dato, unidades, condiciones y grado de verificación"></textarea></div><div class="field"><label for="fSource">Procedencia *</label><input id="fSource" name="source" required maxlength="1000" placeholder="Fuente, instrumento o persona que declara el dato"></div><div class="field"><label for="fAuthor">Registrado por (opcional)</label><input id="fAuthor" name="author" maxlength="200"></div><div class="field"><label for="fHypothesis">Interpretación provisional (opcional)</label><select id="fHypothesis" name="hypothesisId">${hypOptions()}</select></div><div class="field"><label for="fStance">Relación con la hipótesis, si se seleccionó</label><select id="fStance" name="stance"><option value="neutral">Sin conclusión</option><option value="apoya">A favor</option><option value="refuta">En contra</option></select></div>`,
+    check:(c=null)=>`<div class="field"><label for="fHypothesis">Hipótesis inicial de referencia *</label><select id="fHypothesis" name="hypothesisId" required>${hypOptions(false)}</select></div><div class="field"><label for="fTitle">Nombre de comprobación *</label><input id="fTitle" name="title" required maxlength="500" placeholder="Ej. Comparar dos métodos de medición"></div><div class="field"><label for="fMethod">Método seguro y reproducible *</label><textarea id="fMethod" name="method" required maxlength="9000" placeholder="Qué se medirá, bajo qué condiciones"></textarea></div><div class="field"><label for="fCriteria">Criterio previo *</label><textarea id="fCriteria" name="criteria" required maxlength="5000" placeholder="Qué observación distinguiría causas distintas"></textarea></div><fieldset class="field-group"><legend>Dos resultados observables posibles</legend><p class="muted" style="font-size:11px;line-height:1.5">Defínelos antes de ejecutar la comprobación; no son probabilidades ni veredictos.</p><div class="fields"><div class="field"><label for="fOutcomeA">Resultado A</label><textarea id="fOutcomeA" name="outcomeA" maxlength="600" placeholder="Ej. Se reproduce el error"></textarea></div><div class="field"><label for="fOutcomeB">Resultado B</label><textarea id="fOutcomeB" name="outcomeB" maxlength="600" placeholder="Ej. El error no se reproduce"></textarea></div></div></fieldset><fieldset class="field-group"><legend>Predicción para cada hipótesis activa</legend><p class="muted" style="font-size:11px;line-height:1.5">A/B: resultado esperable bajo la hipótesis. Ambos: permite A y B. Desconocido: no hay predicción defendible. Las hipótesis descartadas no participan.</p><div class="matrix-rows">${(getAnalysis()?.hypotheses||[]).filter(h=>!h.discarded).map((h,i)=>`<div class="matrix-row"><label for="pred_${i}">${esc(h.title)}</label><select id="pred_${i}" name="pred_${i}"><option value="desconocido">Desconocido</option><option value="A">A</option><option value="B">B</option><option value="ambos">Ambos</option></select></div>`).join('')}</div></fieldset><div class="two"><div class="field"><label for="fEffort">Duración estimada (min)</label><input id="fEffort" type="number" min="1" max="1440" name="effort" value="30" required></div><div class="field"><label for="fRisk">Riesgo declarado</label><select id="fRisk" name="risk"><option value="bajo">Bajo</option><option value="medio">Medio</option><option value="alto">Alto</option></select></div></div><div class="field"><label for="fCostMXN">Costo incremental estimado, MXN (opcional)</label><input id="fCostMXN" type="number" min="0" max="1000000000" step="0.01" name="costMXN" placeholder="Dejar vacío si se desconoce"></div><div class="field"><label for="fAuthor">Preparado por (opcional)</label><input id="fAuthor" name="author" maxlength="200"></div>`,
+    interpretation:()=>`<div class="field"><label>Observación</label><div id="observationSummary" class="muted"></div></div><div class="field"><label for="fHypothesis">Hipótesis a relacionar *</label><select id="fHypothesis" name="hypothesisId" required>${hypOptions(false)}</select></div><div class="field"><label for="fStance">Interpretación *</label><select id="fStance" name="stance"><option value="neutral">Sin conclusión</option><option value="apoya">A favor</option><option value="refuta">En contra</option></select></div>`,
+    complete:()=>`<div class="field"><label>Comprobación</label><div id="checkSummary" class="muted"></div></div><div class="field"><label for="fResult">Resultado observado *</label><textarea id="fResult" name="result" required maxlength="9000" placeholder="Valores y condiciones registradas, sin inventar conclusiones"></textarea></div><div class="field"><label for="fSource">Procedencia del resultado *</label><input id="fSource" name="source" required maxlength="1000" placeholder="Ej. Medición realizada por técnico con calibre"></div><div class="field"><label for="fAuthor">Registrado por (opcional)</label><input id="fAuthor" name="author" maxlength="200"></div><div class="field"><label for="fMeasuredOutcome">Qué resultado se observó *</label><select id="fMeasuredOutcome" name="measuredOutcome" required><option value="">Seleccionar…</option><option value="A">Resultado A</option><option value="B">Resultado B</option><option value="otro">Otro resultado (no previsto)</option><option value="inconcluyente">Inconcluyente</option></select></div><p class="muted" style="font-size:11px">Registrar un resultado no confirma ni descarta hipótesis automáticamente.</p>`
+  };
+  let modalType=null, modalId=null;
+  function openModal(type,id) {
+    const a=getAnalysis();if(type!=='analysis'&&!a)return;
+    if(['check','configure','interpretation'].includes(type)&&!a.hypotheses.some(h=>!h.discarded)){toast('Antes plantea una hipótesis activa.');return;}
+    modalType=type;modalId=id||null;
+    const names={analysis:'Nuevo análisis',hypothesis:'Nueva hipótesis',observation:'Añadir observación',check:'Preparar comprobación',configure:'Revisar matriz de comprobación',interpretation:'Relacionar observación',complete:'Registrar resultado de comprobación'};
+    const hints={analysis:'El planteamiento no es una solicitud operativa de OCRE-OS.',hypothesis:'Una hipótesis es una explicación provisional; debe poder contrastarse.',observation:'La observación existe por sí misma. Su interpretación es opcional y revisable.',check:'Define resultados A y B, predicciones, criterio, riesgo y costo. PRISMA no autoriza procedimientos.',configure:'Revisa las predicciones declaradas; el histórico no se convierte automáticamente en conocimiento verificado.',interpretation:'La relación es una inferencia, no modifica la observación ni confirma la causa.',complete:'El resultado se documenta como observación. Si contradice predicciones, revisa las hipótesis manualmente.'};
+    document.getElementById('modalTitle').textContent=names[type];document.getElementById('modalHint').textContent=hints[type];document.getElementById('modalFields').innerHTML=(type==='configure'?fields.check:fields[type])();
+    if(type==='interpretation') {const o=a.observations.find(o=>o.id===id);if(!o)return;document.getElementById('observationSummary').textContent=o.detail;}
+    if(type==='complete') {const c=a.checks.find(c=>c.id===id);if(!c)return;document.getElementById('checkSummary').textContent=c.title+' · '+c.method+(c.criteria?' · Criterio: '+c.criteria:' · Criterio histórico no separado');}
+    document.getElementById('modalForm').reset();
+    if(type==='configure') {
+      const c=a.checks.find(c=>c.id===id);if(!c)return;
+      if(c.state!=='pendiente'){toast('Las predicciones de comprobaciones realizadas no pueden modificarse retrospectivamente.');return;}
+      for (const k of ['hypothesisId','title','method','criteria','outcomeA','outcomeB','effort','risk','author']) {
+        const node=document.getElementById(({hypothesisId:'fHypothesis',title:'fTitle',method:'fMethod',criteria:'fCriteria',outcomeA:'fOutcomeA',outcomeB:'fOutcomeB',effort:'fEffort',risk:'fRisk',author:'fAuthor'})[k]);
+        if(node)node.value=c[k]??'';
+      }
+      document.getElementById('fCostMXN').value=c.costMXN??'';
+      a.hypotheses.filter(h=>!h.discarded).forEach((h,i)=>{document.getElementById('pred_'+i).value=c.predictions[h.id]||'desconocido';});
+    }
+    if(type==='complete') {
+      const c=a.checks.find(c=>c.id===id);if(!c)return;
+      const opt=document.getElementById('fMeasuredOutcome').options;
+      opt[1].text='A · '+str(c.outcomeA||'Sin definir',80);
+      opt[2].text='B · '+str(c.outcomeB||'Sin definir',80);
+    }
+    document.getElementById('modal').showModal();document.getElementById('modalFields').querySelector('input,select,textarea')?.focus();
+  }
+  function closeModal(){document.getElementById('modal').close();modalType=null;modalId=null;}
+  document.getElementById('cancelModal').addEventListener('click',closeModal);
+  document.getElementById('modalForm').addEventListener('submit',e=>{
+    e.preventDefault();const a=getAnalysis(),d=Object.fromEntries(new FormData(e.currentTarget).entries());
+    switch(modalType){
+      case 'analysis': {const n={id:uid(),title:d.title.trim(),statement:d.statement.trim(),domain:d.domain,created:now(),hypotheses:[],observations:[],checks:[]};state.analyses.unshift(n);state.active=n.id;break;}
+      case 'hypothesis':a.hypotheses.push({id:uid(),title:d.title.trim(),note:d.note.trim(),created:now(),discarded:false});break;
+      case 'observation':a.observations.push({id:uid(),detail:d.detail.trim(),source:d.source.trim(),author:d.author?.trim()||'',created:now(),checkId:null,interpretations:d.hypothesisId?[{hypothesisId:d.hypothesisId,stance:stance(d.stance)}]:[]});break;
+      case 'interpretation':{const o=a.observations.find(o=>o.id===modalId);if(!o)return;const old=o.interpretations.find(i=>i.hypothesisId===d.hypothesisId);if(old)old.stance=stance(d.stance);else o.interpretations.push({hypothesisId:d.hypothesisId,stance:stance(d.stance)});break;}
+      case 'check':a.checks.push({id:uid(),hypothesisId:d.hypothesisId,title:d.title.trim(),method:d.method.trim(),criteria:d.criteria.trim(),outcomeA:str(d.outcomeA,600).trim(),outcomeB:str(d.outcomeB,600).trim(),predictions:predictionsFromForm(d,a),costMXN:amount(d.costMXN),measuredOutcome:null,risk:risk(d.risk),effort:Math.max(1,Math.min(1440,+d.effort||30)),author:d.author?.trim()||'',legacyCombinedMethod:false,state:'pendiente',result:'',created:now(),completed:null});break;
+      case 'configure':{const c=a.checks.find(c=>c.id===modalId);if(!c || c.state!=='pendiente')return;Object.assign(c,{hypothesisId:d.hypothesisId,title:d.title.trim(),method:d.method.trim(),criteria:d.criteria.trim(),outcomeA:str(d.outcomeA,600).trim(),outcomeB:str(d.outcomeB,600).trim(),predictions:{...c.predictions,...predictionsFromForm(d,a)},costMXN:amount(d.costMXN),risk:risk(d.risk),effort:Math.max(1,Math.min(1440,+d.effort||30)),author:d.author?.trim()||''});break;}
+      case 'complete': {const c=a.checks.find(c=>c.id===modalId);if(!c)return;c.state='completada';c.result=d.result.trim();c.measuredOutcome=d.measuredOutcome;c.completed=now();a.observations.push({id:uid(),detail:d.result.trim(),source:d.source.trim(),author:d.author?.trim()||'',created:c.completed,checkId:c.id,interpretations:[]});break;}
+    }
+    const closeMenu = modalType==='analysis';closeModal();save();if(closeMenu){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded','false');}toast('Guardado localmente.');
+  });
+  document.addEventListener('click',e=>{
+    const target=e.target.closest('[data-open],[data-analysis],[data-complete],[data-configure],[data-toggle-h],[data-interpret],[data-delete-analysis]');if(!target)return;
+    const d=target.dataset;if(d.open){openModal(d.open);return;}
+    if(d.analysis){state.active=d.analysis;save();document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded','false');return;}
+    if(d.complete){openModal('complete',d.complete);return;}
+    if(d.configure){openModal('configure',d.configure);return;}
+    if(d.interpret){openModal('interpretation',d.interpret);return;}
+    const a=getAnalysis();if(d.toggleH){const h=a.hypotheses.find(h=>h.id===d.toggleH);if(h){h.discarded=!h.discarded;save();}return;}
+    if(d.deleteAnalysis){if(!confirm('¿Eliminar permanentemente este análisis y sus registros locales? Exporta primero si necesitas conservarlo.'))return;state.analyses=state.analyses.filter(x=>x.id!==d.deleteAnalysis);state.active=state.analyses[0]?.id||null;save();}
+  });
+  document.addEventListener('change',e=>{if(e.target.id==='rankMode'){rankingMode=e.target.value==='eficiencia'?'eficiencia':'contraste';render();}});
+  document.getElementById('mobileToggle').addEventListener('click',()=>{const n=document.getElementById('sidebar'),a=n.classList.toggle('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded',String(a));});
+  document.getElementById('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='OCRE-PRISMA-v0.3-respaldo-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Respaldo JSON v0.3 preparado.');});
+  document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('jsonInput').click());
+  document.getElementById('jsonInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>5e6)throw Error('Archivo demasiado grande (máximo 5 MB)');const data=normalize(JSON.parse(await f.text()));if(!confirm('Esto reemplazará los análisis locales de v0.3. ¿Continuar?'))return;state=data;save();toast('Respaldo importado y normalizado.');}catch(err){toast('No se pudo importar: '+err.message);}finally{e.target.value='';}});
+  document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('¿Reemplazar todos los análisis locales por los datos de ejemplo? Exporta primero.'))return;state=sample();save();toast('Demostración restablecida.');});
+  document.getElementById('copySummary').addEventListener('click',async()=>{const a=getAnalysis();if(!a){toast('Selecciona un análisis.');return;}
+    const lines=[`OCRE PRISMA · Análisis: ${a.title}`,`Planteamiento: ${a.statement}`,'','HIPÓTESIS',...a.hypotheses.map(h=>`- ${h.title}${h.discarded?' [descartada]':''}`),'','OBSERVACIONES',...a.observations.map(o=>`- ${o.detail} [Procedencia: ${o.source}]`),'','COMPROBACIONES',...a.checks.map(c=>`- ${c.title} · Método: ${c.method} · Criterio: ${c.criteria||'No separado'} · ${c.state}${c.result?' · Resultado: '+c.result:''}`)].join('\n');
+    try{await navigator.clipboard.writeText(lines);toast('Resumen del análisis copiado.');}catch{const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Resumen del análisis preparado.');}
+  });
+  render();if(migratedLegacy)toast('Datos v0.1/v0.2 migrados a v0.3; los respaldos anteriores permanecen intactos.');
+})();
+
+</script>
+</body>
+</html>
