@@ -289,6 +289,36 @@ class DevenvSampleTests(unittest.TestCase):
         self.assertEqual(stop.waits,[60,300])
         self.assertNotIn("secret-token-value",output.getvalue())
 
+    def test_quota_worker_unexpected_failure_invalidates_previous_available(self):
+        clock=[1000.0]
+        source=DevenvSource(None,"collector.py",lambda:clock[0])
+        source.wsl=lambda with_quota: self.DATA
+        source.quota=self.QUOTA
+        source.quota_at=999.0
+        source.claude_auth=True
+        source.claude_auth_at=999.0
+        # An unexpected exception is different from a normal timeout returning None.
+        source.refresh_quotas=lambda: (_ for _ in ()).throw(RuntimeError("private-metadata"))
+        class SingleCycle:
+            count=0
+            def is_set(self):
+                self.count+=1
+                return self.count>1
+            def wait(self,seconds):
+                self.seconds=seconds
+        with unittest.mock.patch("native_monitor.codex_desktop_turn",return_value=None):
+            before=source.sample()
+            self.assertEqual(before["agents"]["codex"]["quota"]["state"],"low")
+            output=io.StringIO()
+            with contextlib.redirect_stdout(output):
+                poll_quotas(source,SingleCycle())
+            after=source.sample()
+        self.assertEqual(after["agents"]["codex"]["quota"]["state"],"unknown")
+        self.assertEqual(source.quota_at,0.0)
+        self.assertIsNone(source.claude_auth)
+        self.assertEqual(source.claude_auth_at,0.0)
+        self.assertNotIn("private-metadata",output.getvalue())
+
     def test_devenv_publisher_recovers_from_unexpected_error_without_secrets(self):
         sample=build_devenv_sample(self.DATA,None,None,1_800_000_000)
         source=unittest.mock.Mock()

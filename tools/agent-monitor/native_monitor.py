@@ -312,6 +312,13 @@ class DevenvSource:
             self.claude_auth,self.claude_auth_at=(auth,auth_at) if auth is not None else (None,0.0)
         return candidate is not None  # Claude auth UNKNOWN must not trigger repeated heavy Codex probes.
 
+    def invalidate_quotas(self):
+        # Fail closed after an unexpected failure, even when an earlier positive
+        # measurement has not yet reached its normal 300-second expiry.
+        with self._quota_lock:
+            self.quota,self.quota_at=None,0.0
+            self.claude_auth,self.claude_auth_at=None,0.0
+
     def sample(self):
         # Do not wait for Claude auth, Codex quota, or any other slow credential probe.
         data=self.wsl(False)
@@ -339,6 +346,8 @@ def poll_quotas(source,stop):
             complete=source.refresh_quotas()
         except Exception:
             # Never print exceptions: they can contain private paths or provider data.
+            # A failed probe must not keep previously available quota/auth visible.
+            source.invalidate_quotas()
             print("Monitor devenv: sondeo de cuotas no disponible.",flush=True)
             complete=False
         stop.wait(QUOTA_REFRESH_SECONDS if complete else QUOTA_RETRY_SECONDS)
