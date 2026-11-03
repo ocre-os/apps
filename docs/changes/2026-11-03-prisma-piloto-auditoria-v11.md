@@ -27,7 +27,7 @@
 - Las filas de pruebas automáticas son **ficticias** y no se cuentan como corridas del piloto.
 - El código local de la instrumentación v1.1 y los ZIP de distribución se entregaron como artefactos de conversación, no forman parte de esta PR. **No declarar la PR reproducible de extremo a extremo hasta versionarlos también**.
 
-## CompueRtas para la fase de campo
+## Compuertas para la fase de campo
 
 1. Un problema administrativo real con desenlace verificable; autorización y anonimización de M01.
 2. Verificación del desconocimiento previo del desenlace por la persona operadora, especialmente S01 por ser fuente pública.
