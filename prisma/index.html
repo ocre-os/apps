@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#08121a">
-<meta name="robots" content="noindex, nofollow">
-<meta name="description" content="OCRE PRISMA: laboratorio de razonamiento verificable con síntesis trazables, observaciones y comprobaciones.">
+<meta name="description" content="OCRE PRISMA: síntesis trazables y patrones reutilizables con revisión humana.">
 <title>OCRE PRISMA · Razonamiento verificable</title>
 <style>
 :root{color-scheme:dark;--bg:#08121a;--panel:#0d1c27;--panel2:#102432;--border:#223744;--text:#eaf4f7;--muted:#8da7b5;--cyan:#58d9d1;--cyan2:#207b7c;--amber:#f3c070;--red:#fc9086;--green:#70d6b6;--radius:16px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -15,6 +14,9 @@
 .mobile-menu{display:none!important} @media(max-width:700px){.mobile-menu{display:inline-flex!important}}button:focus-visible,.analysis:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
 .matrix-rows{display:grid;gap:9px;margin:8px 0}.matrix-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.42fr);align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)}.synthesis{border-top:1px solid var(--border);padding:16px 0}.synthesis:first-child{border-top:0}.synthesis h3{font-size:14px;line-height:1.5;white-space:pre-wrap;margin:11px 0}.synthesis p{font-size:12px;color:var(--muted);line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}.synthesis-sources{display:grid;gap:7px;background:#0b2430;padding:12px;border-radius:10px;margin:12px 0;font-size:11px}.synthesis-sources strong{color:#a8d1d4}.source{display:flex;align-items:flex-start;gap:8px;line-height:1.5;overflow-wrap:anywhere}.source-against{border-left:2px solid var(--red);padding-left:6px}.synthesis-warnings{border-left:3px solid #d0a261;padding:8px 12px;background:#30271c;border-radius:8px}.synthesis-warnings p{color:#f4d5a3;margin:4px 0}.synthesis-footer{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:11px}.synthesis-picker{max-height:240px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px} .matrix-row label{font-size:12px;font-weight:600;line-height:1.45}.matrix-row select{min-width:0;width:100%;color:var(--text);background:#071923;border:1px solid #365363;border-radius:9px;padding:9px}.field-group{padding:12px;border:1px solid var(--border);border-radius:12px}.field-group legend{color:#a7e5e1;font-size:12px;font-weight:700;padding:0 5px}.compare-info{background:#0d2b37;border-left:3px solid #5bdcd4;padding:10px;border-radius:8px;font-size:11px;line-height:1.6;color:#bedbe0}.rank-option{margin:4px 0 8px 0}.rank-option select{width:100%;max-width:none}.note-warn{color:#ffd193}.reasoning-meta{line-height:1.55;font-size:11px;color:var(--muted);margin-top:9px}@media(max-width:530px){.matrix-row{grid-template-columns:1fr}}
+
+.pattern-card{padding:15px 0;border-top:1px solid var(--border)}.pattern-card:first-of-type{border-top:0}.pattern-card h3{font-size:14px;margin:10px 0 9px}.pattern-card p{font-size:12px;line-height:1.6;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0}.pattern-card strong{color:var(--text)}.pattern-origin{background:#0b2530;border-left:3px solid #467e86;padding:10px;border-radius:8px;color:#a7c4cb;font-size:11px;line-height:1.6;margin:12px 0;overflow-wrap:anywhere}.pattern-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.pattern-note{color:var(--muted);background:#102934;padding:10px;border:1px solid var(--border);border-radius:9px;line-height:1.65;font-size:11px;margin:0 0 8px}
+.pattern-source{display:flex;gap:10px;align-items:start;padding:8px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.5}.pattern-source input{width:16px;height:16px;flex:0 0 auto;margin:1px 0;accent-color:#60ddd4}
 </style>
 </head>
 <body>
@@ -25,7 +27,7 @@
   <div class="sidebottom"><button class="btn primary" data-open="analysis">＋ Nuevo análisis</button><button class="btn ghost" id="exportBtn">↓ Exportar datos</button><button class="btn ghost" id="importBtn">↑ Importar datos</button><button class="btn ghost" id="resetBtn">↻ Restablecer demostración</button><div class="side-note">🔒 <strong>Modo local.</strong> Los datos permanecen en este navegador. No hay cuenta, sincronización ni IA conectada. Exporta copias de respaldo.</div></div>
 </aside>
 <main class="main">
-<div class="top"><span class="crumb">OCRE Apps <span class="muted">/</span> PRISMA <span class="muted">/</span> Prototipo v0.4</span><div class="top-right"><span class="pill"><span class="dot"></span> LOCAL · SIN IA</span><button class="btn ghost small" id="copySummary">Copiar resumen</button></div></div>
+<div class="top"><span class="crumb">OCRE Apps <span class="muted">/</span> PRISMA <span class="muted">/</span> Prototipo v0.5</span><div class="top-right"><span class="pill"><span class="dot"></span> LOCAL · SIN IA</span><button class="btn ghost small" id="copySummary">Copiar resumen</button></div></div>
 <div id="app"></div>
 <p class="footer">OCRE PRISMA · Laboratorio de razonamiento verificable. No crea Solicitudes, Sesiones, Servicios ni Casos en OCRE-OS. Las comprobaciones requieren evaluación de riesgos y autorización correspondiente fuera de PRISMA. Los datos locales no están cifrados ni sincronizados; no introduzcas información confidencial en dispositivos compartidos.</p>
 </main></div>
@@ -132,7 +134,8 @@
 <script>
 (() => {
   'use strict';
-  const STORE = 'ocre_prisma_v04';
+  const STORE = 'ocre_prisma_v05';
+  const V04_STORE = 'ocre_prisma_v04';
   const V03_STORE = 'ocre_prisma_v03';
   const LEGACY_STORE = 'ocre_prisma_v01';
   const PRIOR_STORE = 'ocre_prisma_v02';
@@ -163,7 +166,7 @@
   function migrateV1(raw) {
     if (!isObject(raw) || !Array.isArray(raw.cases)) throw Error('El respaldo v0.1 no tiene la estructura esperada.');
     return {
-      version:4, active:raw.active ?? null,
+      version:5, active:raw.active ?? null,
       analyses:raw.cases.map(c => ({
         id:c.id, title:c.title, statement:c.problem, domain:c.domain, created:c.created,
         hypotheses:(c.hypotheses || []).map(h => ({...h, discarded:false})),
@@ -183,9 +186,9 @@
   }
 
   function normalize(input) {
-    const raw = isObject(input) && ([2,3,4].includes(input.version)) ? input :
+    const raw = isObject(input) && ([2,3,4,5].includes(input.version)) ? input :
       isObject(input) && Array.isArray(input.cases) && (input.version === 1 || input.version === undefined) ? migrateV1(input) : null;
-    if (!raw || !Array.isArray(raw.analyses)) throw Error('Versión o estructura JSON no compatible (PRISMA v0.1 a v0.4).');
+    if (!raw || !Array.isArray(raw.analyses)) throw Error('Versión o estructura JSON no compatible (PRISMA v0.1 a v0.5).');
     if (raw.analyses.length > 250) throw Error('El respaldo supera los 250 análisis permitidos.');
     const analyses = raw.analyses.map(a => ({
       id:str(a.id || uid(),100), title:str(a.title || 'Sin título',250),
@@ -214,11 +217,24 @@
       })))
     }));
     const active = analyses.find(a => a.id === raw.active)?.id || analyses[0]?.id || null;
-    return {version:4, analyses, active};
+    const patterns=capped(raw.patterns,250).filter(isObject).map(z=>({
+      id:str(z.id || uid(),100), title:str(z.title,250), domain:str(z.domain||'Otro',100),
+      context:str(z.context,2000), conditions:str(z.conditions,4000), guidance:str(z.guidance,6000), limits:str(z.limits,6000),
+      created:str(z.created||now(),60), status:['candidato','revisado','retirado'].includes(z.status)?z.status:'candidato',
+      reviewedAt:z.reviewedAt?str(z.reviewedAt,60):null, reviewer:str(z.reviewer,200), reviewNote:str(z.reviewNote,2500),
+      origin:{analysisId:str(z.origin?.analysisId,100),analysisTitle:str(z.origin?.analysisTitle,250),synthesisId:str(z.origin?.synthesisId,100),
+        conclusion:str(z.origin?.conclusion,9000),created:str(z.origin?.created,60),support:Number(z.origin?.support)||0,
+        opposition:Number(z.origin?.opposition)||0,warnings:capped(z.origin?.warnings,100).map(w=>str(w,500)),
+        sources:capped(z.origin?.sources,600).filter(isObject).map(l=>({type:['observacion','comprobacion'].includes(l.type)?l.type:'observacion',id:str(l.id,100),role:l.role==='contradice'?'contradice':'sustenta',detail:str(l.detail,9000),source:str(l.source,1000)}))},
+      applications:capped(z.applications,200).filter(isObject).map(k=>({id:str(k.id||uid(),100),analysisId:str(k.analysisId,100),
+        created:str(k.created||now(),60),outcome:['compatible','contradice','inconcluso'].includes(k.outcome)?k.outcome:'inconcluso',
+        note:str(k.note,4000),reviewer:str(k.reviewer,200),links:capped(k.links,200).filter(isObject).filter(l=>['observacion','comprobacion'].includes(l.type)).map(l=>({type:l.type,id:str(l.id,100)}))}))
+    }));
+    return {version:5, analyses, active, patterns};
   }
 
   function sample() { const created=now(); return normalize({
-    version:4, active:'demo-router', analyses:[{
+    version:5, active:'demo-router', analyses:[{
       id:'demo-router', title:'Desviación de escuadra en router CNC', domain:'Mantenimiento industrial', created,
       statement:'Se reporta una desviación de 2.4 mm sobre 1,000 mm. El dato todavía requiere una medición independiente; se investigarán alternativas antes de intervenir componentes.',
       hypotheses:[
@@ -240,7 +256,7 @@
     const saved = localStorage.getItem(STORE);
     if (saved) state = normalize(JSON.parse(saved));
     else {
-      const old = localStorage.getItem(V03_STORE) || localStorage.getItem(PRIOR_STORE) || localStorage.getItem(LEGACY_STORE);
+      const old = localStorage.getItem(V04_STORE) || localStorage.getItem(V03_STORE) || localStorage.getItem(PRIOR_STORE) || localStorage.getItem(LEGACY_STORE);
       state = old ? normalize(JSON.parse(old)) : sample();
       if (old) {
         localStorage.setItem(STORE,JSON.stringify(state));
@@ -252,6 +268,23 @@
     console.warn('PRISMA: no fue posible restaurar los datos locales; no se eliminó el respaldo anterior.', err);
   }
   const getAnalysis = () => state.analyses.find(a => a.id === state.active);
+  const patternById = id => state.patterns.find(p=>p.id===id);
+  const patternOrigin = (a,s)=>state.patterns.some(p=>p.origin.analysisId===a.id && p.origin.synthesisId===s.id && p.status!=='retirado');
+  const patternStatus = p => p.status==='revisado'?'Revisado por una persona':p.status==='retirado'?'Retirado':'Candidato, no revisado';
+  function latestApplications(p){
+    const byAnalysis=new Map();for(const x of p.applications)byAnalysis.set(x.analysisId,x);
+    return [...byAnalysis.values()];
+  }
+  function renderPatterns(a) {
+    const patterns=[...state.patterns].sort((x,y)=>Number(x.domain===a.domain)-Number(y.domain===a.domain)||String(x.created).localeCompare(String(y.created))).reverse();
+    if(!patterns.length)return '<div class="empty"><strong>Sin patrones aún.</strong> Extrae un candidato desde una síntesis trazable. Ninguna conclusión se valida automáticamente.</div>';
+    return `<div class="pattern-note">Biblioteca local compartida entre los análisis de este navegador. La revisión humana no equivale a validación técnica, y una coincidencia de área no demuestra aplicabilidad.</div>${patterns.map(p=>{
+      const latest=latestApplications(p),match=p.domain===a.domain;
+      const current=latest.find(x=>x.analysisId===a.id);
+      const orphan=!state.analyses.some(x=>x.id===p.origin.analysisId);
+      return `<article class="pattern-card"><div class="row-meta"><span class="chip ${p.status==='revisado'?'green':p.status==='retirado'?'red':'amber'}">${esc(patternStatus(p))}</span>${match?'<span class="chip green">Misma área</span>':''}<span class="chip">${esc(p.domain)}</span></div><h3>${esc(p.title)}</h3><p><strong>Contexto:</strong> ${esc(p.context)}</p><p><strong>Condiciones:</strong> ${esc(p.conditions)}</p><p><strong>Orientación:</strong> ${esc(p.guidance)}</p><p><strong>Límites:</strong> ${esc(p.limits)}</p><div class="pattern-origin">Origen: ${esc(p.origin.analysisTitle||'Sin título')} · Síntesis ${esc(p.origin.synthesisId)} · ${p.origin.support} fuentes a favor / ${p.origin.opposition} en contra · ${(p.origin.sources||[]).length} fuente(s) con instantánea${orphan?' · Original no disponible, se conserva la instantánea':''}. ${esc(p.origin.conclusion)}</div><div class="row-meta"><span class="chip">${latest.filter(x=>x.outcome==='compatible').length} compatibilidades declaradas</span><span class="chip red">${latest.filter(x=>x.outcome==='contradice').length} contradicciones declaradas</span><span class="chip">${latest.filter(x=>x.outcome==='inconcluso').length} inconclusas</span>${current?`<span class="chip">Último uso aquí: ${esc(current.outcome)} · ${current.links?.length||0} fuente(s)</span>`:''}</div><div class="pattern-actions">${p.status==='candidato'?`<button class="btn small" data-review-pattern="${esc(p.id)}">Revisar candidato</button>`:''}${p.status==='revisado'?`<button class="btn small" data-use-pattern="${esc(p.id)}">Registrar contraste en este análisis</button>`:''}${p.status!=='retirado'?`<button class="btn small ghost" data-retire-pattern="${esc(p.id)}">Retirar</button>`:''}${p.status==='retirado'?'<span class="muted">No disponible para nuevos contrastes.</span>':''}<button class="btn small ghost" data-copy-pattern="${esc(p.id)}">Copiar referencia</button></div></article>`;
+    }).join('')}`;
+  }
   function toast(message) { const n=document.getElementById('toast'); n.textContent=message; n.classList.add('visible'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>n.classList.remove('visible'),3600); }
   function save() { try {localStorage.setItem(STORE,JSON.stringify(state));} catch {toast('No se pudo guardar. Exporta una copia y revisa el almacenamiento.');} render(); }
   function countInterpretations(a,id) {const x=a.observations.flatMap(o=>o.interpretations.filter(i=>i.hypothesisId===id));return {support:x.filter(i=>i.stance==='apoya').length, refute:x.filter(i=>i.stance==='refuta').length,neutral:x.filter(i=>i.stance==='neutral').length};}
@@ -274,7 +307,7 @@
       <h3>${esc(s.conclusion)}</h3><p><strong>Límites:</strong> ${esc(s.limitations)}</p><p><strong>Incertidumbre pendiente:</strong> ${esc(s.unresolved)}</p>
       <div class="synthesis-sources"><strong>Fuentes vinculadas</strong>${s.links.length?s.links.map(l=>`<div class="source ${l.role==='contradice'?'source-against':''}"><span class="chip ${l.role==='contradice'?'red':'green'}">${l.role==='contradice'?'En contra':'A favor'}</span> ${esc(sourceLabel(a,l))}</div>`).join(''):'<p>No se indicaron fuentes.</p>'}</div>
       ${r.warnings.length?`<div class="synthesis-warnings" role="note">${r.warnings.map(w=>`<p>⚠ ${esc(w)}</p>`).join('')}</div>`:''}
-      <div class="synthesis-footer"><span class="muted">${s.author?'Registrada por '+esc(s.author)+' · ':''}Registro histórico, no diagnóstico certificado</span><button class="btn small" data-copy-synthesis="${esc(s.id)}">Copiar con referencias</button></div></article>`;
+      <div class="synthesis-footer"><span class="muted">${s.author?'Registrada por '+esc(s.author)+' · ':''}Registro histórico, no diagnóstico certificado</span><button class="btn small" data-copy-synthesis="${esc(s.id)}">Copiar con referencias</button>${!patternOrigin(a,s)?`<button class="btn small" data-open-pattern="${esc(s.id)}">Extraer candidato</button>`:'<span class="chip">Candidato extraído</span>'}</div></article>`;
     }).join('');
   }
   function synthesisText(a,s){
@@ -304,6 +337,7 @@
       ${ranked.length>1?`<div class="compare-info" style="margin-top:10px">Otras alternativas: ${ranked.slice(1,4).map(x=>`${esc(x.check.title)} (${x.detail.separatedPairs}/${x.detail.potentialPairs} pares; ${x.detail.effort} min; ${esc(costText(x.detail.costMXN))})`).join(' · ')}</div>`:''}</div></section>
       <section class="panel"><div class="panel-header"><div><h2>Plan de comprobaciones</h2><p>Resultados posibles, predicciones por hipótesis y costo estimado.</p></div><button class="btn small" data-open="check">＋ Preparar</button></div><div class="body">${a.checks.length?a.checks.map(c=>{const sc=E.score(a,c),conf= c.state==='completada'?E.conflicts(a,c):[];return `<div class="entry"><div style="min-width:0;flex:1"><h3>${esc(c.title)}</h3><p>${esc(trunc(c.method,170))}</p><p><strong>Criterio previo:</strong> ${esc(c.criteria||'Sin criterio separado; revisar antes de ejecutar')}</p>${sc.hasOutcomes?`<p><strong>A:</strong> ${esc(c.outcomeA)}<br><strong>B:</strong> ${esc(c.outcomeB)}</p>`:'<p class="note-warn">Sin matriz de resultados posibles.</p>'}${c.result?`<p style="color:#d4e6ea"><strong>Resultado:</strong> ${esc(c.result)}${c.measuredOutcome?` · Resultado registrado: ${esc(c.measuredOutcome)}`:''}</p>`:''}${conf.length?`<p class="note-warn">Contradicciones con predicciones declaradas: ${conf.map(h=>esc(h.title)).join(', ')}. Revisar antes de extraer conclusiones.</p>`:''}<div class="row-meta"><span class="chip ${c.state==='completada'?'green':'amber'}">${c.state==='completada'?'Realizada':'Pendiente'}</span><span class="chip ${c.risk==='alto'?'red':''}">Riesgo: ${esc(c.risk)}</span><span class="chip">${c.effort} min</span><span class="chip">${esc(costText(sc.costMXN))}</span><span class="chip ${sc.status==='elegible'?'green':'amber'}">${sc.separatedPairs}/${sc.potentialPairs} pares · ${esc(sc.status.replaceAll('_',' '))}</span>${c.legacyCombinedMethod?'<span class="chip amber">Formato heredado</span>':''}</div></div><div style="display:grid;gap:6px;flex-shrink:0">${c.state==='pendiente'?`<button class="btn small" data-configure="${esc(c.id)}">Revisar matriz</button>`:'<span class="chip">Matriz congelada</span>'}${c.state==='pendiente'?`<button class="btn small" data-complete="${esc(c.id)}">Resultado</button>`:''}</div></div>`}).join(''):'<div class="empty"><strong>Sin comprobaciones.</strong> Diseña una prueba que distinga alternativas.</div>'}</div></section>
       <section class="panel"><div class="panel-header"><div><h2>Síntesis trazable</h2><p>Conclusiones humanas versionadas, con fundamentos, contradicciones y límites explícitos.</p></div><button class="btn small" data-open="synthesis">＋ Redactar</button></div><div class="body">${renderSyntheses(a)}</div></section>
+      <section class="panel"><div class="panel-header"><div><h2>Patrones reutilizables</h2><p>Candidatos, revisión humana y contraste entre análisis. Nunca equivalen a diagnósticos.</p></div></div><div class="body">${renderPatterns(a)}</div></section>
       <section class="panel"><div class="panel-header"><div><h2>Consistencia del análisis</h2><p>Indicadores descriptivos; no son puntuaciones de certeza.</p></div></div><div class="body"><p class="muted" style="line-height:1.65;font-size:12px;margin:0">Hipótesis con interpretación registrada: <strong style="color:var(--text)">${covered} de ${a.hypotheses.length}</strong>.</p><hr class="divider"><p class="muted" style="line-height:1.65;font-size:12px;margin:0">Las síntesis son conclusiones provisionales redactadas por personas: la aplicación sólo comprueba referencias y señala alertas lógicas, sin certificar diagnósticos.</p></div></section></div></div>`;
   }
 
@@ -321,15 +355,20 @@
     ];
     return `<div class="field"><label for="fConclusion">Conclusión provisional *</label><textarea id="fConclusion" name="conclusion" required maxlength="9000" placeholder="Qué permiten afirmar los datos, sin presentar hipótesis como certezas"></textarea></div><div class="field"><label for="fLimitations">Alcance y límites de la conclusión *</label><textarea id="fLimitations" name="limitations" required maxlength="6000" placeholder="Qué no demuestra este análisis; condiciones de medición y excepciones"></textarea></div><div class="field"><label for="fUnresolved">Incertidumbres y posibles refutaciones *</label><textarea id="fUnresolved" name="unresolved" required maxlength="6000" placeholder="Qué preguntas siguen abiertas y qué resultado cambiaría la conclusión"></textarea></div><fieldset class="field-group"><legend>Vínculos con fuentes registradas</legend><p class="muted" style="font-size:11px;line-height:1.6">Para cada fuente elige si sustenta, contradice o no aplica. Solo se pueden vincular comprobaciones realizadas. Se muestran las 100 observaciones y las 100 comprobaciones realizadas más recientes. No se modifica su contenido.</p><div class="synthesis-picker">${rows.map(o=>`<div class="matrix-row"><label for="syn_${o.type}_${o.key}">${esc(o.label)}</label><select name="syn_${o.type}_${o.key}" id="syn_${o.type}_${o.key}"><option value="">No vincular</option><option value="sustenta">Sustenta</option><option value="contradice">Contradice</option></select></div>`).join('')||'<p class="note-warn">Registra observaciones o resultados de comprobaciones antes de redactar la síntesis.</p>'}</div></fieldset><div class="field"><label for="fAuthor">Autor de la síntesis (opcional)</label><input id="fAuthor" name="author" maxlength="200" placeholder="Responsable que revisó la interpretación"></div>`;
     },
+    pattern:()=>{const a=getAnalysis(),syn=a?.syntheses.find(x=>x.id===modalId);return `<p class="muted" style="font-size:11px">Origen inmutable: ${esc(trunc(syn?.conclusion,200))}. La nueva ficha será un candidato, no un patrón validado.</p><div class="field"><label for="fTitle">Nombre del candidato *</label><input id="fTitle" name="title" required maxlength="250" placeholder="Ej. Diagnóstico cruzado de desviación"></div><div class="field"><label for="fContext">Contexto de aplicación *</label><textarea id="fContext" name="context" required maxlength="2000" placeholder="Tipo de problema, circunstancias y alcance"></textarea></div><div class="field"><label for="fConditions">Condiciones que deben cumplirse *</label><textarea id="fConditions" name="conditions" required maxlength="4000" placeholder="Qué comprobar antes de reutilizar"></textarea></div><div class="field"><label for="fGuidance">Orientación reutilizable *</label><textarea id="fGuidance" name="guidance" required maxlength="6000" placeholder="Qué comprobaciones considerar; sin autorizar maniobras"></textarea></div><div class="field"><label for="fLimits">Límites y excepciones *</label><textarea id="fLimits" name="limits" required maxlength="6000" placeholder="Cuándo no aplicar o investigar de nuevo"></textarea></div>`;},
+    patternReview:()=>`<div class="field"><label for="fReviewer">Revisado por *</label><input id="fReviewer" name="reviewer" required maxlength="200"></div><div class="field"><label for="fReviewNote">Fundamento de la revisión *</label><textarea id="fReviewNote" name="reviewNote" required maxlength="2500" placeholder="Qué se comprobó y qué limitaciones quedan"></textarea></div><p class="note-warn">Revisado significa lectura y evaluación humana, no solución certificada ni patrón reproducido.</p>`,
+    patternUse:()=>{const a=getAnalysis();const rows=[...a.observations.slice(-100).map((o,i)=>({type:'obs',key:i,label:'Observación · '+trunc(o.detail,140)})),...a.checks.filter(c=>c.state==='completada').slice(-100).map((c,i)=>({type:'chk',key:i,label:'Comprobación · '+trunc(c.title,140)}))];return `<div class="field"><label for="fOutcome">Resultado del contraste *</label><select id="fOutcome" name="outcome" required><option value="">Seleccionar…</option><option value="compatible">Compatible con las observaciones de este análisis</option><option value="contradice">Contradice observaciones o pruebas</option><option value="inconcluso">No se puede determinar</option></select></div><div class="field"><label for="fNote">Evidencia y condiciones examinadas *</label><textarea id="fNote" name="note" required maxlength="4000" placeholder="Describe observaciones, comprobaciones, diferencias y dudas"></textarea></div><div class="field"><label for="fReviewer">Registrado por *</label><input id="fReviewer" name="reviewer" required maxlength="200"></div><fieldset class="field-group"><legend>Fuentes del análisis actual</legend><p class="muted" style="font-size:11px">Para afirmar compatibilidad o contradicción, vincula al menos una observación o comprobación realizada. Una observación procedente de una comprobación no equivale a evidencia independiente.</p><div class="synthesis-picker">${rows.map(x=>`<label class="pattern-source"><input type="checkbox" name="pat_${x.type}_${x.key}" value="1"><span>${esc(x.label)}</span></label>`).join('')||'<p class="note-warn">Este análisis no tiene observaciones ni comprobaciones realizadas. Solo puede registrarse como inconcluso.</p>'}</div></fieldset><p class="note-warn">Este registro no crea observaciones ni diagnósticos, y no confirma automáticamente un patrón.</p>`;},
     complete:()=>`<div class="field"><label>Comprobación</label><div id="checkSummary" class="muted"></div></div><div class="field"><label for="fResult">Resultado observado *</label><textarea id="fResult" name="result" required maxlength="9000" placeholder="Valores y condiciones registradas, sin inventar conclusiones"></textarea></div><div class="field"><label for="fSource">Procedencia del resultado *</label><input id="fSource" name="source" required maxlength="1000" placeholder="Ej. Medición realizada por técnico con calibre"></div><div class="field"><label for="fAuthor">Registrado por (opcional)</label><input id="fAuthor" name="author" maxlength="200"></div><div class="field"><label for="fMeasuredOutcome">Qué resultado se observó *</label><select id="fMeasuredOutcome" name="measuredOutcome" required><option value="">Seleccionar…</option><option value="A">Resultado A</option><option value="B">Resultado B</option><option value="otro">Otro resultado (no previsto)</option><option value="inconcluyente">Inconcluyente</option></select></div><p class="muted" style="font-size:11px">Registrar un resultado no confirma ni descarta hipótesis automáticamente.</p>`
   };
   let modalType=null, modalId=null;
   function openModal(type,id) {
     const a=getAnalysis();if(type!=='analysis'&&!a)return;
+    if(type==='pattern' && (!a.syntheses.some(x=>x.id===id)||patternOrigin(a,a.syntheses.find(x=>x.id===id))))return;
+    if(['patternReview','patternUse'].includes(type) && !patternById(id))return;
     if(['check','configure','interpretation'].includes(type)&&!a.hypotheses.some(h=>!h.discarded)){toast('Antes plantea una hipótesis activa.');return;}
     modalType=type;modalId=id||null;
-    const names={analysis:'Nuevo análisis',hypothesis:'Nueva hipótesis',observation:'Añadir observación',check:'Preparar comprobación',configure:'Revisar matriz de comprobación',interpretation:'Relacionar observación',complete:'Registrar resultado de comprobación',synthesis:'Nueva síntesis trazable'};
-    const hints={analysis:'El planteamiento no es una solicitud operativa de OCRE-OS.',hypothesis:'Una hipótesis es una explicación provisional; debe poder contrastarse.',observation:'La observación existe por sí misma. Su interpretación es opcional y revisable.',check:'Define resultados A y B, predicciones, criterio, riesgo y costo. PRISMA no autoriza procedimientos.',configure:'Revisa las predicciones declaradas; el histórico no se convierte automáticamente en conocimiento verificado.',interpretation:'La relación es una inferencia, no modifica la observación ni confirma la causa.',complete:'El resultado se documenta como observación. Si contradice predicciones, revisa las hipótesis manualmente.',synthesis:'La síntesis es una conclusión humana provisional. Se conserva como versión histórica; no sustituye un diagnóstico de OCRE-OS.'};
+    const names={analysis:'Nuevo análisis',hypothesis:'Nueva hipótesis',observation:'Añadir observación',check:'Preparar comprobación',configure:'Revisar matriz de comprobación',interpretation:'Relacionar observación',complete:'Registrar resultado de comprobación',synthesis:'Nueva síntesis trazable',pattern:'Extraer candidato de patrón',patternReview:'Revisar candidato',patternUse:'Contrastar patrón en este análisis'};
+    const hints={analysis:'El planteamiento no es una solicitud operativa de OCRE-OS.',hypothesis:'Una hipótesis es una explicación provisional; debe poder contrastarse.',observation:'La observación existe por sí misma. Su interpretación es opcional y revisable.',check:'Define resultados A y B, predicciones, criterio, riesgo y costo. PRISMA no autoriza procedimientos.',configure:'Revisa las predicciones declaradas; el histórico no se convierte automáticamente en conocimiento verificado.',interpretation:'La relación es una inferencia, no modifica la observación ni confirma la causa.',complete:'El resultado se documenta como observación. Si contradice predicciones, revisa las hipótesis manualmente.',synthesis:'La síntesis es una conclusión humana provisional. Se conserva como versión histórica; no sustituye un diagnóstico de OCRE-OS.',pattern:'Convierte una síntesis en candidato. No implica aplicabilidad automática.',patternReview:'La revisión humana es declarativa y debe justificar el alcance.',patternUse:'Registrar uso contextual no prueba causalidad ni independencia de evidencia.'};
     document.getElementById('modalTitle').textContent=names[type];document.getElementById('modalHint').textContent=hints[type];document.getElementById('modalFields').innerHTML=(type==='configure'?fields.check:fields[type])();
     if(type==='interpretation') {const o=a.observations.find(o=>o.id===id);if(!o)return;document.getElementById('observationSummary').textContent=o.detail;}
     if(type==='complete') {const c=a.checks.find(c=>c.id===id);if(!c)return;document.getElementById('checkSummary').textContent=c.title+' · '+c.method+(c.criteria?' · Criterio: '+c.criteria:' · Criterio histórico no separado');}
@@ -372,32 +411,60 @@
         a.syntheses.push({id:uid(),conclusion:d.conclusion.trim(),limitations:d.limitations.trim(),unresolved:d.unresolved.trim(),author:d.author?.trim()||'',created:now(),links});
         break;
       }
+      case 'pattern':{
+        const syn=a.syntheses.find(x=>x.id===modalId);if(!syn || patternOrigin(a,syn))return;
+        const review=E.reviewSynthesis(a,syn);
+        if(!review.support){toast('No se puede extraer un patrón sin una fuente válida a favor.');return;}
+        if(![d.title,d.context,d.conditions,d.guidance,d.limits].every(x=>x?.trim())){toast('Completa todas las condiciones del candidato.');return;}
+        state.patterns.push({id:uid(),title:d.title.trim(),domain:a.domain,context:d.context.trim(),conditions:d.conditions.trim(),guidance:d.guidance.trim(),limits:d.limits.trim(),status:'candidato',reviewer:'',reviewNote:'',reviewedAt:null,created:now(),applications:[],origin:{analysisId:a.id,analysisTitle:a.title,synthesisId:syn.id,conclusion:syn.conclusion,created:syn.created,support:review.support,opposition:review.opposition,warnings:review.warnings.slice(),sources:syn.links.map(l=>({type:l.type,id:l.id,role:l.role,detail:l.type==='observacion'?(a.observations.find(o=>o.id===l.id)?.detail||'Fuente ausente'):(a.checks.find(c=>c.id===l.id)?.result||'Resultado ausente'),source:l.type==='observacion'?(a.observations.find(o=>o.id===l.id)?.source||''):(a.checks.find(c=>c.id===l.id)?.title||'')}))}});break;
+      }
+      case 'patternReview':{
+        const p=patternById(modalId);if(!p || p.status!=='candidato')return;
+        if(!d.reviewer?.trim()||!d.reviewNote?.trim()){toast('Indica responsable y fundamento de la revisión.');return;}
+        if(p.origin.warnings.length){toast('La síntesis original tiene alertas. Se debe crear una nueva síntesis corregida antes de revisar el candidato.');return;}
+        p.status='revisado';p.reviewer=d.reviewer.trim();p.reviewNote=d.reviewNote.trim();p.reviewedAt=now();break;
+      }
+      case 'patternUse':{
+        const p=patternById(modalId);if(!p || p.status!=='revisado')return;
+        if(p.origin.analysisId===a.id){toast('Para contraste independiente utiliza otro análisis.');return;}
+        if(!['compatible','contradice','inconcluso'].includes(d.outcome)||!d.note?.trim()||!d.reviewer?.trim()){toast('Indica resultado, evidencia y responsable.');return;}
+        const links=[];
+        a.observations.slice(-100).forEach((o,i)=>{if(d['pat_obs_'+i]==='1')links.push({type:'observacion',id:o.id});});
+        a.checks.filter(c=>c.state==='completada').slice(-100).forEach((c,i)=>{if(d['pat_chk_'+i]==='1')links.push({type:'comprobacion',id:c.id});});
+        if(d.outcome!=='inconcluso'&&!links.length){toast('Para declarar compatibilidad o contradicción vincula una fuente registrada.');return;}
+        p.applications.push({id:uid(),analysisId:a.id,created:now(),outcome:d.outcome,note:d.note.trim(),reviewer:d.reviewer.trim(),links});break;
+      }
       case 'complete': {const c=a.checks.find(c=>c.id===modalId);if(!c)return;c.state='completada';c.result=d.result.trim();c.measuredOutcome=d.measuredOutcome;c.completed=now();a.observations.push({id:uid(),detail:d.result.trim(),source:d.source.trim(),author:d.author?.trim()||'',created:c.completed,checkId:c.id,interpretations:[]});break;}
     }
     const closeMenu = modalType==='analysis';closeModal();save();if(closeMenu){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded','false');}toast('Guardado localmente.');
   });
   document.addEventListener('click',e=>{
-    const target=e.target.closest('[data-open],[data-analysis],[data-complete],[data-configure],[data-toggle-h],[data-interpret],[data-delete-analysis],[data-copy-synthesis]');if(!target)return;
+    const target=e.target.closest('[data-open],[data-analysis],[data-complete],[data-configure],[data-toggle-h],[data-interpret],[data-delete-analysis],[data-copy-synthesis],[data-open-pattern],[data-review-pattern],[data-use-pattern],[data-retire-pattern],[data-copy-pattern]');if(!target)return;
     const d=target.dataset;if(d.open){openModal(d.open);return;}
     if(d.analysis){state.active=d.analysis;save();document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded','false');return;}
     if(d.complete){openModal('complete',d.complete);return;}
     if(d.configure){openModal('configure',d.configure);return;}
     if(d.interpret){openModal('interpretation',d.interpret);return;}
+    if(d.openPattern){openModal('pattern',d.openPattern);return;}
+    if(d.reviewPattern){openModal('patternReview',d.reviewPattern);return;}
+    if(d.usePattern){const p=patternById(d.usePattern);if(p?.origin.analysisId===state.active){toast('Para contrastar en otro contexto, selecciona un análisis distinto al de origen.');return;}openModal('patternUse',d.usePattern);return;}
+    if(d.retirePattern){const p=patternById(d.retirePattern);if(p?.status!=='retirado'&&confirm('¿Retirar este candidato o patrón de nuevas aplicaciones? El historial se conservará.')){p.status='retirado';save();}return;}
+    if(d.copyPattern){const p=patternById(d.copyPattern);if(p)copyText([p.title,p.context,p.conditions,p.guidance,p.limits,'Origen: '+p.origin.analysisTitle+' / '+p.origin.synthesisId,'Estado: '+p.status,'Fuentes de origen:',...(p.origin.sources||[]).map(x=>x.type+' · '+x.role+' · '+x.detail+' ('+x.source+')')].join('\n'), 'Ficha copiada.');return;}
     if(d.copySynthesis){const a=getAnalysis(),s=a?.syntheses.find(x=>x.id===d.copySynthesis);if(s)copyText(synthesisText(a,s),'Síntesis con referencias copiada.');return;}
     const a=getAnalysis();if(d.toggleH){const h=a.hypotheses.find(h=>h.id===d.toggleH);if(h){h.discarded=!h.discarded;save();}return;}
     if(d.deleteAnalysis){if(!confirm('¿Eliminar permanentemente este análisis y sus registros locales? Exporta primero si necesitas conservarlo.'))return;state.analyses=state.analyses.filter(x=>x.id!==d.deleteAnalysis);state.active=state.analyses[0]?.id||null;save();}
   });
   document.addEventListener('change',e=>{if(e.target.id==='rankMode'){rankingMode=e.target.value==='eficiencia'?'eficiencia':'contraste';render();}});
   document.getElementById('mobileToggle').addEventListener('click',()=>{const n=document.getElementById('sidebar'),a=n.classList.toggle('mobile-open');document.getElementById('mobileToggle').setAttribute('aria-expanded',String(a));});
-  document.getElementById('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='OCRE-PRISMA-v0.4-respaldo-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Respaldo JSON v0.4 preparado.');});
+  document.getElementById('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='OCRE-PRISMA-v0.5-respaldo-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Respaldo JSON v0.5 preparado.');});
   document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('jsonInput').click());
-  document.getElementById('jsonInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>5e6)throw Error('Archivo demasiado grande (máximo 5 MB)');const data=normalize(JSON.parse(await f.text()));if(!confirm('Esto reemplazará los análisis locales de v0.4. ¿Continuar? Exporta primero.'))return;state=data;save();toast('Respaldo importado y normalizado.');}catch(err){toast('No se pudo importar: '+err.message);}finally{e.target.value='';}});
+  document.getElementById('jsonInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>5e6)throw Error('Archivo demasiado grande (máximo 5 MB)');const data=normalize(JSON.parse(await f.text()));if(!confirm('Esto reemplazará los análisis y patrones locales de v0.5. ¿Continuar? Exporta primero.'))return;state=data;save();toast('Respaldo importado y normalizado.');}catch(err){toast('No se pudo importar: '+err.message);}finally{e.target.value='';}});
   document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('¿Reemplazar todos los análisis locales por los datos de ejemplo? Exporta primero.'))return;state=sample();save();toast('Demostración restablecida.');});
   document.getElementById('copySummary').addEventListener('click',async()=>{const a=getAnalysis();if(!a){toast('Selecciona un análisis.');return;}
-    const lines=[`OCRE PRISMA · Análisis: ${a.title}`,`Planteamiento: ${a.statement}`,'','HIPÓTESIS',...a.hypotheses.map(h=>`- ${h.title}${h.discarded?' [descartada]':''}`),'','OBSERVACIONES',...a.observations.map(o=>`- ${o.detail} [Procedencia: ${o.source}]`),'','COMPROBACIONES',...a.checks.map(c=>`- ${c.title} · Método: ${c.method} · Criterio: ${c.criteria||'No separado'} · ${c.state}${c.result?' · Resultado: '+c.result:''}`),'','SÍNTESIS TRAZABLES',...a.syntheses.map(s=>synthesisText(a,s))].join('\n');
+    const lines=[`OCRE PRISMA · Análisis: ${a.title}`,`Planteamiento: ${a.statement}`,'','HIPÓTESIS',...a.hypotheses.map(h=>`- ${h.title}${h.discarded?' [descartada]':''}`),'','OBSERVACIONES',...a.observations.map(o=>`- ${o.detail} [Procedencia: ${o.source}]`),'','COMPROBACIONES',...a.checks.map(c=>`- ${c.title} · Método: ${c.method} · Criterio: ${c.criteria||'No separado'} · ${c.state}${c.result?' · Resultado: '+c.result:''}`),'','SÍNTESIS TRAZABLES',...a.syntheses.map(s=>synthesisText(a,s)),'','PATRONES REUTILIZABLES',...state.patterns.map(p=>`${p.title} · ${p.status} · Origen: ${p.origin.analysisTitle} · Condiciones: ${p.conditions} · Límites: ${p.limits}`)].join('\n');
     try{await navigator.clipboard.writeText(lines);toast('Resumen del análisis copiado.');}catch{const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Resumen del análisis preparado.');}
   });
-  render();if(migratedLegacy)toast('Datos anteriores migrados a v0.4; el respaldo original permanece intacto.');
+  render();if(migratedLegacy)toast('Datos anteriores migrados a v0.5; el respaldo original permanece intacto.');
 })();
 
 </script>
