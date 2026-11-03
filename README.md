@@ -5,6 +5,7 @@ Portal de apps y herramientas internas de OCRE.
 ## Apps incluidas
 
 - Portal general: `index.html`
+- PRISMA v0.3 (prototipo de razonamiento verificable, datos locales): `prisma/index.html`
 - OCRE OS Status: `os-status/index.html`
 - Limpiador Mozaik KDT: `limpiador-mozaik/index.html`
 - Cizalla Hidraulica Krass: `cizalla/index.html`
@@ -32,6 +33,8 @@ No guardes contrasenas FTP/SFTP dentro del repositorio.
 /
 |- index.html
 |- limpiador-mozaik/
+|  `- index.html
+|- prisma/
 |  `- index.html
 |- cizalla/
 |  |- index.html
