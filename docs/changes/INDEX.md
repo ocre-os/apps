@@ -4,3 +4,4 @@
 | --- | --- | --- |
 | 2026-10-03 | Matrix Mode: telemetría vertical y lluvia en tres capas | [Detalle](2026-10-03-matrix-vertical.md) |
 | 2026-11-02 | PRISMA v0.4: Síntesis trazable, migraciones y validación | [Detalle](2026-11-02-prisma-v04-sintesis-trazable.md) |
+| 2026-11-03 | PRISMA v0.5: biblioteca de patrones reutilizables | [Detalle](2026-11-03-prisma-v05-patrones-reutilizables.md) |
