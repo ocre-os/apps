@@ -51,6 +51,14 @@ async function run() {
     assert.equal(data.version, 5);
     const check = data.analyses[0].checks.at(-1);
     assert.ok(Object.values(check.predictions).every(v => v === 'desconocido'));
+    // Sin definiciones previas, A/B no deben poder seleccionarse como resultados realizados.
+    await page.locator('[data-complete="' + check.id + '"]').click();
+    assert.match(await page.locator('#outcomeLabelA').innerText(), /A — No definido/);
+    assert.match(await page.locator('#outcomeLabelB').innerText(), /B — No definido/);
+    assert.equal(await page.locator('#fMeasuredOutcome option[value="A"]').isDisabled(), true);
+    assert.equal(await page.locator('#fMeasuredOutcome option[value="B"]').isDisabled(), true);
+    assert.equal(await page.locator('#fMeasuredOutcome option[value="otro"]').isEnabled(), true);
+    await page.locator('#cancelModal').click();
     await page.locator('[data-configure="' + check.id + '"]').click();
     assert.equal(await page.locator('#checkAdvanced').evaluate(e => e.open), true);
     await page.locator('#fOutcomeA').fill('Se observa A');
@@ -59,6 +67,27 @@ async function run() {
     await page.locator('#pred_1').selectOption('B');
     await page.locator('#pred_2').selectOption('desconocido');
     await page.locator('#modalForm button[type="submit"]').click();
+    // Las descripciones definidas deben mostrarse de manera explícita antes de registrar.
+    await page.locator('[data-complete="' + check.id + '"]').click();
+    assert.equal(await page.locator('#outcomeLabelA').innerText(), 'A — Se observa A');
+    assert.equal(await page.locator('#outcomeLabelB').innerText(), 'B — Se observa B');
+    assert.equal(await page.locator('#fMeasuredOutcome option[value="A"]').isEnabled(), true);
+    assert.equal(await page.locator('#fMeasuredOutcome option[value="B"]').isEnabled(), true);
+    await page.locator('#cancelModal').click();
+    // Ejercitar específicamente el acceso desde la nueva vista enfocada.
+    await page.locator('#modeToggle').click();
+    const focusedComplete = page.locator('.focus-layout [data-complete]').first();
+    assert.equal(await focusedComplete.count(), 1, 'La vista enfocada debe ofrecer comprobación');
+    const focusedId = await focusedComplete.getAttribute('data-complete');
+    const current = await page.evaluate(() => JSON.parse(localStorage.getItem('ocre_prisma_v05')));
+    const focusedCheck = current.analyses.find(a => a.id === current.active).checks.find(c => c.id === focusedId);
+    await focusedComplete.click();
+    assert.equal(await page.locator('#outcomeLabelA').innerText(),
+      focusedCheck.outcomeA ? 'A — ' + focusedCheck.outcomeA : 'A — No definido antes de la comprobación.');
+    assert.equal(await page.locator('#outcomeLabelB').innerText(),
+      focusedCheck.outcomeB ? 'B — ' + focusedCheck.outcomeB : 'B — No definido antes de la comprobación.');
+    await page.locator('#cancelModal').click();
+    await page.locator('#modeToggle').click();
     await page.getByRole('button', {name:'＋ Redactar síntesis'}).first().click();
     await page.locator('#fConclusion').fill('Conclusión provisional sin validación automática');
     await page.locator('#fLimitations').fill('Una sola observación');
@@ -91,7 +120,7 @@ async function run() {
     const dimensions = await mobile.evaluate(() => ({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}));
     assert.ok(dimensions.scroll <= dimensions.client + 4, JSON.stringify(dimensions));
     assert.deepEqual(errors, []);
-    console.log('OK: Chromium WSL, matriz parcial, revisión, persistencia, móvil 390px; sin errores JS');
+    console.log('OK: Chromium WSL, A/B definidos, selección segura, vista enfocada, matriz parcial, revisión, persistencia, móvil 390px; sin errores JS');
   } finally {
     await browser.close();
   }
