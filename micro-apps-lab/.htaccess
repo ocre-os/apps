@@ -13,6 +13,6 @@ Require valid-user
   Header always set Cache-Control "private, no-store"
   Header always set Permissions-Policy "geolocation=(), microphone=()"
 </IfModule>
-<FilesMatch "^\\.(htpasswd|htaccess)$">
+<FilesMatch "^\.(htpasswd|htaccess)$">
   Require all denied
 </FilesMatch>
