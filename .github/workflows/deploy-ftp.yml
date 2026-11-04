@@ -17,6 +17,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Provision Micro-Apps private access file
+        env:
+          MICROAPPS_HTPASSWD: ${{ secrets.MICROAPPS_HTPASSWD }}
+        run: |
+          set -euo pipefail
+          test -n "$MICROAPPS_HTPASSWD"
+          test -d micro-apps-lab
+          ( umask 077; printf '%s\n' "$MICROAPPS_HTPASSWD" > micro-apps-lab/.htpasswd )
+          test -s micro-apps-lab/.htpasswd
+          test "$(wc -l < micro-apps-lab/.htpasswd)" -eq 1
+
       - name: Deploy to cPanel FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
