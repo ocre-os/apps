@@ -30,3 +30,18 @@ Versionar el código de evaluación **no** autoriza usar expedientes ni implica 
 ## Criterio de elegibilidad
 
 Para cada caso: problema real, resolución documentada, permiso de uso y anonimización, mismo material de partida para ambas condiciones, sin conocimiento previo del desenlace por los operadores, tiempo total medido y revisión independiente ciega. No declarar superioridad con n=3; cualquier error crítico impide una conclusión favorable.
+
+## Integridad verificable de los archivos (v1.3)
+
+El script `verificar_artefactos.py` verifica los SHA-256 **contra los bytes de archivos presentes**, comprueba rutas relativas dentro de una carpeta raíz (incluidos enlaces simbólicos) y exige que cada SHA de entrada/salida declarado en el CSV esté respaldado por un archivo comprobado. No hace llamadas a Internet ni modifica archivos.
+
+```bash
+cd docs/tools/prisma-pilot
+python3 -m unittest discover -v
+python3 verificar_artefactos.py PLANTILLA-corridas-v1.1.csv \
+  PLANTILLA-manifiesto-artefactos-v1.json --root .
+```
+
+En la plantilla vacía el resultado debe reflejar **0 corridas y 0 archivos**, no eficacia. Para corridas reales, añadir al manifiesto archivos `initial` y `output` con ruta relativa y SHA-256 calculado sobre su contenido. Los dos métodos de un caso deben usar idéntico material inicial y salidas distintas. No poner desenlaces bajo el directorio accesible a investigadores.
+
+Repetir las pruebas unitarias debe arrojar **24/24** (17 de `evaluar.py` y 7 de integridad). Estas verificaciones demuestran consistencia del kit, no verdad de los datos ni revisión ciega.
