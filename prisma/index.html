@@ -59,7 +59,7 @@
   <div class="sidebottom"><button class="btn primary" data-open="capture">＋ Captura rápida</button><button class="btn ghost" id="exportBtn">↓ Exportar datos</button><button class="btn ghost" id="importBtn">↑ Importar datos</button><button class="btn ghost" id="resetBtn">↻ Restablecer demostración</button><div class="side-note">🔒 <strong>Modo local.</strong> Los datos permanecen en este navegador. No hay cuenta, sincronización ni IA conectada. Exporta copias de respaldo.</div></div>
 </aside>
 <main class="main">
-<div class="top"><span class="crumb">OCRE Apps <span class="muted">/</span> PRISMA <span class="muted">/</span> Prototipo v0.6.1</span><div class="top-right"><span class="pill"><span class="dot"></span> LOCAL · SIN IA</span><button class="btn ghost small" id="modeToggle" aria-pressed="false">Vista completa</button><button class="btn ghost small" id="copySummary">Copiar resumen</button></div></div>
+<div class="top"><span class="crumb">OCRE Apps <span class="muted">/</span> PRISMA <span class="muted">/</span> Prototipo v0.6.2</span><div class="top-right"><span class="pill"><span class="dot"></span> LOCAL · SIN IA</span><button class="btn ghost small" id="modeToggle" aria-pressed="false">Vista completa</button><button class="btn ghost small" id="copySummary">Copiar resumen</button></div></div>
 <div id="storageWarning" class="storage-warning" role="alert" hidden><div><strong>Los cambios aún NO están guardados en este navegador.</strong><p>Falló el almacenamiento local. Descarga un respaldo de emergencia antes de cerrar o recargar la página.</p></div><button class="btn small" id="emergencyExportBtn" type="button">↓ Descargar respaldo ahora</button></div>
 <div id="app"></div>
 <p class="footer">OCRE PRISMA · Laboratorio de razonamiento verificable. No crea Solicitudes, Sesiones, Servicios ni Casos en OCRE-OS. Las comprobaciones requieren evaluación de riesgos y autorización correspondiente fuera de PRISMA. Los datos locales no están cifrados ni sincronizados; no introduzcas información confidencial en dispositivos compartidos.</p>
@@ -329,9 +329,9 @@
     }).join('')}`;
   }
   function toast(message) { const n=document.getElementById('toast'); n.textContent=message; n.classList.add('visible'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>n.classList.remove('visible'),3600); }
-  function save() {
+  function save(candidate=state) {
     let saved=true;
-    try {localStorage.setItem(STORE,JSON.stringify(state));}
+    try {localStorage.setItem(STORE,JSON.stringify(candidate));state=candidate;}
     catch {saved=false;toast('No se pudo guardar. Descarga el respaldo de emergencia antes de cerrar.');}
     document.getElementById('storageWarning').hidden=saved;
     render();
@@ -590,8 +590,8 @@
   document.getElementById('exportBtn').addEventListener('click',exportBackup);
   document.getElementById('emergencyExportBtn').addEventListener('click',exportBackup);
   document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('jsonInput').click());
-  document.getElementById('jsonInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>5e6)throw Error('Archivo demasiado grande (máximo 5 MB)');const data=normalize(JSON.parse(await f.text()));if(!confirm('Esto reemplazará los análisis y patrones locales de v0.5. ¿Continuar? Exporta primero.'))return;state=data;if(save())toast('Respaldo importado y normalizado.');}catch(err){toast('No se pudo importar: '+err.message);}finally{e.target.value='';}});
-  document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('¿Reemplazar todos los análisis locales por los datos de ejemplo? Exporta primero.'))return;state=sample();if(save())toast('Demostración restablecida.');});
+  document.getElementById('jsonInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>5e6)throw Error('Archivo demasiado grande (máximo 5 MB)');const data=normalize(JSON.parse(await f.text()));if(!confirm('Esto reemplazará los análisis y patrones locales de v0.5. ¿Continuar? Exporta primero.'))return;if(save(data))toast('Respaldo importado y normalizado.');}catch(err){toast('No se pudo importar: '+err.message);}finally{e.target.value='';}});
+  document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('¿Reemplazar todos los análisis locales por los datos de ejemplo? Exporta primero.'))return;if(save(sample()))toast('Demostración restablecida.');});
   document.getElementById('copySummary').addEventListener('click',async()=>{const a=getAnalysis();if(!a){toast('Selecciona un análisis.');return;}
     const lines=[`OCRE PRISMA · Análisis: ${a.title}`,`Planteamiento: ${a.statement}`,'','HIPÓTESIS',...a.hypotheses.map(h=>`- ${h.title}${h.discarded?' [descartada]':''}`),'','OBSERVACIONES',...a.observations.map(o=>`- ${o.detail} [Procedencia: ${o.source}]`),'','COMPROBACIONES',...a.checks.map(c=>`- ${c.title} · Método: ${c.method} · Criterio: ${c.criteria||'No separado'} · ${c.state}${c.result?' · Resultado: '+c.result:''}`),'','SÍNTESIS TRAZABLES',...a.syntheses.map(s=>synthesisText(a,s)),'','PATRONES REUTILIZABLES',...state.patterns.map(p=>`${p.title} · ${p.status} · Origen: ${p.origin.analysisTitle} · Condiciones: ${p.conditions} · Límites: ${p.limits}`)].join('\n');
     try{await navigator.clipboard.writeText(lines);toast('Resumen del análisis copiado.');}catch{const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Resumen del análisis preparado.');}
