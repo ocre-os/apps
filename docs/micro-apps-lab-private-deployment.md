@@ -1,21 +1,20 @@
-# Micro-Apps LAB v0.2 — despliegue de prueba
+# Micro-Apps LAB — seguridad de acceso y continuidad
 
-Esta micro-app es independiente de OCRE-OS y no modifica Core.
+## Estado vigente
+- Laboratorio estático en `apps.ocre.mx/micro-apps-lab/`, independiente funcionalmente de OCRE-OS.
+- Acceso **temporalmente suspendido** mediante `Require all denied` hasta rotar credenciales.
+- La primera `.htpasswd` fue agregada a un repositorio **público**. El verificador y la contraseña compartida anteriormente se consideran comprometidos. Borrar el archivo de la rama principal **no elimina su presencia en el historial de Git**.
+- No alojar información personal, documentos reales ni datos de clientes. El almacenamiento local del navegador es compartido por origen web con otras herramientas en `apps.ocre.mx`.
 
-## Alcance
-- Sitio: /micro-apps-lab/
-- Demo estática con tres micro-apps y módulo de validación.
-- Sin backend, pagos, analítica remota ni datos reales de clientes.
-- Acceso Apache Basic Auth; usuario temporal entregado privadamente; reemplazar antes de pruebas externas.
-- El origen se comparte con apps.ocre.mx. Por eso no debe usarse con datos personales reales: el localStorage se comparte por origen y cualquier script del mismo origen puede acceder. La protección por ruta no equivale a aislamiento de origen.
+## Reactivación segura (requiere compuerta)
+1. Generar una contraseña fuerte nueva **fuera de Git**, almacenarla en un gestor de credenciales, y configurar en GitHub Actions un secreto que contenga la línea `usuario:hash`, o aprovisionar el archivo de autenticación fuera del document root mediante canal administrativo seguro.
+2. Adaptar el flujo FTPS para aprovisionar el archivo desde secretos y evitar que el hash o contraseña aparezcan en el repositorio, logs o artefactos.
+3. Rehabilitar `AuthType Basic` con ruta exacta, requerir autenticación sobre HTTPS, y comprobar 401 sin credenciales, 200 con credenciales nuevas y 403 a archivos de configuración.
+4. Retirar la contraseña antigua de cualquier cuenta compartida y mantener revocado su acceso. No afirmar que el historial Git quedó limpio.
+5. Verificar `PRISMA` y `OCRE Status` después de la publicación.
+6. Antes de pilotos con datos reales, establecer **origen propio y separado**, políticas de privacidad y controles apropiados de acceso.
 
-## Validación
-- Comprobar código 401 sin credenciales y 200 con credenciales.
-- Comprobar TLS, X-Robots-Tag y que /.htpasswd no sea accesible.
-- Verificar EntregaOK, ComparaBien, EventoMínimo y registro local.
-- No anunciar públicamente el sitio, no habilitar pagos.
-
-## Restricciones
-- El workflow FTP existente sincroniza la raíz del repositorio: no modificar .github/workflows/deploy-ftp.yml ni las demás apps.
-- La ruta AuthUserFile supone el DocumentRoot indicado en .cpanel.yml. Si difiere, Apache responderá con error en lugar de exponer el contenido; actualizar solo tras verificar la ruta real.
-- Para un piloto con datos reales se requiere origen independiente, aviso de privacidad y controles de acceso adecuados.
+## Alcance operativo
+- No modificar OCRE-OS Core ni despliegues ajenos al subdirectorio `micro-apps-lab/`.
+- No habilitar cobros ni registro de personas reales antes de validar demanda y cumplir la compuerta anterior.
+- La publicación por GitHub Actions FTPS del repositorio `ocre-os/apps` afecta toda su raíz; no disparar cambios sin verificar el impacto.

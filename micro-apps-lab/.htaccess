@@ -1,10 +1,7 @@
-# MICRO-APPS LAB — private demonstration
+# TEMPORARY CONTAINMENT — no access until private auth credentials are rotated.
+# The initial .htpasswd was committed to a public Git repository and must not be reused.
 Options -Indexes
-AuthType Basic
-AuthName "Micro-Apps LAB - acceso privado"
-AuthBasicProvider file
-AuthUserFile /home/ocre/public_html/apps/micro-apps-lab/.htpasswd
-Require valid-user
+Require all denied
 <IfModule mod_headers.c>
   Header always set X-Robots-Tag "noindex, nofollow, noarchive"
   Header always set X-Content-Type-Options "nosniff"
@@ -13,6 +10,6 @@ Require valid-user
   Header always set Cache-Control "private, no-store"
   Header always set Permissions-Policy "geolocation=(), microphone=()"
 </IfModule>
-<FilesMatch "^\.(htpasswd|htaccess)$">
+<FilesMatch "^\\.(htpasswd|htaccess)$">
   Require all denied
 </FilesMatch>
