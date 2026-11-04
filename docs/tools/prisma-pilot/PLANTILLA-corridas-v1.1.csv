@@ -1,0 +1,1 @@
+case_id,method,run_id,operator_alias,order,active_minutes,claims_total,claims_supported,checks_total,checks_discriminant,reviewer_score_0_4,critical_errors,unsupported_certainty,ground_truth_available,reviewer_alias,reviewer_blinded,operator_prior_knowledge,initial_sha256,output_sha256,notes
