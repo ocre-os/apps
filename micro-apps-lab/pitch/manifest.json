@@ -1,15 +1,15 @@
 {
-  "catalog_version": "0.4",
+  "catalog_version": "0.5",
   "products": [
     "entregaok",
     "comparabien",
     "eventominimo"
   ],
   "files_sha256": {
-    "index.html": "aeec94a0670871f25b7dc82627716ad58a78563141cb826c771b915aea8cd9e3",
-    "entregaok.html": "d4dfa0dc7e119e9ba1c56d2fd5f656de63419bb1a4b854e678c7c164e6793536",
-    "comparabien.html": "af0e902a088ab7408c7cbb5d0e1de7e9393f3a7983cc3feaa223fcb3e40d10cb",
-    "eventominimo.html": "8e514b9bb0a144341f34831594823a6e86d6d23ad1a0b4d7f91666ae551f3cc2",
+    "index.html": "226e4134e134ad56b7165be03b27f57df3d4dc5bf18b7b9da41ab86195f2ef20",
+    "entregaok.html": "c24a2e8bfb190d34f2b00a8d289a0dd3cf3b0bc61ed57b84935910d4b41c180b",
+    "comparabien.html": "ffb42967294a09b793350a88de6488eaa1b18f5305febe4f88c290f4e2b3c744",
+    "eventominimo.html": "a68509da77fd953b909e9747a4ebf089b3a318d9e25fcf3c18a625d1ff80c0b5",
     "../ofertas/entregaok.html": "a9e8ee5bc5df78bd67dc988ee3764d0c72bb6ced642d2f25f6b034965c5eecfb",
     "../ofertas/comparabien.html": "50f1cb98b5bc0a94c39651ea247c4879a9ad20342085dbc5ca4b69e7fe5b3471",
     "../ofertas/eventominimo.html": "0677505e609a5df9e47c5c1fb14041fe26a30cf9acd67db52eea81bfb07744f4"
