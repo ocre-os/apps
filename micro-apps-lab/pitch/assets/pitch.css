@@ -80,3 +80,27 @@ button,input{font:inherit}.shell{max-width:1260px;margin:auto;padding:0 42px}.to
 @media(max-width:900px){.lens-grid{grid-template-columns:1fr}}
 @media(max-width:730px){.investor-lens{padding:20px}.investor-lens h3{font-size:25px}.ui-window{padding:13px}.ui-photo-grid>div{min-height:68px}.ui-sheet-head strong{font-size:15px}.ui-price-hero strong{font-size:25px}}
 @media print{.ui-window{background:#fff!important;color:#232b35!important;box-shadow:none!important;border:1px solid #ddd}.investor-lens{break-inside:avoid}}
+
+
+/* v0.6: investor diligence and contribution */
+.matrix-intro{display:flex;align-items:center;gap:16px;border:1px solid var(--line);border-radius:14px;padding:16px 20px;background:#122133;margin:20px 0}
+.matrix-intro>span{font-size:28px;color:var(--accent)}.matrix-intro p{font-size:13px;color:#c0cfdd;line-height:1.65;margin:0}
+.comparison-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:#111c2a;scrollbar-color:#567f8b #111c2a}
+.comparison-table{border-collapse:collapse;text-align:left;min-width:950px;width:100%;font-size:13px}
+.comparison-table th,.comparison-table td{padding:18px 17px;vertical-align:top;border-bottom:1px solid var(--line);line-height:1.5}
+.comparison-table thead th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#b8f0dc;background:#172739}
+.comparison-table tbody th{min-width:155px;color:#fff}.comparison-table tbody th a{color:#b2efd5}.comparison-table small{display:block;font-weight:400;color:#a5b4c4;font-size:11px;margin-top:7px}
+.comparison-table tr:last-child td,.comparison-table tr:last-child th{border-bottom:0}
+.gate-list{list-style:none;padding:0;margin:24px 0;display:grid;gap:12px}
+.gate{display:grid;grid-template-columns:50px 1fr auto;gap:18px;align-items:start;border:1px solid var(--line);border-radius:16px;padding:22px;background:#111c2a}
+.gate-num{color:#a7edce;font-size:23px;font-weight:850}.gate h3{font-size:19px;margin:6px 0}.gate p{font-size:13px;color:#adc0cd;margin:0;line-height:1.65}.gate-state{border:1px solid #4d647a;border-radius:22px;padding:7px 11px;font-size:11px;color:#c0cdd8}.gate-pending .gate-state{color:#ffcaad}
+.economics{border:1px solid rgba(167,237,206,.22);border-radius:18px;background:linear-gradient(120deg,#122533,#0e1b2b);padding:27px;margin-top:24px}
+.economics-head{display:flex;gap:30px;justify-content:space-between;align-items:start}
+.economics-head h3{font-size:24px;letter-spacing:-.03em;margin:8px 0}.economics-head p{font-size:13px;color:#aebfcd}.economics-price{text-align:right;white-space:nowrap}
+.economics-price small,.economics-price span{display:block;color:#a9becb;font-size:12px}.economics-price strong{display:block;font-size:31px}
+.economics-inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:25px 0}.economics-inputs label{font-size:12px;color:#b9c8d5}
+.economics-inputs input{display:block;width:100%;margin-top:8px;padding:13px 12px;background:#0d1b2a;border:1px solid #557184;border-radius:10px;color:#fff;font-size:16px}
+.economics-volume label{font-size:13px}.economics-volume .slider{width:100%;margin:18px 0;accent-color:#a7edce}.economics-volume .stepscale{display:flex;justify-content:space-between;color:#a3b7c7;font-size:11px}
+.econ-result{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:22px 0}.econ-result>div{border-radius:12px;background:#0e1a29;border:1px solid var(--line);padding:19px}.econ-result span{display:block;color:#a9bccc;font-size:12px}.econ-result output{display:block;font-size:clamp(22px,3vw,33px);font-weight:800;margin-top:8px}
+.economics-status{font-size:13px;color:#bad4ce}.economics-status[data-level="warning"]{color:#ffba9d}
+@media(max-width:760px){.economics-inputs{grid-template-columns:1fr}.economics-head{display:block}.economics-price{text-align:left;padding:13px 0}.gate{grid-template-columns:38px 1fr}.gate-state{grid-column:2;justify-self:start}.econ-result{grid-template-columns:1fr}.economics{padding:18px}}
