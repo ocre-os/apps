@@ -45,3 +45,14 @@
 - Se identificó un candidato **A01 externo, público y resuelto** en conciliación de anticipos/facturas; problema y desenlace se separaron en los paquetes locales v1.2. Sus fuentes quedan reservadas al coordinador/revisor para preservar cegamiento. Sigue **pendiente de admisibilidad** por mezclar operación administrativa y defecto de software.
 - El paquete `M01` sigue sin autorización ni causalidad corroborada; `S01` requiere verificar desconocimiento previo; **0/6 corridas reales**.
 - La PR sigue sin fusionar: requiere revisión independiente del protocolo y privacidad antes de integrarse.
+
+## Actualización de instrumentación v1.4 — 2026-11-03
+
+- Se incorporaron a esta PR los archivos `docs/tools/prisma-pilot/verificar_fuentes.py`, `test_verificar_fuentes.py` y `README-OPERATIVO.md`, bajo `docs/**` (excluido del despliegue FTP).
+- El nuevo validador comprueba `prisma-pilot-source-files-v1`: SHA-256 de los **seis documentos**, correspondencia de casos S01/M02/A01, rutas seguras y separación entre ZIP de investigador y ZIP de revisor. No verifica ausencia de conocimiento previo ni cegamiento real.
+- Los archivos de pruebas añaden **14 casos** a los 24 existentes: **38/38** aprobados tanto en el contenedor de trabajo como en la ThinkPad (WSL), ejecutando una copia aislada de la rama de GitHub con `python3 -m unittest discover -s docs/tools/prisma-pilot -p 'test_*.py' -v`.
+- Hashes SHA-256 de archivos nuevos coincidentes entre ZIP local y GitHub: `verificar_fuentes.py` `67363311c9f7297366adc0f8b1b5fae550863655d34afd04c0aad3857c514edf`; `test_verificar_fuentes.py` `9f71a0bcefddbcbbd3600a623a026fdfbeb098e8a8f7d016e99e4586a3aa4c07`.
+- Se distribuye kit **v1.4** en tres ZIP separados. El paquete completo permanece sólo bajo custodia del coordinador y **no se sube a GitHub**, para no filtrar desenlaces de casos.
+- Dos manifiestos distintos: `prisma-pilot-source-files-v1` para enunciados/desenlaces y `prisma-pilot-artifacts-v1` para la integridad de entradas/salidas de cada corrida. El evaluador de métricas por sí solo **no** verifica contenido físico.
+- Estado empírico: **0/6 corridas reales, 0 revisiones ciegas; ningún resultado comparativo**. Los 3 expedientes sólo son candidatos hasta comprobar elegibilidad y reclutamiento de operadores ajenos al desenlace.
+- La PR #75 permanece abierta y **no debe fusionarse sin revisión de contenido y privacidad**. PRISMA v0.5 y OCRE-OS Core siguen sin modificaciones.
