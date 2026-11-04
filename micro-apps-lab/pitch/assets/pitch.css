@@ -104,3 +104,8 @@ button,input{font:inherit}.shell{max-width:1260px;margin:auto;padding:0 42px}.to
 .econ-result{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:22px 0}.econ-result>div{border-radius:12px;background:#0e1a29;border:1px solid var(--line);padding:19px}.econ-result span{display:block;color:#a9bccc;font-size:12px}.econ-result output{display:block;font-size:clamp(22px,3vw,33px);font-weight:800;margin-top:8px}
 .economics-status{font-size:13px;color:#bad4ce}.economics-status[data-level="warning"]{color:#ffba9d}
 @media(max-width:760px){.economics-inputs{grid-template-columns:1fr}.economics-head{display:block}.economics-price{text-align:left;padding:13px 0}.gate{grid-template-columns:38px 1fr}.gate-state{grid-column:2;justify-self:start}.econ-result{grid-template-columns:1fr}.economics{padding:18px}}
+
+/* Keep navigation readable without pushing compact phone layouts wider. */
+@media(max-width:390px){.topbar{gap:8px}.wordmark{gap:8px;font-size:11px;letter-spacing:.03em}.wordmark .microcopy{display:none}.topnav{gap:0;flex-shrink:0}.topnav .topcta{font-size:10px;padding:8px 9px;white-space:nowrap}}
+/* Prevent the hero's grid min-content size from exceeding very narrow screens. */
+@media(max-width:390px){.hero{grid-template-columns:minmax(0,1fr)}.hero>div{min-width:0}.hero h1{font-size:clamp(34px,10vw,43px);letter-spacing:-.06em}.hero .actionline .btn{max-width:100%;text-align:center;white-space:normal}.hero-art .proof-stack{max-width:calc(100% - 20px)}}
