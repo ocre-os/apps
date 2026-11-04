@@ -48,6 +48,29 @@ async function capture(page,label){
    const download=await dlPromise;
    const backup=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
    assert.ok(backup.analyses.some(a=>a.statement==='Registro bajo cuota agotada'));
-   console.log('OK: guardado exitoso, fallo explícito, aviso persistente y exportación de emergencia');
+   const fresh=await ctx.newPage();await load(fresh,false);
+   fresh.on('dialog',dialog=>dialog.accept());
+   await fresh.locator('#jsonInput').setInputFiles({
+     name:'respaldo-prisma.json',mimeType:'application/json',
+     buffer:Buffer.from(JSON.stringify(backup),'utf8')
+   });
+   await fresh.waitForFunction(()=>JSON.parse(localStorage.getItem('ocre_prisma_v05')||'{"analyses":[]}').analyses.some(a=>a.statement==='Registro bajo cuota agotada'));
+   assert.equal(await fresh.locator('#storageWarning').isVisible(),false);
+   assert.equal(await fresh.locator('#toast').innerText(),'Respaldo importado y normalizado.');
+
+   // Si fracasa una importación o restablecimiento, no debe reemplazar el trabajo en memoria.
+   const before=await broken.locator('#analysisList').innerText();
+   broken.on('dialog',dialog=>dialog.accept());
+   await broken.locator('#jsonInput').setInputFiles({
+     name:'respaldo-prisma.json',mimeType:'application/json',
+     buffer:Buffer.from(JSON.stringify(backup),'utf8')
+   });
+   await broken.waitForTimeout(100);
+   assert.equal(await broken.locator('#analysisList').innerText(),before);
+   assert.match(await broken.locator('#toast').innerText(),/No se pudo guardar/);
+   await broken.locator('#resetBtn').click();
+   assert.equal(await broken.locator('#analysisList').innerText(),before);
+   assert.equal(await broken.locator('#storageWarning').isVisible(),true);
+   console.log('OK: guardado fiable, fallo explícito, respaldo/restauración, operaciones destructivas atómicas');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
