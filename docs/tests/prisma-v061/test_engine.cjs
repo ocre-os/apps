@@ -44,3 +44,16 @@ test('corroboración humana queda declarada, no certificada',()=>{
  const r=E.reviewSynthesis(data,s);
  assert.equal(r.semanticVerified,false);assert.equal(r.corroboration,'declarada_por_persona');
 });
+
+test('comprobaciones terminadas nunca regresan al ranking',()=>{
+ const x={...c('hecha',{a:'A',b:'B',c:'B'}),state:'completada'};
+ assert.equal(E.rank(a([x])).length,0);
+});
+test('declaración no esconde advertencias formales',()=>{
+ const data={hypotheses:[],checks:[],observations:[]};
+ const s={conclusion:'X',limitations:'Y',unresolved:'Z',links:[],reviews:[{reviewer:'R',method:'M',reference:'Folio'}]};
+ const r=E.reviewSynthesis(data,s);
+ assert.equal(r.formalStatus,'con_alertas');
+ assert.ok(r.warnings.length>0);
+ assert.equal(r.semanticVerified,false);
+});
