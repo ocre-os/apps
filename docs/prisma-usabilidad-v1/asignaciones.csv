@@ -1,0 +1,11 @@
+participante,orden,metodo,escenario
+P01,1,prisma,A
+P01,2,habitual,B
+P02,1,habitual,A
+P02,2,prisma,B
+P03,1,prisma,B
+P03,2,habitual,A
+P04,1,habitual,B
+P04,2,prisma,A
+P05,1,prisma,A
+P05,2,habitual,B
