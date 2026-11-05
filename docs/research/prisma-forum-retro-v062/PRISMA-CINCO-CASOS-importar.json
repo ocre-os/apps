@@ -1,0 +1,491 @@
+{
+  "version": 5,
+  "active": "669474c3-a0e4-45a3-a249-977169613f55",
+  "analyses": [
+    {
+      "id": "669474c3-a0e4-45a3-a249-977169613f55",
+      "title": "A01 · Excel Power Query: falla al combinar archivos",
+      "statement": "En un foro de Excel, un usuario reportó que al combinar libros mediante Power Query aparecía «The key did not match any rows in the table» en la consulta Transform File. ¿Qué inconsistencia conviene buscar antes de modificar consultas o datos?",
+      "domain": "Administración y operaciones",
+      "created": "2026-11-05T05:36:02.338Z",
+      "hypotheses": [
+        {
+          "id": "a12e0e7d-2972-457b-a374-7e735b40a13f",
+          "title": "Una o más hojas no tienen el nombre que Power Query espera",
+          "note": "",
+          "created": "2026-11-05T05:36:02.338Z",
+          "discarded": false
+        },
+        {
+          "id": "971351c1-d4b8-4933-bbfe-9b8299fb3196",
+          "title": "El esquema de columnas o tabla interna difiere",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:36:02.485Z",
+          "discarded": false
+        },
+        {
+          "id": "1239e828-1491-43fd-b786-35e23a79033d",
+          "title": "Alguno de los archivos es inaccesible o corrupto",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:36:02.619Z",
+          "discarded": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "1d8bedaf-fac0-4619-b9e1-5360d8da159d",
+          "detail": "La combinación de archivos Excel desde carpeta falla en una transformación de ejemplo; el mensaje indica que una clave de navegación no encuentra la tabla u hoja esperada.",
+          "source": "https://techcommunity.microsoft.com/discussions/excelgeneral/power-query-error-the-key-didnt-match-any-rows-in-the-table--when-combining/2443417/replies/3800562/ (Ozz_Kozz, jun 2021)",
+          "author": "",
+          "created": "2026-11-05T05:36:02.338Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "8aa33f5e-1561-4076-b85a-682947ed8315",
+          "detail": "DESENLACE HISTÓRICO REPORTADO (no medido aquí): El participante Charters290 informó que uno de 18 libros tenía una hoja con nombre diferente; renombró la pestaña y la combinación funcionó.",
+          "source": "https://techcommunity.microsoft.com/discussions/excelgeneral/power-query-error-the-key-didnt-match-any-rows-in-the-table--when-combining/2443417/replies/3800562/ — respuesta posterior en el mismo hilo",
+          "author": "",
+          "created": "2026-11-05T05:36:03.135Z",
+          "checkId": null,
+          "interpretations": []
+        }
+      ],
+      "checks": [
+        {
+          "id": "dd7824e9-9222-49d6-8732-f6abe6ebf220",
+          "hypothesisId": "a12e0e7d-2972-457b-a374-7e735b40a13f",
+          "title": "Comparar nombres de hojas y tablas frente a archivo de ejemplo",
+          "method": "Listar nombres de pestañas y de tablas estructuradas en todos los libros, sin reescribir datos; cotejar con la clave usada por Power Query.",
+          "criteria": "A: hay diferencias de nombres con la hoja/tabla esperada; B: todos coinciden.",
+          "outcomeA": "Al menos un archivo tiene nombre de pestaña/tabla distinto",
+          "outcomeB": "Todas las pestañas y tablas de interés coinciden",
+          "predictions": {
+            "a12e0e7d-2972-457b-a374-7e735b40a13f": "A",
+            "971351c1-d4b8-4933-bbfe-9b8299fb3196": "B",
+            "1239e828-1491-43fd-b786-35e23a79033d": "B"
+          },
+          "costMXN": null,
+          "measuredOutcome": null,
+          "risk": "bajo",
+          "effort": 10,
+          "author": "",
+          "legacyCombinedMethod": false,
+          "state": "pendiente",
+          "result": "",
+          "created": "2026-11-05T05:36:02.987Z",
+          "completed": null
+        }
+      ],
+      "syntheses": [
+        {
+          "id": "d3fc36ab-c629-4c98-93f1-3099db55c032",
+          "conclusion": "Un usuario del mismo hilo confirmó que su error se solucionó al normalizar el nombre de una hoja entre 18 archivos. No está verificado que sea la causa del autor original.",
+          "limitations": "La confirmación corresponde a un participante distinto del autor inicial; no hay copia de los libros ni prueba local de Power Query.",
+          "unresolved": "No se dispone de pruebas independientes ni series de mediciones originales; otra unidad puede tener causas distintas.",
+          "author": "",
+          "created": "2026-11-05T05:36:03.286Z",
+          "links": [
+            {
+              "type": "observacion",
+              "id": "8aa33f5e-1561-4076-b85a-682947ed8315",
+              "role": "sustenta"
+            }
+          ],
+          "reviews": []
+        }
+      ]
+    },
+    {
+      "id": "106985ea-fe03-40af-997b-1416ef522496",
+      "title": "I02 · MikroTik: bridge port inactivo con enlace físico activo",
+      "statement": "El administrador de un CCR1016 con RouterOS 7.23.2 informó que ether1 aparece como inactive dentro de un bridge VLAN 1700, aunque el enlace físico está up a 1 Gbps, PVID y VLAN parecen correctos y no hay bloqueo STP. ¿Qué control operativo puede impedir el estado activo?",
+      "domain": "Software y sistemas",
+      "created": "2026-11-05T05:36:00.956Z",
+      "hypotheses": [
+        {
+          "id": "88ad0709-f9c2-4f1c-a105-89f8835f3a84",
+          "title": "Interfaz ether1 asignada a VRF diferente de main",
+          "note": "",
+          "created": "2026-11-05T05:36:00.956Z",
+          "discarded": false
+        },
+        {
+          "id": "fb22c549-9677-4367-9e7a-c19e816b5020",
+          "title": "Error de PVID/etiquetado en la VLAN nativa",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:36:01.121Z",
+          "discarded": false
+        },
+        {
+          "id": "d42bd5ba-0d80-407d-8b1e-5f608b0179c9",
+          "title": "Estado obsoleto del bridge o problema de hardware offload",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:36:01.287Z",
+          "discarded": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "b15834e7-41a9-4660-a54a-404a4cd2ae2c",
+          "detail": "ether1 reporta link-ok, flags running/slave, pvid=1700, frame-types=admit-all y current-untagged vacío en el bridge.",
+          "source": "https://forum.mikrotik.com/t/bridge-port-stuck-inactive-native-vlan-ether1-despite-correct-vlan-table-pvid-and-frame-types-ccr1016-12g-7-23-2/272780 (haitham94, sep 2026)",
+          "author": "",
+          "created": "2026-11-05T05:36:00.956Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "f19ed9a4-b52b-422c-a33c-866900773651",
+          "detail": "DESENLACE HISTÓRICO REPORTADO (no medido aquí): El autor reportó que ether1 tenía una VRF distinta de main; al quitar esa asignación el puerto se activó.",
+          "source": "https://forum.mikrotik.com/t/bridge-port-stuck-inactive-native-vlan-ether1-despite-correct-vlan-table-pvid-and-frame-types-ccr1016-12g-7-23-2/272780 — respuesta posterior en el mismo hilo",
+          "author": "",
+          "created": "2026-11-05T05:36:01.940Z",
+          "checkId": null,
+          "interpretations": []
+        }
+      ],
+      "checks": [
+        {
+          "id": "179efbdd-5cb3-4338-964b-b32237103329",
+          "hypothesisId": "88ad0709-f9c2-4f1c-a105-89f8835f3a84",
+          "title": "Auditar pertenencia VRF de ether1 en configuración completa",
+          "method": "Consultar exportación de configuración sin cambios y comparar pertenencia VRF de ether1; no modificar enrutamiento ni desconectar uplinks.",
+          "criteria": "A: ether1 pertenece a VRF no-main; B: pertenece a main. Si A, revisar interacción con bridge antes de cambio autorizado.",
+          "outcomeA": "ether1 asociado con VRF distinto de main",
+          "outcomeB": "ether1 sin asignación VRF especial",
+          "predictions": {
+            "88ad0709-f9c2-4f1c-a105-89f8835f3a84": "A",
+            "fb22c549-9677-4367-9e7a-c19e816b5020": "B",
+            "d42bd5ba-0d80-407d-8b1e-5f608b0179c9": "B"
+          },
+          "costMXN": null,
+          "measuredOutcome": null,
+          "risk": "bajo",
+          "effort": 10,
+          "author": "",
+          "legacyCombinedMethod": false,
+          "state": "pendiente",
+          "result": "",
+          "created": "2026-11-05T05:36:01.742Z",
+          "completed": null
+        }
+      ],
+      "syntheses": [
+        {
+          "id": "edf8a63e-da92-49a0-a1a3-096215fcd1fc",
+          "conclusion": "En esa configuración RouterOS, el autor confirmó que la asociación VRF, y no la tabla VLAN, explicaba el puerto inactivo.",
+          "limitations": "No se obtuvo el export íntegro ni se accedió al router. Cambiar VRF puede cortar conectividad; ninguna intervención está autorizada por este análisis.",
+          "unresolved": "No se dispone de pruebas independientes ni series de mediciones originales; otra unidad puede tener causas distintas.",
+          "author": "",
+          "created": "2026-11-05T05:36:02.118Z",
+          "links": [
+            {
+              "type": "observacion",
+              "id": "f19ed9a4-b52b-422c-a33c-866900773651",
+              "role": "sustenta"
+            }
+          ],
+          "reviews": []
+        }
+      ]
+    },
+    {
+      "id": "cef06e40-544a-40df-9390-882df45a1144",
+      "title": "I01 · MQTT: identifier rejected al actualizar broker",
+      "statement": "En Home Assistant, un usuario de ESP8266 con umqtt.simple2 en MicroPython reportó error 22 «identifier rejected» al conectar justo después de actualizar el broker MQTT a 6.2.0, sin modificar el código cliente. ¿Qué parámetro o condición explica la regresión?",
+      "domain": "Software y sistemas",
+      "created": "2026-11-05T05:35:59.025Z",
+      "hypotheses": [
+        {
+          "id": "bf45073d-1c72-4d8b-952d-7cebdc920fb0",
+          "title": "El cliente deja keepalive en el valor predeterminado cero",
+          "note": "",
+          "created": "2026-11-05T05:35:59.025Z",
+          "discarded": false
+        },
+        {
+          "id": "ebdcd3e7-202b-4ad8-9f13-f37491fb4bfe",
+          "title": "El broker rechaza el client_id por duplicidad o formato",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:59.301Z",
+          "discarded": false
+        },
+        {
+          "id": "912a6802-1dfe-4b1d-9166-8e936fa9af76",
+          "title": "Las credenciales o permisos del broker cambiaron",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:59.625Z",
+          "discarded": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "aae9e166-9981-4b37-b84d-74d6b3bc56b1",
+          "detail": "El cliente MQTT funcionaba el día anterior. Tras actualizar únicamente el broker, se rechaza el identificador; el ejemplo de código no muestra parámetro keepalive explícito.",
+          "source": "https://community.home-assistant.io/t/mqtt-fails-identifier-rejected-after-broker-update-to-6-2-0/553193 (nickt444, 28 mar 2023)",
+          "author": "",
+          "created": "2026-11-05T05:35:59.025Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "4a423a69-ee2e-4b83-813d-470f232ce81c",
+          "detail": "DESENLACE HISTÓRICO REPORTADO (no medido aquí): El mismo autor afirmó que umqtt.simple2 usaba keepalive=0 como valor inicial y que al pasar keepalive=60 la conexión volvió a funcionar.",
+          "source": "https://community.home-assistant.io/t/mqtt-fails-identifier-rejected-after-broker-update-to-6-2-0/553193 — respuesta posterior en el mismo hilo",
+          "author": "",
+          "created": "2026-11-05T05:36:00.474Z",
+          "checkId": null,
+          "interpretations": []
+        }
+      ],
+      "checks": [
+        {
+          "id": "08c43fe1-4bc9-4fb5-abf4-635e7c3a0228",
+          "hypothesisId": "bf45073d-1c72-4d8b-952d-7cebdc920fb0",
+          "title": "Inspeccionar valores de cliente MQTT y límite keepalive del broker",
+          "method": "Comparar constructor y valores documentados del cliente con el comportamiento del broker; usar un ejemplo de prueba sin contraseñas reales.",
+          "criteria": "A: keepalive inicial efectivo es cero, B: keepalive es positivo. La validación posterior requeriría prueba controlada de conexión.",
+          "outcomeA": "keepalive efectivo = 0",
+          "outcomeB": "keepalive efectivo > 0",
+          "predictions": {
+            "bf45073d-1c72-4d8b-952d-7cebdc920fb0": "A",
+            "ebdcd3e7-202b-4ad8-9f13-f37491fb4bfe": "B",
+            "912a6802-1dfe-4b1d-9166-8e936fa9af76": "B"
+          },
+          "costMXN": null,
+          "measuredOutcome": null,
+          "risk": "bajo",
+          "effort": 10,
+          "author": "",
+          "legacyCombinedMethod": false,
+          "state": "pendiente",
+          "result": "",
+          "created": "2026-11-05T05:36:00.133Z",
+          "completed": null
+        }
+      ],
+      "syntheses": [
+        {
+          "id": "5dce83a3-1cee-4e95-9cdc-16ac51cadbad",
+          "conclusion": "Para esa combinación de cliente y broker, el autor documentó que definir keepalive=60 resolvió su rechazo de conexión.",
+          "limitations": "No se reprodujo el error MQTT ni se accedió a broker alguno; es un resultado de foro, no una prueba de compatibilidad general.",
+          "unresolved": "No se dispone de pruebas independientes ni series de mediciones originales; otra unidad puede tener causas distintas.",
+          "author": "",
+          "created": "2026-11-05T05:36:00.672Z",
+          "links": [
+            {
+              "type": "observacion",
+              "id": "4a423a69-ee2e-4b83-813d-470f232ce81c",
+              "role": "sustenta"
+            }
+          ],
+          "reviews": []
+        }
+      ]
+    },
+    {
+      "id": "86e58bb0-3ef9-4203-8690-7064298218e6",
+      "title": "M02 · AMS 2 Pro: fallos de alimentación en hub externo",
+      "statement": "Un usuario informó en junio de 2026 que su AMS 2 Pro recién instalado falla con frecuencia al cargar o retraer filamento en una P1S, y que reemplazar la tubería PTFE no resolvió el problema. Observó atascos cerca del hub externo trasero. ¿Cuál es la causa?",
+      "domain": "Mantenimiento industrial",
+      "created": "2026-11-05T05:35:57.421Z",
+      "hypotheses": [
+        {
+          "id": "b36305a3-63a5-4312-97b9-e88297d64666",
+          "title": "Desalineación o defecto geométrico del hub externo",
+          "note": "",
+          "created": "2026-11-05T05:35:57.421Z",
+          "discarded": false
+        },
+        {
+          "id": "65f41d1e-5696-49ff-91bc-2dac30207e37",
+          "title": "Presión excesiva del mecanismo alimentador",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:57.575Z",
+          "discarded": false
+        },
+        {
+          "id": "0d2eeae1-75a2-464e-bbee-cde6e8a5c563",
+          "title": "Curvatura/diámetro inadecuado de tubo PTFE",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:57.790Z",
+          "discarded": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "87789fbf-6f55-42af-9823-255acdde4264",
+          "detail": "Los fallos se repiten con distintos filamentos y slots. La tubería ya fue sustituida; el autor ubica el punto de resistencia cerca de un conector del hub externo.",
+          "source": "https://forum.bambulab.com/t/ams2-pressing-ridges-into-the-filament-normal/255613 (TheGenerals, junio 2026)",
+          "author": "",
+          "created": "2026-11-05T05:35:57.421Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "005344a7-c345-4356-9440-76b365eed18b",
+          "detail": "DESENLACE HISTÓRICO REPORTADO (no medido aquí): El usuario reportó que Bambu reemplazó el hub y dejó de tener fallos; atribuyó el problema a la alineación del componente.",
+          "source": "https://forum.bambulab.com/t/ams2-pressing-ridges-into-the-filament-normal/255613 — respuesta posterior en el mismo hilo",
+          "author": "",
+          "created": "2026-11-05T05:35:58.488Z",
+          "checkId": null,
+          "interpretations": []
+        }
+      ],
+      "checks": [
+        {
+          "id": "18943151-d963-4c87-a5ff-e91c1b428943",
+          "hypothesisId": "b36305a3-63a5-4312-97b9-e88297d64666",
+          "title": "Comparación visual de la entrada al hub sin intervenir el equipo",
+          "method": "Inspeccionar fotografías del trayecto, con el equipo detenido, para determinar si hay desviación visible entre tubo, acople y entrada del hub. No desarmar.",
+          "criteria": "A: se aprecia un desplazamiento del conector respecto al trayecto del filamento; B: conector aparentemente alineado; hallazgo visual no certifica la causa.",
+          "outcomeA": "Se observa desalineación en la entrada del hub",
+          "outcomeB": "El hub parece alineado",
+          "predictions": {
+            "b36305a3-63a5-4312-97b9-e88297d64666": "A",
+            "65f41d1e-5696-49ff-91bc-2dac30207e37": "B",
+            "0d2eeae1-75a2-464e-bbee-cde6e8a5c563": "desconocido"
+          },
+          "costMXN": null,
+          "measuredOutcome": null,
+          "risk": "bajo",
+          "effort": 10,
+          "author": "",
+          "legacyCombinedMethod": false,
+          "state": "pendiente",
+          "result": "",
+          "created": "2026-11-05T05:35:58.247Z",
+          "completed": null
+        }
+      ],
+      "syntheses": [
+        {
+          "id": "dec8def5-c86b-4638-a4f4-73a5ea4ed4e6",
+          "conclusion": "En ese AMS 2 Pro, el autor informó que la sustitución del hub eliminó los problemas de carga; la atribución exacta al desalineamiento es plausible pero no fue medida de forma independiente.",
+          "limitations": "Éxito informado por el autor, sin expediente de garantía o mediciones de alineación. La inspección visual sugerida por nosotros no se realizó.",
+          "unresolved": "No se dispone de pruebas independientes ni series de mediciones originales; otra unidad puede tener causas distintas.",
+          "author": "",
+          "created": "2026-11-05T05:35:58.708Z",
+          "links": [
+            {
+              "type": "observacion",
+              "id": "005344a7-c345-4356-9440-76b365eed18b",
+              "role": "sustenta"
+            }
+          ],
+          "reviews": []
+        }
+      ]
+    },
+    {
+      "id": "f88031d2-1860-4270-a21e-89b026e09551",
+      "title": "M01 · Bambu P1S: AMS no carga, bobina externa sí",
+      "statement": "Según el primer mensaje de septiembre de 2023, una Bambu P1S nueva con AMS falla cargando filamento desde todos los compartimentos; la alimentación externa imprime correctamente. El autor revisó tubos PTFE, obstrucciones, extrusor y buffer, sin resolverlo. ¿Qué subsistema está causando la falla?",
+      "domain": "Mantenimiento industrial",
+      "created": "2026-11-05T05:35:55.691Z",
+      "hypotheses": [
+        {
+          "id": "ca0461bd-8a0f-459b-ae00-00900cd038ef",
+          "title": "Falla del motor de alimentación del AMS",
+          "note": "",
+          "created": "2026-11-05T05:35:55.691Z",
+          "discarded": false
+        },
+        {
+          "id": "a73609f2-7bc6-487b-8e4d-e618b079aac1",
+          "title": "Falla en la placa de control del AMS",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:55.854Z",
+          "discarded": false
+        },
+        {
+          "id": "d964fd46-3110-4872-b518-a605071c4073",
+          "title": "Atasco o sensor en el cabezal/extrusor",
+          "note": "Hipótesis alternativa, sin evidencia concluyente en el mensaje inicial.",
+          "created": "2026-11-05T05:35:55.989Z",
+          "discarded": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "969324d1-92ef-4938-a9cf-414ac82c6219",
+          "detail": "El problema se reproduce en todos los slots AMS y al usar la bobina exterior no aparece. Se revisaron PTFE y extrusor sin encontrar bloqueo.",
+          "source": "https://forum.bambulab.com/t/problems-with-loading-the-filament-from-ams-to-printer/28416 (shalev30, 20 sep 2023)",
+          "author": "",
+          "created": "2026-11-05T05:35:55.691Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "7b6cb92f-1129-416c-a4f1-339454f7588b",
+          "detail": "DESENLACE HISTÓRICO REPORTADO (no medido aquí): El autor shalev30 informó que la sustitución del motor principal del AMS enviada por soporte resolvió su problema.",
+          "source": "https://forum.bambulab.com/t/problems-with-loading-the-filament-from-ams-to-printer/28416 — respuesta posterior en el mismo hilo",
+          "author": "",
+          "created": "2026-11-05T05:35:56.691Z",
+          "checkId": null,
+          "interpretations": []
+        },
+        {
+          "id": "9de05ace-8eea-4094-96d4-0fe5ecc8bd03",
+          "detail": "CASO DIFERENTE / CONTRASTE: Otro participante, Pascal94, reportó que cambiar el motor no bastó y que el cambio de placa principal del AMS sí solucionó su equipo.",
+          "source": "https://forum.bambulab.com/t/problems-with-loading-the-filament-from-ams-to-printer/28416 — mensaje de Pascal94",
+          "author": "",
+          "created": "2026-11-05T05:35:56.885Z",
+          "checkId": null,
+          "interpretations": []
+        }
+      ],
+      "checks": [
+        {
+          "id": "c96acbe4-b93e-4c05-ac8a-ce03136a44d4",
+          "hypothesisId": "ca0461bd-8a0f-459b-ae00-00900cd038ef",
+          "title": "Contrastar códigos de diagnóstico del AMS con el motor interno",
+          "method": "Revisar los logs y la secuencia de carga ya registrados, con soporte autorizado, sin desmontar ni sustituir piezas.",
+          "criteria": "Si los registros señalan una anomalía propia del motor AMS, se prioriza H1; si señalan la placa o el cabezal, revisar otras hipótesis.",
+          "outcomeA": "Los logs señalan fallo del motor de alimentación del AMS",
+          "outcomeB": "No señalan fallo específico del motor AMS",
+          "predictions": {
+            "ca0461bd-8a0f-459b-ae00-00900cd038ef": "A",
+            "a73609f2-7bc6-487b-8e4d-e618b079aac1": "B",
+            "d964fd46-3110-4872-b518-a605071c4073": "B"
+          },
+          "costMXN": null,
+          "measuredOutcome": null,
+          "risk": "bajo",
+          "effort": 10,
+          "author": "",
+          "legacyCombinedMethod": false,
+          "state": "pendiente",
+          "result": "",
+          "created": "2026-11-05T05:35:56.489Z",
+          "completed": null
+        }
+      ],
+      "syntheses": [
+        {
+          "id": "cb04de53-9c62-4c7e-b2db-d7786998ff4d",
+          "conclusion": "En la unidad de shalev30, el autor reportó éxito tras sustituir el motor AMS. En otra unidad con síntomas parecidos se reportó éxito tras sustituir la placa; no existe una causa universal probada.",
+          "limitations": "Relatos públicos autodeclarados; ni los logs originales ni las piezas están disponibles para inspección independiente. La comprobación planteada aquí no se ejecutó.",
+          "unresolved": "No se dispone de pruebas independientes ni series de mediciones originales; otra unidad puede tener causas distintas.",
+          "author": "",
+          "created": "2026-11-05T05:35:57.145Z",
+          "links": [
+            {
+              "type": "observacion",
+              "id": "7b6cb92f-1129-416c-a4f1-339454f7588b",
+              "role": "sustenta"
+            },
+            {
+              "type": "observacion",
+              "id": "9de05ace-8eea-4094-96d4-0fe5ecc8bd03",
+              "role": "sustenta"
+            }
+          ],
+          "reviews": []
+        }
+      ]
+    }
+  ],
+  "patterns": []
+}
