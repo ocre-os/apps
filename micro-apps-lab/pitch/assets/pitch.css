@@ -109,3 +109,7 @@ button,input{font:inherit}.shell{max-width:1260px;margin:auto;padding:0 42px}.to
 @media(max-width:390px){.topbar{gap:8px}.wordmark{gap:8px;font-size:11px;letter-spacing:.03em}.wordmark .microcopy{display:none}.topnav{gap:0;flex-shrink:0}.topnav .topcta{font-size:10px;padding:8px 9px;white-space:nowrap}}
 /* Prevent the hero's grid min-content size from exceeding very narrow screens. */
 @media(max-width:390px){.hero{grid-template-columns:minmax(0,1fr)}.hero>div{min-width:0}.hero h1{font-size:clamp(34px,10vw,43px);letter-spacing:-.06em}.hero .actionline .btn{max-width:100%;text-align:center;white-space:normal}.hero-art .proof-stack{max-width:calc(100% - 20px)}}
+
+/* WCAG 2.2 AA: legible metadata in the light conceptual product previews. */
+.ui-window .ui-sheet-head small,.ui-window .ui-detail span,.ui-window .ui-duo small,.ui-window .ui-question small,.ui-window .ui-bars span{color:#48566a}
+.ui-window .ui-warning p{color:#75401e}
