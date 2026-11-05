@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "version": "0.6.2",
+    "method": "retrospectiva_no_ciega",
+    "cases": 5,
+    "checks_executed_on_devices": 0,
+    "browser_js_errors": 0,
+    "browser_actions": 205,
+    "elapsed_ms": 9233,
+    "notes": "205 interacciones para crear cinco expedientes; una más para exportar.",
+    "provenance": "Ejercicio retrospectivo no ciego, sin mediciones físicas ni pruebas humanas"
+  },
+  "results": [
+    {
+      "id": "M01",
+      "source": "https://forum.bambulab.com/t/problems-with-loading-the-filament-from-ams-to-printer/28416 (shalev30, 20 sep 2023)",
+      "ranking": {
+        "title": "Contrastar códigos de diagnóstico del AMS con el motor interno",
+        "status": "elegible",
+        "separatedPairs": 2,
+        "unknownPairs": 0
+      },
+      "formalStatus": "documentada",
+      "semanticVerified": false,
+      "corroboration": "no_comprobada",
+      "formalWarnings": [],
+      "reportedHistoricalSolution": "El autor shalev30 informó que la sustitución del motor principal del AMS enviada por soporte resolvió su problema.",
+      "browser_actions": 45,
+      "script_time_ms": 1776
+    },
+    {
+      "id": "M02",
+      "source": "https://forum.bambulab.com/t/ams2-pressing-ridges-into-the-filament-normal/255613 (TheGenerals, junio 2026)",
+      "ranking": {
+        "title": "Comparación visual de la entrada al hub sin intervenir el equipo",
+        "status": "parcial",
+        "separatedPairs": 1,
+        "unknownPairs": 2
+      },
+      "formalStatus": "documentada",
+      "semanticVerified": false,
+      "corroboration": "no_comprobada",
+      "formalWarnings": [],
+      "reportedHistoricalSolution": "El usuario reportó que Bambu reemplazó el hub y dejó de tener fallos; atribuyó el problema a la alineación del componente.",
+      "browser_actions": 40,
+      "script_time_ms": 1553
+    },
+    {
+      "id": "I01",
+      "source": "https://community.home-assistant.io/t/mqtt-fails-identifier-rejected-after-broker-update-to-6-2-0/553193 (nickt444, 28 mar 2023)",
+      "ranking": {
+        "title": "Inspeccionar valores de cliente MQTT y límite keepalive del broker",
+        "status": "elegible",
+        "separatedPairs": 2,
+        "unknownPairs": 0
+      },
+      "formalStatus": "documentada",
+      "semanticVerified": false,
+      "corroboration": "no_comprobada",
+      "formalWarnings": [],
+      "reportedHistoricalSolution": "El mismo autor afirmó que umqtt.simple2 usaba keepalive=0 como valor inicial y que al pasar keepalive=60 la conexión volvió a funcionar.",
+      "browser_actions": 40,
+      "script_time_ms": 1975
+    },
+    {
+      "id": "I02",
+      "source": "https://forum.mikrotik.com/t/bridge-port-stuck-inactive-native-vlan-ether1-despite-correct-vlan-table-pvid-and-frame-types-ccr1016-12g-7-23-2/272780 (haitham94, sep 2026)",
+      "ranking": {
+        "title": "Auditar pertenencia VRF de ether1 en configuración completa",
+        "status": "elegible",
+        "separatedPairs": 2,
+        "unknownPairs": 0
+      },
+      "formalStatus": "documentada",
+      "semanticVerified": false,
+      "corroboration": "no_comprobada",
+      "formalWarnings": [],
+      "reportedHistoricalSolution": "El autor reportó que ether1 tenía una VRF distinta de main; al quitar esa asignación el puerto se activó.",
+      "browser_actions": 40,
+      "script_time_ms": 1427
+    },
+    {
+      "id": "A01",
+      "source": "https://techcommunity.microsoft.com/discussions/excelgeneral/power-query-error-the-key-didnt-match-any-rows-in-the-table--when-combining/2443417/replies/3800562/ (Ozz_Kozz, jun 2021)",
+      "ranking": {
+        "title": "Comparar nombres de hojas y tablas frente a archivo de ejemplo",
+        "status": "elegible",
+        "separatedPairs": 2,
+        "unknownPairs": 0
+      },
+      "formalStatus": "documentada",
+      "semanticVerified": false,
+      "corroboration": "no_comprobada",
+      "formalWarnings": [],
+      "reportedHistoricalSolution": "El participante Charters290 informó que uno de 18 libros tenía una hoja con nombre diferente; renombró la pestaña y la combinación funcionó.",
+      "browser_actions": 40,
+      "script_time_ms": 1158
+    }
+  ]
+}
