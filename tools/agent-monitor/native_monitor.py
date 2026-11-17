@@ -187,8 +187,12 @@ def snapshot(home,collector):
       "codex":{"state":codex,"observed_at":stamp}}}
 
 QUOTA_REFRESH_SECONDS=300
+QUOTA_RETRY_SECONDS=60
 CLAUDE_STATUSLINE_TTL=900
-DEVENV_REFRESH_SECONDS=15
+# Even the worst-case fast source timeout plus POST and pause stays under
+# the backend's strict 30-second sample TTL. A missing fast sample remains absent.
+FAST_WSL_TIMEOUT_SECONDS=10
+DEVENV_REFRESH_SECONDS=10
 
 
 def read_claude_quota(path, now=None):
@@ -269,38 +273,85 @@ def claude_windows_authenticated(binary):
 APPROVED_URLS=("https://staging.ocre.mx/api/agents","https://staging.ocre.mx/api/devenv")
 
 class DevenvSource:
-    """Arma la muestra `ocre-devenv-v1`; la cuota cambia despacio y se consulta cada QUOTA_REFRESH_SECONDS."""
+    """Independent fast occupancy samples and slow, bounded quota observations."""
+
     def __init__(self,home,collector,clock=time.time):
         self.home,self.collector,self.clock=home,collector,clock
         self.quota=None;self.quota_at=0.0
         self.claude_auth=None;self.claude_auth_at=0.0
+        self._quota_lock=threading.Lock()
 
     def wsl(self,with_quota):
         command=["wsl.exe","-d","Ubuntu-24.04","-u","ocre","--","python3",self.collector,
                  "--codex-dir","/home/ocre/.codex/sessions","--devenv"]+(["--quota"] if with_quota else [])
         try:
-            result=subprocess.run(command,capture_output=True,text=True,timeout=40 if with_quota else 20,check=True)
+            result=subprocess.run(command,capture_output=True,text=True,
+                                  timeout=40 if with_quota else FAST_WSL_TIMEOUT_SECONDS,check=True)
             return json.loads(result.stdout)
         except (OSError,ValueError,subprocess.SubprocessError):
             return None
 
-    def sample(self):
-        now=self.clock()
-        refresh=now-self.quota_at>=QUOTA_REFRESH_SECONDS
-        data=self.wsl(refresh)
-        if refresh and isinstance(data,dict) and isinstance(data.get("codex_quota"),dict):
-            self.quota,self.quota_at=data["codex_quota"],now
-        claude_quota=None
+    def refresh_quotas(self):
+        """Slow probes run only in the quota worker, never in the fast publisher."""
+        data=self.wsl(True)
+        codex_at=self.clock()  # Stamp *after* a successful measurement, not at start.
+        candidate=data.get("codex_quota") if isinstance(data,dict) else None
+        if not isinstance(candidate,dict) or candidate.get("state") not in {
+            "available","low","exhausted","unknown"
+        }:
+            candidate=None
+
+        auth=None
         if self.home is not None:
+            executable=Path(self.home).parent/".local"/"bin"/"claude.exe"
+            auth=claude_windows_authenticated(executable)
+        auth_at=self.clock()
+        with self._quota_lock:
+            # A failed measurement never makes an old percentage current again.
+            self.quota,self.quota_at=(candidate,codex_at) if candidate is not None else (None,0.0)
+            self.claude_auth,self.claude_auth_at=(auth,auth_at) if auth is not None else (None,0.0)
+        return candidate is not None  # Claude auth UNKNOWN must not trigger repeated heavy Codex probes.
+
+    def invalidate_quotas(self):
+        # Fail closed after an unexpected failure, even when an earlier positive
+        # measurement has not yet reached its normal 300-second expiry.
+        with self._quota_lock:
+            self.quota,self.quota_at=None,0.0
+            self.claude_auth,self.claude_auth_at=None,0.0
+
+    def sample(self):
+        # Do not wait for Claude auth, Codex quota, or any other slow credential probe.
+        data=self.wsl(False)
+        if not isinstance(data,dict) or not isinstance(data.get("slots"),dict):
+            return None
+        now=self.clock()
+        with self._quota_lock:
+            codex_age=now-self.quota_at
+            auth_age=now-self.claude_auth_at
+            codex_quota=self.quota if self.quota is not None and 0<=codex_age<QUOTA_REFRESH_SECONDS else None
+            claude_authenticated=self.claude_auth is True and 0<=auth_age<QUOTA_REFRESH_SECONDS
+
+        claude_quota=None
+        if claude_authenticated and self.home is not None:
             user_home=Path(self.home).parent
-            if now-self.claude_auth_at>=QUOTA_REFRESH_SECONDS:
-                executable=user_home/".local"/"bin"/"claude.exe"
-                self.claude_auth=claude_windows_authenticated(executable)
-                self.claude_auth_at=now
-            if self.claude_auth is True:
-                cache=user_home/".ocre-os"/"agent-monitor"/"claude-usage.json"
-                claude_quota=read_claude_quota(cache,now)
-        return build_devenv_sample(data,codex_desktop_turn(self.home),self.quota,now,claude_quota)
+            cache=user_home/".ocre-os"/"agent-monitor"/"claude-usage.json"
+            claude_quota=read_claude_quota(cache,now)
+        return build_devenv_sample(data,codex_desktop_turn(self.home),codex_quota,now,claude_quota)
+
+
+def poll_quotas(source,stop):
+    """A slow or broken quota provider must not postpone fresh occupancy samples."""
+    while not stop.is_set():
+        try:
+            complete=source.refresh_quotas()
+        except Exception:
+            # Never print exceptions: they can contain private paths or provider data.
+            # A failed probe must not keep previously available quota/auth visible.
+            source.invalidate_quotas()
+            print("Monitor devenv: sondeo de cuotas no disponible.",flush=True)
+            complete=False
+        stop.wait(QUOTA_REFRESH_SECONDS if complete else QUOTA_RETRY_SECONDS)
+
 
 def clean_validations(raw):
     """Revalida los resultados antes de publicarlos: hora UTC, revisión hexadecimal y pass/fail; todo lo demás se descarta."""
@@ -354,7 +405,9 @@ def publish_devenv(source,url,token_file,stop):
                 req=build_request(url,json.dumps(sample).encode(),token_file.read_text().strip())
                 with urllib.request.urlopen(req,timeout=3) as response:response.read(1024)
         except urllib.error.HTTPError as error:print(f"Monitor devenv: envio rechazado (HTTP {error.code}).",flush=True)
-        except (OSError,ValueError,subprocess.SubprocessError):print("Monitor devenv: envio no disponible.",flush=True)
+        except Exception:
+            # Keep the observer alive after unexpected failures, without logging secrets.
+            print("Monitor devenv: envio no disponible.",flush=True)
         stop.wait(DEVENV_REFRESH_SECONDS)
 
 USER_AGENT="OCRE-Agent-Monitor/1"
@@ -378,7 +431,9 @@ def main():
         p.error("Only the approved Staging endpoint and a token file are allowed")
     stop=threading.Event()
     if a.url and a.watch:
-        threading.Thread(target=publish_devenv,args=(DevenvSource(a.codex_home,a.collector),APPROVED_URLS[1],a.token_file,stop),daemon=True).start()
+        source=DevenvSource(a.codex_home,a.collector)
+        threading.Thread(target=poll_quotas,args=(source,stop),daemon=True).start()
+        threading.Thread(target=publish_devenv,args=(source,APPROVED_URLS[1],a.token_file,stop),daemon=True).start()
     while True:
         data=json.dumps(snapshot(a.codex_home,a.collector)).encode()
         if a.output:
