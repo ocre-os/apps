@@ -251,6 +251,12 @@ class DevenvSampleTests(unittest.TestCase):
                 "observed_at":now,"windows":{"five_hour":{"used_percentage":10,"resets_at":now+600}}}))
             self.assertEqual(read_claude_quota(cache,now),plain)
 
+    def test_sample_quota_keeps_only_core_contract_keys(self):
+        # Core rechazó con 422 una muestra con `observed_at` en la cuota: nunca debe salir hacia Core.
+        quota={"state":"available","remaining_percent":38,"resets_at":"2026-11-22T10:19:09Z","observed_at":"2026-11-18T14:16:45Z"}
+        sample=build_devenv_sample(self.DATA,None,quota,1_800_000_000,{**quota,"weekly":None})
+        for name in ("claude","codex"):
+            self.assertLessEqual(set(sample["agents"][name]["quota"]),{"state","remaining_percent","resets_at","weekly"})
     def test_wsl_statusline_writes_only_percentages(self):
         import io
         from claude_statusline import main

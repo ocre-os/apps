@@ -281,6 +281,13 @@ def clean_supervisor(raw):
         return None
     return dict(raw)
 
+# Claves de cuota que acepta `ocre-devenv-v1` en Core (valida estricto: una clave extra -> 422).
+# `observed_at` se calcula pero no se publica hasta que el contrato de Core lo incluya.
+CORE_QUOTA_KEYS=("state","remaining_percent","resets_at","weekly")
+
+def core_quota(quota):
+    return {k:quota[k] for k in CORE_QUOTA_KEYS if k in quota} if isinstance(quota,dict) else None
+
 def build_devenv_sample(data, codex_turn, codex_quota, now, claude_quota=None):
     """None si las reservas no se pudieron leer: no se afirma una carga que no se midió."""
     slots=data.get("slots") if isinstance(data,dict) else None
@@ -290,8 +297,8 @@ def build_devenv_sample(data, codex_turn, codex_quota, now, claude_quota=None):
     events=[e for e in (data.get("events") or []) if isinstance(e,dict)][:5]
     stamp=dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat().replace("+00:00","Z")
     return {"contract":"ocre-devenv-v1","observed_at":stamp,"agents":{
-        "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":claude_quota or unknown},
-        "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":codex_quota or unknown}},
+        "claude":{"slots_used":slots["claude"],"turn_seconds":data.get("claude_turn_seconds"),"quota":core_quota(claude_quota) or unknown},
+        "codex":{"slots_used":slots["codex"],"turn_seconds":codex_turn,"quota":core_quota(codex_quota) or unknown}},
         "events":events,"validations":clean_validations(data.get("validations")),"supervisor":clean_supervisor(data.get("supervisor"))}
 
 def publish_devenv(source,url,token_file,stop):
