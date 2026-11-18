@@ -3,6 +3,9 @@
 ## Alcance y precedencia
 Estas instrucciones rigen el trabajo automatizado en este repositorio. Core es la fuente de verdad de contratos, permisos, autenticación, cuotas y acciones. No inventar endpoints ni estados. Mantener la experiencia móvil Android compacta, accesible y coherente con el modo Matrix.
 
+## Recursos de UI/UX
+VP0 y 21st.dev como referencia visual, con la regla de la cuota diaria gratuita: [docs/recursos-ui.md](docs/recursos-ui.md). Servidores MCP del proyecto en `.mcp.json`.
+
 ## Ejecución y seguridad
 - Inspeccionar contratos, implementación, ramas y pruebas existentes antes de modificar.
 - Trabajar en rama aislada; preservar modificaciones locales y trabajo exclusivo. No fusionar ni desplegar sin las comprobaciones y autorizaciones correspondientes.
