@@ -4,11 +4,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 const library=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'../library.css'),'utf8');
-test('la biblioteca conserva las 6 herramientas y sus destinos originales',()=>{
- const links=['os-status/','polimob-sync/OCRE-Polimob-Sync-Installer.cmd','limpiador-mozaik/','cizalla/','escuadra/'];
+test('la biblioteca conserva sus herramientas (incluida PRISMA) y sus destinos originales',()=>{
+ const links=['os-status/','polimob-sync/OCRE-Polimob-Sync-Installer.cmd','limpiador-mozaik/','cizalla/','escuadra/','prisma/'];
  for(const href of links)assert.ok(library.includes('href="'+href+'"'),href);
- for(const title of ['OCRE OS Status','OCRE Polimob Sync','Limpiador Mozaik KDT','Cizalla Hidráulica Krass','Escuadra Gantry','Alineación Óptica Láser'])assert.ok(library.includes(title));
- assert.equal((library.match(/class="app(?: app-featured)?"/g)||[]).length,5);
+ for(const title of ['OCRE OS Status','OCRE Polimob Sync','Limpiador Mozaik KDT','Cizalla Hidráulica Krass','Escuadra Gantry','Alineación Óptica Láser','PRISMA'])assert.ok(library.includes(title));
+ assert.equal((library.match(/class="app(?: app-featured)?"/g)||[]).length,6);
  assert.ok(library.includes('class="app app-pending"'));
 });
 test('versions distinguish interface from actual apps',()=>{
