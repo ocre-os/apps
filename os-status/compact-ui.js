@@ -14,7 +14,7 @@
  }
  function quota(q){
   if(!q||!['available','low','exhausted'].includes(q.state)||typeof q.remainingPercent!=='number'||!Number.isFinite(q.remainingPercent)||q.remainingPercent<0||q.remainingPercent>100||(q.state==='exhausted'&&q.remainingPercent!==0)||(q.resetsAt&&Number.isFinite(Date.parse(q.resetsAt))&&Date.parse(q.resetsAt)<=Date.now()))
-   return {text:'Sin medición',tone:'unknown',percent:null};
+   return {text:q&&q.observedAt?'Sin medición reciente':'Sin medición',tone:'unknown',percent:null};
   const percent=Math.round(Math.max(0,Math.min(100,q.remainingPercent)));
   return {text:percent+'% restante',tone:q.state,percent};
  }
@@ -55,6 +55,19 @@
   return '<span>Semanal</span><strong>'+w.remainingPercent+'% restante</strong>'
    +'<span>Reinicio semanal</span><strong>'+clean(resetLabel(w.resetsAt,now))+'</strong>';
  }
+ // De dónde sale cada cuota y qué tan viva es: la de Claude solo se renueva en sesiones interactivas.
+ const QUOTA_SOURCE={
+  claude:'Fuente: statusLine de Claude Code. Solo se actualiza durante sesiones interactivas; las corridas sin interfaz consumen cuota sin reportarla.',
+  codex:'Fuente: servidor de app de Codex (account/rateLimits/read), consultado cada 5 min.'};
+ function readingLabel(iso,now=Date.now()){
+  const at=Date.parse(iso);
+  if(!Number.isFinite(at))return 'Sin lectura registrada';
+  const minutes=Math.max(0,Math.floor((now-at)/60000));
+  if(minutes<1)return 'Hace un momento';
+  if(minutes<60)return 'Hace '+minutes+' min';
+  const hours=Math.floor(minutes/60);
+  return hours<48?'Hace '+hours+' h':'Hace '+Math.floor(hours/24)+' días';
+ }
  function card(name,agent,state='unknown'){
   const o=occupancy(agent),q=quota(agent?.quota),turn=agent?.turnSeconds;
   const reset=q.percent===null?'Sin reinicio confirmado':resetLabel(agent?.quota?.resetsAt);
@@ -69,7 +82,9 @@
    +'<span>Autenticación</span><strong>Sin señal pública</strong>'
    +'<span>Cuota</span><strong>'+q.text+'</strong>'+'<span>Restablecimiento</span><strong>'+reset+'</strong>'
    +weeklyRows(agent?.quota?.weekly)
+   +'<span>Última lectura de cuota</span><strong>'+clean(readingLabel(agent?.quota?.observedAt))+'</strong>'
+   +'<p>'+clean(QUOTA_SOURCE[name]||'')+'</p>'
    +'<p>Ocupación, ejecución y cuota son mediciones independientes. La autenticación por runtime aún no se publica en esta API.</p></div></details>';
  }
- return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,weeklyRows,card};
+ return {occupancy,quota,currentTelemetry,liveStates,freshExecution,resetLabel,turnLabel,weeklyRows,readingLabel,card};
 });

@@ -1,6 +1,7 @@
 (() => {
  const monitor=new window.OcreDevenv.DevenvMonitor();
- const url='https://staging.ocre.mx/api/devenv';
+ // status.ocre.mx define OCRE_STATUS_ENDPOINTS (config.js) para leer de su propio relay.
+ const url=(window.OCRE_STATUS_ENDPOINTS&&window.OCRE_STATUS_ENDPOINTS.devenv)||'https://staging.ocre.mx/api/devenv';
  const D=window.OcreDevenv;
  let last=null,signature=null;
  let agentStates={claude:'unknown',codex:'unknown'};

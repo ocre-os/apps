@@ -1,6 +1,7 @@
 (() => {
  const monitor=new window.OcreAgents.AgentMonitor();
- const url='https://staging.ocre.mx/api/agents';
+ // status.ocre.mx define OCRE_STATUS_ENDPOINTS (config.js) para leer de su propio relay.
+ const url=(window.OCRE_STATUS_ENDPOINTS&&window.OCRE_STATUS_ENDPOINTS.agents)||'https://staging.ocre.mx/api/agents';
  const labels={working:'Trabajando',waiting:'En espera',available:'Disponible',unknown:'Sin información'};
  let last=null;
  function render(){

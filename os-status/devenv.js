@@ -22,6 +22,8 @@
   const turn=raw.turn_seconds===null||raw.turn_seconds===undefined?null:int(raw.turn_seconds,0,7*86400);
   const out={slotsUsed:slots,capacity,turnSeconds:turn,quota:{state,remainingPercent:percent,resetsAt:resets}};
   // OCRE-075: ventana semanal opcional; sólo se conserva si está completa y es válida.
+  // Frescura de la cuota: cuándo se leyó de verdad (opcional; si Core no la envía, no se muestra).
+  if(Number.isFinite(Date.parse(quota.observed_at))&&Date.parse(quota.observed_at)<=Date.now()+5000)out.quota.observedAt=quota.observed_at;
   const wk=quota.weekly,wp=int(wk?.remaining_percent,0,100);
   if(wp!==null&&Number.isFinite(Date.parse(wk.resets_at)))out.quota.weekly={remainingPercent:wp,resetsAt:wk.resets_at};
   return out;

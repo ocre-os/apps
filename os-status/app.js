@@ -1,7 +1,8 @@
 (() => {
   const { StatusMonitor, applyStaleness } = window.OcreStatus;
   const V = window.OcreView;
-  const targets = {
+  // status.ocre.mx inyecta OCRE_STATUS_TARGETS (config.js) para leer CORE desde su relay propio.
+  const targets = window.OCRE_STATUS_TARGETS || {
     core: { label: 'CORE', url: 'https://os.ocre.mx/api/status' },
     staging: { label: 'STAGING', url: 'https://staging.ocre.mx/api/status' },
   };
