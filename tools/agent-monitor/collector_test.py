@@ -104,6 +104,11 @@ class DevenvTests(unittest.TestCase):
         view=quota_view(self.quota(),NOW)
         self.assertEqual((view["state"],view["remaining_percent"]),("available",31))
         self.assertTrue(view["resets_at"].endswith("Z"))
+    def test_quota_reports_when_codex_was_read(self):
+        self.assertNotIn("observed_at",quota_view(self.quota(),NOW))
+        view=quota_view(self.quota(observed_at=NOW-60),NOW)
+        self.assertTrue(view["observed_at"].endswith("Z"))
+        self.assertNotIn("observed_at",quota_view(self.quota(observed_at=NOW+3600),NOW))  # futuro: no se cree
     def test_quota_low_exhausted_and_unknown(self):
         low=quota_view(self.quota(windows=[{"name":"p","remaining":15,"resets_at":NOW+5}]),NOW)
         self.assertEqual(low["state"],"low")

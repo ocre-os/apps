@@ -2,12 +2,15 @@
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import re
 from pathlib import Path
 import subprocess
 import time
 import urllib.request
+
+from claude_quota import read_claude_quota
 
 def claude_state(session, alive):
     if not alive:
@@ -189,9 +192,13 @@ def quota_view(snapshot, now=None):
         return unknown
     tight=min(windows,key=lambda w:w["remaining"])
     remaining=max(0,min(100,int(tight["remaining"])))
-    return {"state":"exhausted" if remaining==0 else "low" if remaining<=LOW_QUOTA_PERCENT else "available",
-            "remaining_percent":remaining,
-            "resets_at":dt.datetime.fromtimestamp(tight["resets_at"],dt.timezone.utc).isoformat().replace("+00:00","Z")}
+    view={"state":"exhausted" if remaining==0 else "low" if remaining<=LOW_QUOTA_PERCENT else "available",
+          "remaining_percent":remaining,
+          "resets_at":dt.datetime.fromtimestamp(tight["resets_at"],dt.timezone.utc).isoformat().replace("+00:00","Z")}
+    observed=data.get("observed_at")
+    if isinstance(observed,(int,float)) and math.isfinite(observed) and observed<=now+5:
+        view["observed_at"]=dt.datetime.fromtimestamp(observed,dt.timezone.utc).isoformat().replace("+00:00","Z")
+    return view
 
 def run_json(command, timeout, cwd=None):
     try:
@@ -266,7 +273,8 @@ def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_
                    ocre_agent=Path("/home/ocre/.local/bin/ocre-agent"), codex_binary=Path("/home/ocre/.local/bin/codex"),
                    events_path=Path("/home/ocre/.ocre-os/status-events.jsonl"),
                    validations_path=Path("/home/ocre/.ocre-os/validations.jsonl"),
-                   supervisor_path=Path("/home/ocre/.ocre-os/supervisor-status.json")):
+                   supervisor_path=Path("/home/ocre/.ocre-os/supervisor-status.json"),
+                   claude_usage_path=Path("/home/ocre/.ocre-os/agent-monitor/claude-usage.json")):
     # `ocre-agent` resuelve el registro desde el repositorio actual: se ejecuta dentro del checkout de core,
     # no en el directorio heredado de Windows (por eso las reservas salían ilegibles bajo wsl.exe).
     """Parte WSL de `ocre-devenv-v1`: reservas por proveedor, turno de Claude y, si se pide, cuota de Codex."""
@@ -274,6 +282,8 @@ def collect_devenv(claude_directory, core_scripts, with_quota=False, runner=run_
     result={"slots":slots,"claude_turn_seconds":claude_turn_seconds(claude_directory,now),"events":read_events(events_path),
             "validations":read_validations(validations_path),
             "supervisor":read_supervisor(supervisor_path)}
+    # Caché de la statusLine de Claude Code en WSL (claude_statusline.py); se lee siempre, es local y barata.
+    result["claude_quota"]=read_claude_quota(claude_usage_path,now)
     if with_quota:
         result["codex_quota"]=quota_view(runner(["python3",str(core_scripts/"agent-quota.py"),"--codex-binary",str(codex_binary)],25,core_scripts.parent),now)
     return result

@@ -219,10 +219,56 @@ class DevenvSampleTests(unittest.TestCase):
             self.assertEqual(result["remaining_percent"],12)
             self.assertEqual(result["weekly"],{"remaining_percent":12,"resets_at":"2027-01-19T23:06:40Z"})
             self.assertNotIn("session_id",json.dumps(result))
-            self.assertEqual(read_claude_quota(cache,now+901)["state"],"unknown")
+            self.assertEqual(result["observed_at"],"2027-01-15T07:59:30Z")
+            stale=read_claude_quota(cache,now+901)
+            self.assertEqual(stale["state"],"unknown")
+            self.assertIsNone(stale["remaining_percent"])
+            self.assertEqual(stale["observed_at"],"2027-01-15T07:59:30Z")  # la UI dice cuándo fue la última lectura
+            # Claude Code omite una ventana sin dato: se usa la que llegó y la semanal queda sin dato.
             data["windows"].pop("seven_day")
             cache.write_text(json.dumps(data))
+            partial=read_claude_quota(cache,now)
+            self.assertEqual((partial["state"],partial["remaining_percent"],partial["weekly"]),("available",58,None))
+            data["windows"]={"monthly":{"used_percentage":1,"resets_at":now+60}}
+            cache.write_text(json.dumps(data))
             self.assertEqual(read_claude_quota(cache,now)["state"],"unknown")
+
+    def test_wsl_statusline_cache_is_accepted_and_freshest_wins(self):
+        from claude_quota import freshest
+        now=1_800_000_000
+        with tempfile.TemporaryDirectory() as temp:
+            cache=Path(temp)/"claude-usage.json"
+            cache.write_text(json.dumps({"schema":"ocre-claude-usage-v1","runtime":"wsl","source":"claude_code_statusline",
+                "observed_at":now-10,"windows":{"five_hour":{"used_percentage":10,"resets_at":now+600}}}))
+            wsl=read_claude_quota(cache,now)
+            self.assertEqual(wsl["state"],"available")
+            old={"state":"unknown","remaining_percent":None,"resets_at":None,"observed_at":"2027-01-15T07:00:00Z"}
+            self.assertIs(freshest(old,wsl),wsl)
+            self.assertIs(freshest(None,wsl),wsl)
+            plain={"state":"unknown","remaining_percent":None,"resets_at":None}
+            self.assertEqual(freshest(plain,None),plain)
+            cache.write_text(json.dumps({"schema":"ocre-claude-usage-v1","runtime":"otro","source":"claude_code_statusline",
+                "observed_at":now,"windows":{"five_hour":{"used_percentage":10,"resets_at":now+600}}}))
+            self.assertEqual(read_claude_quota(cache,now),plain)
+
+    def test_wsl_statusline_writes_only_percentages(self):
+        import io
+        from claude_statusline import main
+        now=1_800_000_000
+        payload={"session_id":"secreto","model":{"id":"x"},"workspace":{"current_dir":"/home/ocre/privado"},
+                 "rate_limits":{"five_hour":{"used_percentage":23.5,"resets_at":now+1000},
+                                "seven_day":{"used_percentage":"mal","resets_at":now+9000}}}
+        with tempfile.TemporaryDirectory() as temp:
+            out=io.StringIO()
+            main(io.StringIO(json.dumps(payload)),out,home=temp,now=now)
+            self.assertEqual(out.getvalue().strip(),"OCRE Claude | 5h:24%")
+            cache=Path(temp)/".ocre-os"/"agent-monitor"/"claude-usage.json"
+            saved=json.loads(cache.read_text())
+            self.assertEqual(saved,{"schema":"ocre-claude-usage-v1","runtime":"wsl","source":"claude_code_statusline",
+                "observed_at":now,"windows":{"five_hour":{"used_percentage":23.5,"resets_at":now+1000}}})
+            self.assertEqual(read_claude_quota(cache,now)["remaining_percent"],76)
+            out=io.StringIO(); main(io.StringIO("{no json"),out,home=temp,now=now)
+            self.assertIn("no disponible",out.getvalue())
 
     def test_symlinked_ancestor_and_fractional_quota_are_handled(self):
         now=1_800_000_000
